@@ -1,0 +1,31 @@
+import React, { useEffect } from 'react';
+import { Redirect } from 'react-router-dom';
+
+const Dashboard: React.FC = () => {
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      window.location.href = '/login';
+    }
+  }, []);
+
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+
+  if (!user) {
+    return <Redirect to="/login" />;
+  }
+
+  switch (user.role) {
+    case 'ADMIN':
+      return <Redirect to="/admin" />;
+    case 'MANAGER':
+      return <Redirect to="/manager" />;
+    case 'ROUTE':
+      return <Redirect to="/route" />;
+    default:
+      return <Redirect to="/login" />;
+  }
+};
+
+export default Dashboard;

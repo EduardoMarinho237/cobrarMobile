@@ -1,19 +1,14 @@
 import { Redirect, Route } from 'react-router-dom';
-import {
-  IonApp,
-  IonIcon,
-  IonLabel,
-  IonRouterOutlet,
-  IonTabBar,
-  IonTabButton,
-  IonTabs,
-  setupIonicReact
-} from '@ionic/react';
+import { IonApp, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { ellipse, square, triangle } from 'ionicons/icons';
-import Tab1 from './pages/Tab1';
-import Tab2 from './pages/Tab2';
-import Tab3 from './pages/Tab3';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import AdminTabs from './pages/AdminTabs';
+import ManagerTabs from './pages/ManagerTabs';
+import RouteTabs from './pages/RouteTabs';
+import EditarCategoria from './pages/manager/EditarCategoria';
+import DetalhesGastos from './pages/manager/DetalhesGastos';
+import { getCurrentUser } from './services/api';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -47,41 +42,85 @@ import './theme/variables.css';
 
 setupIonicReact();
 
-const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
-      <IonTabs>
-        <IonRouterOutlet>
-          <Route exact path="/tab1">
-            <Tab1 />
-          </Route>
-          <Route exact path="/tab2">
-            <Tab2 />
-          </Route>
-          <Route path="/tab3">
-            <Tab3 />
-          </Route>
-          <Route exact path="/">
-            <Redirect to="/tab1" />
-          </Route>
-        </IonRouterOutlet>
-        <IonTabBar slot="bottom">
-          <IonTabButton tab="tab1" href="/tab1">
-            <IonIcon aria-hidden="true" icon={triangle} />
-            <IonLabel>Tab 1</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="tab2" href="/tab2">
-            <IonIcon aria-hidden="true" icon={ellipse} />
-            <IonLabel>Tab 2</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="tab3" href="/tab3">
-            <IonIcon aria-hidden="true" icon={square} />
-            <IonLabel>Tab 3</IonLabel>
-          </IonTabButton>
-        </IonTabBar>
-      </IonTabs>
-    </IonReactRouter>
-  </IonApp>
-);
+const App: React.FC = () => {
+  const checkAuth = () => {
+    return getCurrentUser() !== null;
+  };
+
+  const ProtectedRoute: React.FC<{ children: React.ReactNode; path?: string; exact?: boolean }> = ({ children, ...rest }) => {
+    return (
+      <Route {...rest}>
+        {checkAuth() ? children : <Redirect to="/login" />}
+      </Route>
+    );
+  };
+
+  return (
+    <IonApp>
+      <IonReactRouter>
+        <Route exact path="/login">
+          <Login />
+        </Route>
+        <Route exact path="/dashboard">
+          <Dashboard />
+        </Route>
+        <ProtectedRoute exact path="/admin">
+          <AdminTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/admin/managers">
+          <AdminTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/admin/config">
+          <AdminTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/manager">
+          <ManagerTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/manager/dashboard">
+          <ManagerTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/manager/gastos">
+          <ManagerTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/manager/routes">
+          <ManagerTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/manager/config">
+          <ManagerTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/route">
+          <RouteTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/route/cobrancas">
+          <RouteTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/route/cobrados">
+          <RouteTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/route/gastos">
+          <RouteTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/route/creditos">
+          <RouteTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/route/fechamento">
+          <RouteTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/route/config">
+          <RouteTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/manager/gastos/:categoriaId/editar">
+          <EditarCategoria />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/manager/gastos/:categoriaId/detalhes">
+          <DetalhesGastos />
+        </ProtectedRoute>
+        <Route exact path="/">
+          {checkAuth() ? <Redirect to="/dashboard" /> : <Redirect to="/login" />}
+        </Route>
+      </IonReactRouter>
+    </IonApp>
+  );
+};
 
 export default App;
