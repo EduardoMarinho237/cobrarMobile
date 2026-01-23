@@ -20,9 +20,12 @@ import {
   IonBackButton,
   IonGrid,
   IonRow,
-  IonCol
+  IonCol,
+  IonModal,
+  IonDatetime,
+  IonIcon
 } from '@ionic/react';
-import { arrowBack } from 'ionicons/icons';
+import { arrowBack, calendarOutline } from 'ionicons/icons';
 import { 
   getCategorias, 
   getDetalhesGastos,
@@ -41,6 +44,8 @@ const DetalhesGastos: React.FC = () => {
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [showCustomPeriod, setShowCustomPeriod] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [calendarType, setCalendarType] = useState<'start' | 'end'>('start');
   const [dataInicioValida, setDataInicioValida] = useState(false);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
 
@@ -105,9 +110,12 @@ const DetalhesGastos: React.FC = () => {
   };
 
   const handlePeriodoChange = (value: string) => {
+    console.log('Período selecionado:', value);
     const periodValue = value as any;
     setPeriodo(periodValue);
-    setShowCustomPeriod(value === 'custom');
+    const shouldShowCustom = value === 'custom';
+    console.log('Mostrar período personalizado:', shouldShowCustom);
+    setShowCustomPeriod(shouldShowCustom);
     if (value !== 'custom') {
       setDataInicio('');
       setDataFim('');
@@ -130,6 +138,34 @@ const DetalhesGastos: React.FC = () => {
       return;
     }
     setDataFim(value);
+  };
+
+  const openCalendar = (type: 'start' | 'end') => {
+    setCalendarType(type);
+    setShowCalendarModal(true);
+  };
+
+  const handleDateSelected = (event: any) => {
+    const selectedDate = event.detail.value;
+    
+    if (calendarType === 'start') {
+      setDataInicio(selectedDate);
+      setDataInicioValida(true);
+      // Limpa data fim se for anterior à nova data início
+      if (dataFim && new Date(dataFim) < new Date(selectedDate)) {
+        setDataFim('');
+      }
+    } else {
+      setDataFim(selectedDate);
+    }
+    
+    setShowCalendarModal(false);
+  };
+
+  const formatDateDisplay = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR');
   };
 
   const formatCurrency = (value: number) => {
@@ -162,35 +198,37 @@ const DetalhesGastos: React.FC = () => {
                 <IonSelect
                   value={periodo}
                   onIonChange={(e: any) => handlePeriodoChange(e.detail.value)}
+                  placeholder="Selecione um período"
                 >
-                  <IonSelectOption value="ALL_TIME">Todo o tempo</IonSelectOption>
-                  <IonSelectOption value="LAST_90_DAYS">Últimos 90 dias</IonSelectOption>
-                  <IonSelectOption value="LAST_60_DAYS">Últimos 60 dias</IonSelectOption>
-                  <IonSelectOption value="LAST_30_DAYS">Últimos 30 dias</IonSelectOption>
-                  <IonSelectOption value="LAST_7_DAYS">Última semana (últimos 7 dias)</IonSelectOption>
                   <IonSelectOption value="TODAY">Hoje</IonSelectOption>
+                  <IonSelectOption value="LAST_7_DAYS">Últimos 7 dias</IonSelectOption>
+                  <IonSelectOption value="LAST_30_DAYS">Últimos 30 dias</IonSelectOption>
+                  <IonSelectOption value="LAST_60_DAYS">Últimos 60 dias</IonSelectOption>
+                  <IonSelectOption value="LAST_90_DAYS">Últimos 90 dias</IonSelectOption>
+                  <IonSelectOption value="ALL_TIME">Todo o tempo</IonSelectOption>
                   <IonSelectOption value="custom">Período personalizado</IonSelectOption>
                 </IonSelect>
               </IonItem>
 
               {showCustomPeriod && (
                 <>
-                  <IonItem>
+                  <IonItem button onClick={() => openCalendar('start')}>
                     <IonLabel position="stacked">Data Início</IonLabel>
-                    <IonInput
-                      type="date"
-                      value={dataInicio}
-                      onIonInput={(e: any) => handleDataInicioChange(e.detail.value!)}
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <span style={{ color: dataInicio ? '#262626' : '#999' }}>
+                        {dataInicio ? formatDateDisplay(dataInicio) : 'Selecione a data inicial'}
+                      </span>
+                      <IonIcon icon={calendarOutline} style={{ color: '#305bcb' }} />
+                    </div>
                   </IonItem>
-                  <IonItem>
+                  <IonItem button onClick={() => openCalendar('end')} disabled={!dataInicioValida}>
                     <IonLabel position="stacked">Data Fim</IonLabel>
-                    <IonInput
-                      type="date"
-                      value={dataFim}
-                      onIonInput={(e: any) => handleDataFimChange(e.detail.value!)}
-                      disabled={!dataInicioValida}
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <span style={{ color: dataFim ? '#262626' : '#999' }}>
+                        {dataFim ? formatDateDisplay(dataFim) : 'Selecione a data final'}
+                      </span>
+                      <IonIcon icon={calendarOutline} style={{ color: dataInicioValida ? '#305bcb' : '#ccc' }} />
+                    </div>
                   </IonItem>
                 </>
               )}
@@ -257,6 +295,53 @@ const DetalhesGastos: React.FC = () => {
           color={toast.color}
           onDidDismiss={() => setToast({ ...toast, isOpen: false })}
         />
+
+        {/* Modal de Calendário */}
+        <IonModal 
+          isOpen={showCalendarModal} 
+          onDidDismiss={() => setShowCalendarModal(false)}
+          initialBreakpoint={0.6}
+          breakpoints={[0, 0.6, 1]}
+        >
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>
+                {calendarType === 'start' ? 'Selecione a Data Início' : 'Selecione a Data Fim'}
+              </IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setShowCalendarModal(false)}>Fechar</IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent>
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '10px',
+              minHeight: '400px',
+              maxHeight: '500px'
+            }}>
+              <IonDatetime
+                presentation="date"
+                onIonChange={handleDateSelected}
+                value={calendarType === 'start' ? dataInicio : dataFim}
+                min={calendarType === 'end' ? dataInicio : undefined}
+                locale="pt-BR"
+                firstDayOfWeek={1}
+                showDefaultButtons={true}
+                doneText="Confirmar"
+                cancelText="Cancelar"
+                style={{
+                  maxWidth: '320px',
+                  width: '100%',
+                  marginBottom: '20px'
+                }}
+              />
+            </div>
+          </IonContent>
+        </IonModal>
       </IonContent>
     </IonPage>
   );
