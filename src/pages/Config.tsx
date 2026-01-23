@@ -94,7 +94,7 @@ const Config: React.FC = () => {
                   <IonItem>
                     <IonLabel>
                       <h3>Tipo</h3>
-                      <p>{user.type}</p>
+                      <p>{user.role}</p>
                     </IonLabel>
                   </IonItem>
                 </>

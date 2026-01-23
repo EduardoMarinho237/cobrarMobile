@@ -92,7 +92,7 @@ const Gastos: React.FC = () => {
   const handleDeleteClick = (categoria: CategoriaGasto) => {
     setSelectedCategoria(categoria);
     
-    if (categoria.quantidadeTipos > 0) {
+    if (categoria.expensesTypesCount > 0) {
       setShowMigrateAlert(true);
     } else {
       setShowDeleteAlert(true);
@@ -195,7 +195,12 @@ const Gastos: React.FC = () => {
             Adicionar nova categoria
           </IonButton>
 
-          {categorias.map((categoria) => (
+          {categorias.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <p>Nenhuma categoria encontrada</p>
+            </div>
+          ) : (
+            categorias.map((categoria) => (
             <IonCard 
               key={categoria.id} 
               style={{ 
@@ -204,7 +209,7 @@ const Gastos: React.FC = () => {
               }}
             >
               <IonCardHeader>
-                <IonCardTitle>{categoria.nome}</IonCardTitle>
+                <IonCardTitle>{categoria.name}</IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
                 <IonGrid>
@@ -212,7 +217,7 @@ const Gastos: React.FC = () => {
                     <IonCol size="12">
                       <IonItem>
                         <IonLabel>
-                          <h3>Tipos de gastos: {categoria.quantidadeTipos}</h3>
+                          <h3>Tipos de gastos: {categoria.expensesTypesCount}</h3>
                         </IonLabel>
                       </IonItem>
                     </IonCol>
@@ -247,7 +252,8 @@ const Gastos: React.FC = () => {
                 </IonGrid>
               </IonCardContent>
             </IonCard>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Modal Criar Categoria */}
@@ -286,7 +292,7 @@ const Gastos: React.FC = () => {
           isOpen={showMigrateAlert}
           onDidDismiss={() => setShowMigrateAlert(false)}
           header="Confirmar"
-          message={`Essa categoria de gastos possui ${selectedCategoria?.quantidadeTipos} tipos de gastos associados, deseja migrar para outra categoria ou apagá-los junto?`}
+          message={`Essa categoria de gastos possui ${selectedCategoria?.expensesTypesCount} tipos de gastos associados, deseja migrar para outra categoria ou apagá-los junto?`}
           buttons={[
             {
               text: 'Cancelar',
@@ -328,7 +334,7 @@ const Gastos: React.FC = () => {
                     backgroundColor: migrateParaId === categoria.id ? '#e0e0e0' : 'transparent'
                   }}
                 >
-                  <IonLabel>{categoria.nome}</IonLabel>
+                  <IonLabel>{categoria.name}</IonLabel>
                 </IonItem>
               ))}
               <IonButton 

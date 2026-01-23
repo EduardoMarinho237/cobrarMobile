@@ -39,7 +39,7 @@ export const getExpenseCategories = async () => {
     ];
   }
 
-  return apiRequest('/api/expense-categories');
+  return apiRequest('/api/expenses-categories');
 };
 
 export const createExpenseCategory = async (name: string) => {
@@ -50,7 +50,7 @@ export const createExpenseCategory = async (name: string) => {
     };
   }
 
-  return apiRequest('/api/expense-categories', {
+  return apiRequest('/api/expenses-categories', {
     method: 'POST',
     body: JSON.stringify({ name }),
   });
@@ -64,7 +64,7 @@ export const updateExpenseCategory = async (id: number, name: string) => {
     };
   }
 
-  return apiRequest(`/api/expense-categories/${id}`, {
+  return apiRequest(`/api/expenses-categories/${id}`, {
     method: 'PUT',
     body: JSON.stringify({ name }),
   });
@@ -80,7 +80,7 @@ export const deleteExpenseCategory = async (id: number, migrateTo?: number) => {
 
   const body = migrateTo ? { migrateTo } : {};
   
-  return apiRequest(`/api/expense-categories/${id}`, {
+  return apiRequest(`/api/expenses-categories/${id}`, {
     method: 'DELETE',
     body: JSON.stringify(body),
   });
@@ -108,7 +108,7 @@ export const getExpenseTypes = async (categoryId: number) => {
     ];
   }
 
-  return apiRequest(`/api/expense-categories/${categoryId}/types`);
+  return apiRequest(`/api/expenses-categories/${categoryId}/types`);
 };
 
 export const createExpenseType = async (categoryId: number, name: string) => {
@@ -119,7 +119,7 @@ export const createExpenseType = async (categoryId: number, name: string) => {
     };
   }
 
-  return apiRequest(`/api/expense-categories/${categoryId}/types`, {
+  return apiRequest(`/api/expenses-categories/${categoryId}/types`, {
     method: 'POST',
     body: JSON.stringify({ name }),
   });
@@ -133,7 +133,7 @@ export const updateExpenseType = async (categoryId: number, typeId: number, name
     };
   }
 
-  return apiRequest(`/api/expense-categories/${categoryId}/types/${typeId}`, {
+  return apiRequest(`/api/expenses-categories/${categoryId}/types/${typeId}`, {
     method: 'PUT',
     body: JSON.stringify({ name }),
   });
@@ -147,7 +147,7 @@ export const deleteExpenseType = async (categoryId: number, typeId: number) => {
     };
   }
 
-  return apiRequest(`/api/expense-categories/${categoryId}/types/${typeId}`, {
+  return apiRequest(`/api/expenses-categories/${categoryId}/types/${typeId}`, {
     method: 'DELETE',
   });
 };
@@ -174,5 +174,5 @@ export const getExpenseDetails = async (categoryId: number, period: string) => {
     };
   }
 
-  return apiRequest(`/api/expense-categories/${categoryId}/details?period=${period}`);
+  return apiRequest(`/api/expenses-categories/${categoryId}/details?period=${period}`);
 };

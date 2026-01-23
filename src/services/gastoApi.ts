@@ -2,19 +2,33 @@ import { apiRequest, isDev } from './api';
 
 export interface CategoriaGasto {
   id: number;
-  nome: string;
-  quantidadeTipos: number;
+  name: string;
+  expensesTypesCount: number;
 }
 
 export interface TipoGasto {
   id: number;
-  nome: string;
-  categoriaId: number;
+  name: string;
+  expenseCategoryId: number;
 }
 
 export interface GastoDetalhe {
-  tipo: string;
-  valor: number;
+  typeId: number;
+  typeName: string;
+  amount: number;
+}
+
+export interface CategoriaDetalhesResponse {
+  categoryId: number;
+  categoryName: string;
+  totalAmount: number;
+  expenseTypes: GastoDetalhe[];
+}
+
+export interface DetalhesRequest {
+  timePeriod?: 'TODAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'LAST_60_DAYS' | 'LAST_90_DAYS' | 'ALL_TIME';
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export const getCategorias = async () => {
@@ -23,23 +37,23 @@ export const getCategorias = async () => {
     return [
       {
         id: 1,
-        nome: 'Combustível',
-        quantidadeTipos: 3
+        name: 'Combustível',
+        expensesTypesCount: 3
       },
       {
         id: 2,
-        nome: 'Alimentação',
-        quantidadeTipos: 0
+        name: 'Alimentação',
+        expensesTypesCount: 0
       },
       {
         id: 3,
-        nome: 'Manutenção',
-        quantidadeTipos: 5
+        name: 'Manutenção',
+        expensesTypesCount: 5
       }
     ];
   }
 
-  return apiRequest('/api/categorias-gastos');
+  return apiRequest('/api/expenses-categories');
 };
 
 export const createCategoria = async (nome: string) => {
@@ -50,9 +64,9 @@ export const createCategoria = async (nome: string) => {
     };
   }
 
-  return apiRequest('/api/categorias-gastos', {
+  return apiRequest('/api/expenses-categories', {
     method: 'POST',
-    body: JSON.stringify({ nome }),
+    body: JSON.stringify({ name: nome }),
   });
 };
 
@@ -64,9 +78,9 @@ export const updateCategoria = async (id: number, nome: string) => {
     };
   }
 
-  return apiRequest(`/api/categorias-gastos/${id}`, {
+  return apiRequest(`/api/expenses-categories/${id}`, {
     method: 'PUT',
-    body: JSON.stringify({ nome }),
+    body: JSON.stringify({ name: nome }),
   });
 };
 
@@ -80,38 +94,42 @@ export const deleteCategoria = async (id: number, migrarPara?: number) => {
 
   const body = migrarPara ? { migrarPara } : {};
   
-  return apiRequest(`/api/categorias-gastos/${id}`, {
+  return apiRequest(`/api/expenses-categories/${id}`, {
     method: 'DELETE',
     body: JSON.stringify(body),
   });
 };
 
-export const getTiposGastos = async (categoriaId: number) => {
+export const getTiposGastos = async (categoriaId?: number) => {
   if (isDev()) {
     // Mock response
     return [
       {
         id: 1,
-        nome: 'Gasolina',
-        categoriaId: categoriaId
+        name: 'Gasolina',
+        expenseCategoryId: categoriaId || 1
       },
       {
         id: 2,
-        nome: 'Etanol',
-        categoriaId: categoriaId
+        name: 'Etanol',
+        expenseCategoryId: categoriaId || 1
       },
       {
         id: 3,
-        nome: 'Diesel',
-        categoriaId: categoriaId
+        name: 'Diesel',
+        expenseCategoryId: categoriaId || 1
       }
     ];
   }
 
-  return apiRequest(`/api/categorias-gastos/${categoriaId}/tipos`);
+  const url = categoriaId 
+    ? `/api/expenses-types/category/${categoriaId}`
+    : '/api/expenses-types';
+  
+  return apiRequest(url);
 };
 
-export const createTipoGasto = async (categoriaId: number, nome: string) => {
+export const createTipoGasto = async (nome: string, categoriaId?: number) => {
   if (isDev()) {
     return {
       success: true,
@@ -119,13 +137,15 @@ export const createTipoGasto = async (categoriaId: number, nome: string) => {
     };
   }
 
-  return apiRequest(`/api/categorias-gastos/${categoriaId}/tipos`, {
+  const body = categoriaId ? { name: nome, expenseCategoryId: categoriaId } : { name: nome };
+  
+  return apiRequest('/api/expenses-types', {
     method: 'POST',
-    body: JSON.stringify({ nome }),
+    body: JSON.stringify(body),
   });
 };
 
-export const updateTipoGasto = async (categoriaId: number, tipoId: number, nome: string) => {
+export const updateTipoGasto = async (id: number, nome: string, categoriaId?: number) => {
   if (isDev()) {
     return {
       success: true,
@@ -133,13 +153,15 @@ export const updateTipoGasto = async (categoriaId: number, tipoId: number, nome:
     };
   }
 
-  return apiRequest(`/api/categorias-gastos/${categoriaId}/tipos/${tipoId}`, {
+  const body = categoriaId ? { name: nome, expenseCategoryId: categoriaId } : { name: nome };
+  
+  return apiRequest(`/api/expenses-types/${id}`, {
     method: 'PUT',
-    body: JSON.stringify({ nome }),
+    body: JSON.stringify(body),
   });
 };
 
-export const deleteTipoGasto = async (categoriaId: number, tipoId: number) => {
+export const deleteTipoGasto = async (id: number) => {
   if (isDev()) {
     return {
       success: true,
@@ -147,32 +169,44 @@ export const deleteTipoGasto = async (categoriaId: number, tipoId: number) => {
     };
   }
 
-  return apiRequest(`/api/categorias-gastos/${categoriaId}/tipos/${tipoId}`, {
+  return apiRequest(`/api/expenses-types/${id}`, {
     method: 'DELETE',
   });
 };
 
-export const getDetalhesGastos = async (categoriaId: number, periodo: string) => {
+export const getDetalhesGastos = async (categoriaId: number, request: DetalhesRequest) => {
+  console.log('getDetalhesGastos chamado com:', { categoriaId, request });
+  
   if (isDev()) {
     // Mock response
+    console.log('Usando mock response');
     return {
-      total: 1500.50,
-      detalhes: [
+      categoryId: categoriaId,
+      categoryName: 'Combustível',
+      totalAmount: 1500.50,
+      expenseTypes: [
         {
-          tipo: 'Gasolina',
-          valor: 800.00
+          typeId: 1,
+          typeName: 'Gasolina',
+          amount: 800.00
         },
         {
-          tipo: 'Etanol',
-          valor: 500.00
+          typeId: 2,
+          typeName: 'Etanol',
+          amount: 500.00
         },
         {
-          tipo: 'Diesel',
-          valor: 200.50
+          typeId: 3,
+          typeName: 'Diesel',
+          amount: 200.50
         }
       ]
     };
   }
 
-  return apiRequest(`/api/categorias-gastos/${categoriaId}/detalhes?periodo=${periodo}`);
+  console.log('Fazendo requisição real para:', `/api/expenses-categories/details/${categoriaId}`);
+  return apiRequest(`/api/expenses-categories/details/${categoriaId}`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
 };

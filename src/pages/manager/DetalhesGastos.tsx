@@ -27,15 +27,17 @@ import {
   getCategorias, 
   getDetalhesGastos,
   CategoriaGasto,
-  GastoDetalhe 
+  GastoDetalhe,
+  CategoriaDetalhesResponse,
+  DetalhesRequest
 } from '../../services/gastoApi';
 import Toast from '../../components/Toast';
 
 const DetalhesGastos: React.FC = () => {
   const { categoriaId } = useParams<{ categoriaId: string }>();
   const [categoria, setCategoria] = useState<CategoriaGasto | null>(null);
-  const [detalhes, setDetalhes] = useState<{ total: number; detalhes: GastoDetalhe[] } | null>(null);
-  const [periodo, setPeriodo] = useState('todo');
+  const [detalhes, setDetalhes] = useState<CategoriaDetalhesResponse | null>(null);
+  const [periodo, setPeriodo] = useState<'TODAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'LAST_60_DAYS' | 'LAST_90_DAYS' | 'ALL_TIME' | 'custom'>('LAST_30_DAYS');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [showCustomPeriod, setShowCustomPeriod] = useState(false);
@@ -68,19 +70,32 @@ const DetalhesGastos: React.FC = () => {
 
   const loadDetalhes = async () => {
     try {
-      let periodoParam = periodo;
+      let request: DetalhesRequest;
       
       if (periodo === 'custom') {
         if (!dataInicio || !dataFim) {
           showToast('Selecione as datas para o período personalizado', 'danger');
           return;
         }
-        periodoParam = `${dataInicio}_${dataFim}`;
+        request = {
+          dateFrom: new Date(dataInicio).toISOString(),
+          dateTo: new Date(dataFim).toISOString()
+        };
+      } else {
+        request = {
+          timePeriod: periodo
+        };
       }
       
-      const data = await getDetalhesGastos(parseInt(categoriaId!), periodoParam);
+      console.log('Enviando request para detalhes:', request);
+      console.log('Categoria ID:', categoriaId);
+      
+      const data = await getDetalhesGastos(parseInt(categoriaId!), request);
+      console.log('Response recebido:', data);
+      
       setDetalhes(data);
     } catch (error) {
+      console.error('Erro ao carregar detalhes:', error);
       showToast('Erro ao carregar detalhes dos gastos', 'danger');
     }
   };
@@ -90,7 +105,8 @@ const DetalhesGastos: React.FC = () => {
   };
 
   const handlePeriodoChange = (value: string) => {
-    setPeriodo(value);
+    const periodValue = value as any;
+    setPeriodo(periodValue);
     setShowCustomPeriod(value === 'custom');
     if (value !== 'custom') {
       setDataInicio('');
@@ -147,10 +163,12 @@ const DetalhesGastos: React.FC = () => {
                   value={periodo}
                   onIonChange={(e: any) => handlePeriodoChange(e.detail.value)}
                 >
-                  <IonSelectOption value="todo">Todo o tempo</IonSelectOption>
-                  <IonSelectOption value="3meses">Últimos 3 meses</IonSelectOption>
-                  <IonSelectOption value="1mes">Último mês</IonSelectOption>
-                  <IonSelectOption value="7dias">Última semana (últimos 7 dias)</IonSelectOption>
+                  <IonSelectOption value="ALL_TIME">Todo o tempo</IonSelectOption>
+                  <IonSelectOption value="LAST_90_DAYS">Últimos 90 dias</IonSelectOption>
+                  <IonSelectOption value="LAST_60_DAYS">Últimos 60 dias</IonSelectOption>
+                  <IonSelectOption value="LAST_30_DAYS">Últimos 30 dias</IonSelectOption>
+                  <IonSelectOption value="LAST_7_DAYS">Última semana (últimos 7 dias)</IonSelectOption>
+                  <IonSelectOption value="TODAY">Hoje</IonSelectOption>
                   <IonSelectOption value="custom">Período personalizado</IonSelectOption>
                 </IonSelect>
               </IonItem>
@@ -193,7 +211,7 @@ const DetalhesGastos: React.FC = () => {
             <IonCard style={{ borderRadius: '12px' }}>
               <IonCardHeader>
                 <IonCardTitle>
-                  {categoria?.nome} - {formatCurrency(detalhes.total)}
+                  {categoria?.name} - {formatCurrency(detalhes.totalAmount)}
                 </IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
@@ -201,7 +219,7 @@ const DetalhesGastos: React.FC = () => {
                   <IonRow>
                     <IonCol size="12">
                       <h3 style={{ textAlign: 'center', marginBottom: '16px' }}>
-                        Total Gasto: {formatCurrency(detalhes.total)}
+                        Total Gasto: {formatCurrency(detalhes.totalAmount)}
                       </h3>
                     </IonCol>
                   </IonRow>
@@ -212,14 +230,14 @@ const DetalhesGastos: React.FC = () => {
                     </IonCol>
                   </IonRow>
 
-                  {detalhes.detalhes.map((detalhe, index) => (
+                  {detalhes.expenseTypes.map((detalhe, index) => (
                     <IonRow key={index}>
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>{detalhe.tipo}</h3>
+                            <h3>{detalhe.typeName}</h3>
                             <p style={{ color: '#666', fontSize: '14px' }}>
-                              {formatCurrency(detalhe.valor)}
+                              {formatCurrency(detalhe.amount)}
                             </p>
                           </IonLabel>
                         </IonItem>
