@@ -13,9 +13,11 @@ import {
   IonItem,
   IonLabel,
   IonAlert,
-  IonIcon
+  IonIcon,
+  IonRefresher,
+  IonRefresherContent
 } from '@ionic/react';
-import { logOut, person, lockClosed, lockOpen } from 'ionicons/icons';
+import { logOut, person, lockClosed, lockOpen, refresh } from 'ionicons/icons';
 import { getCurrentUser, logout } from '../services/api';
 import { useFechamentoControl } from '../hooks/useFechamentoControl';
 
@@ -36,6 +38,11 @@ const Config: React.FC = () => {
     } catch (error) {
       console.error('Erro ao carregar usuário:', error);
     }
+  };
+
+  const handleRefresh = async (event: CustomEvent) => {
+    await loadUser();
+    event.detail.complete();
   };
 
   const handleLogout = () => {
@@ -67,6 +74,14 @@ const Config: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent
+            pullingIcon={refresh}
+            pullingText="Puxe para atualizar"
+            refreshingSpinner="circles"
+            refreshingText="Atualizando..."
+          />
+        </IonRefresher>
         <div style={{ padding: '16px' }}>
           {/* Card de Informações do Usuário */}
           <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>

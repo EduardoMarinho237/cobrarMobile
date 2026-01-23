@@ -21,9 +21,11 @@ import {
   IonAlert,
   IonGrid,
   IonRow,
-  IonCol
+  IonCol,
+  IonRefresher,
+  IonRefresherContent
 } from '@ionic/react';
-import { add, trash, create, eye, wallet } from 'ionicons/icons';
+import { add, trash, create, eye, wallet, refresh } from 'ionicons/icons';
 import { 
   getGastosDoDia, 
   createGasto, 
@@ -221,6 +223,11 @@ const GastosRoute: React.FC = () => {
     setShowViewModal(true);
   };
 
+  const handleRefresh = async (event: CustomEvent) => {
+    await loadGastos();
+    event.detail.complete();
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -236,6 +243,14 @@ const GastosRoute: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent
+            pullingIcon={refresh}
+            pullingText="Puxe para atualizar"
+            refreshingSpinner="circles"
+            refreshingText="Atualizando..."
+          />
+        </IonRefresher>
         <div style={{ padding: '16px' }}>
           {/* Card de Total do Dia */}
           <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
@@ -341,7 +356,7 @@ const GastosRoute: React.FC = () => {
                   <IonSelectOption value={0}>Selecione...</IonSelectOption>
                   {categorias.map((categoria) => (
                     <IonSelectOption key={categoria.id} value={categoria.id}>
-                      {categoria.nome}
+                      {categoria.name}
                     </IonSelectOption>
                   ))}
                 </IonSelect>
@@ -357,28 +372,30 @@ const GastosRoute: React.FC = () => {
                   <IonSelectOption value={0}>Selecione...</IonSelectOption>
                   {tipos.map((tipo) => (
                     <IonSelectOption key={tipo.id} value={tipo.id}>
-                      {tipo.nome}
+                      {tipo.name}
                     </IonSelectOption>
                   ))}
                 </IonSelect>
               </IonItem>
               
               <IonItem>
-                <IonLabel position="stacked">Valor</IonLabel>
                 <IonInput
+                  label="Valor"
+                  labelPlacement="floating"
+                  placeholder="Digite o valor"
                   type="number"
                   value={newGasto.valor}
-                  onIonInput={(e: any) => setNewGasto({ ...newGasto, valor: parseInt(e.detail.value) || 0 })}
-                  placeholder="$ 100"
+                  onIonInput={(e: any) => setNewGasto({ ...newGasto, valor: e.detail.value! })}
                 />
               </IonItem>
               
               <IonItem>
-                <IonLabel position="stacked">Descrição</IonLabel>
                 <IonInput
+                  label="Descrição"
+                  labelPlacement="floating"
+                  placeholder="Digite a descrição"
                   value={newGasto.descricao}
                   onIonInput={(e: any) => setNewGasto({ ...newGasto, descricao: e.detail.value! })}
-                  placeholder="Descrição do gasto"
                 />
               </IonItem>
               
@@ -415,7 +432,7 @@ const GastosRoute: React.FC = () => {
                   <IonSelectOption value={0}>Selecione...</IonSelectOption>
                   {categorias.map((categoria) => (
                     <IonSelectOption key={categoria.id} value={categoria.id}>
-                      {categoria.nome}
+                      {categoria.name}
                     </IonSelectOption>
                   ))}
                 </IonSelect>
@@ -431,28 +448,30 @@ const GastosRoute: React.FC = () => {
                   <IonSelectOption value={0}>Selecione...</IonSelectOption>
                   {tipos.map((tipo) => (
                     <IonSelectOption key={tipo.id} value={tipo.id}>
-                      {tipo.nome}
+                      {tipo.name}
                     </IonSelectOption>
                   ))}
                 </IonSelect>
               </IonItem>
               
               <IonItem>
-                <IonLabel position="stacked">Valor</IonLabel>
                 <IonInput
+                  label="Valor"
+                  labelPlacement="floating"
+                  placeholder="Digite o valor"
                   type="number"
                   value={editGasto.valor}
-                  onIonInput={(e: any) => setEditGasto({ ...editGasto, valor: parseInt(e.detail.value) || 0 })}
-                  placeholder="$ 100"
+                  onIonInput={(e: any) => setEditGasto({ ...editGasto, valor: e.detail.value! })}
                 />
               </IonItem>
               
               <IonItem>
-                <IonLabel position="stacked">Descrição</IonLabel>
                 <IonInput
+                  label="Descrição"
+                  labelPlacement="floating"
+                  placeholder="Digite a descrição"
                   value={editGasto.descricao}
                   onIonInput={(e: any) => setEditGasto({ ...editGasto, descricao: e.detail.value! })}
-                  placeholder="Descrição do gasto"
                 />
               </IonItem>
               

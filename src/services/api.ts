@@ -9,29 +9,60 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
 
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
+  const token = user?.token;
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options?.headers,
+  };
 
   const url = `${API_BASE_URL}${endpoint}`;
   
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {}),
-  };
+  try {
+    const response = await fetch(url, {
+      headers,
+      ...options,
+    });
 
-  // Adiciona o token de autenticação se existir
-  if (user && user.token) {
-    headers.Authorization = `${user.type || 'Bearer'} ${user.token}`;
+    if (!response.ok) {
+      // Tenta obter o corpo da resposta de erro
+      let errorData = null;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          errorData = JSON.parse(errorText);
+        }
+      } catch (e) {
+        // Se não conseguir parsear, continua sem os dados
+      }
+      
+      // Retorna o erro diretamente em vez de lançar exceção
+      return errorData || { success: false, message: 'Erro de conexão, tente novamente' };
+    }
+
+    // Tratar respostas vazias ou sem conteúdo
+    const text = await response.text();
+    if (!text) {
+      return null; // Resposta vazia
+    }
+    
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      console.error('Erro ao fazer parse do JSON:', error);
+      console.error('Resposta bruta:', text);
+      throw new Error('Erro de conexão, tente novamente');
+    }
+  } catch (error) {
+    // Se for erro de rede ou conexão, usa mensagem padrão
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Erro de conexão, tente novamente');
+    }
+    
+    // Se já for uma mensagem de erro personalizada, propaga
+    throw error;
   }
-  
-  const response = await fetch(url, {
-    headers,
-    ...options,
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
 };
 
 export const login = async (login: string, password: string) => {
@@ -89,10 +120,37 @@ export const createManager = async (name: string, login: string, password: strin
     };
   }
 
-  return apiRequest('/api/users', {
-    method: 'POST',
-    body: JSON.stringify({ name, login, password }),
-  });
+  try {
+    const response = await apiRequest('/api/users', {
+      method: 'POST',
+      body: JSON.stringify({ name, login, password }),
+    });
+    
+    // Se a resposta for null (vazia), considera sucesso
+    if (response === null) {
+      return {
+        success: true,
+        message: 'Manager criado com sucesso'
+      };
+    }
+    
+    // Se a resposta já tiver success e message, retorna como está
+    if (response && typeof response === 'object' && 'success' in response && 'message' in response) {
+      return response;
+    }
+    
+    // Senão, formata resposta de sucesso
+    return {
+      success: true,
+      message: 'Manager criado com sucesso',
+      data: response
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Erro de conexão, tente novamente'
+    };
+  }
 };
 
 export const getManagers = async () => {
@@ -104,18 +162,21 @@ export const getManagers = async () => {
         name: 'Juan Manager',
         login: 'juan.manager',
         role: 'MANAGER',
-        lastAccess: null
+        lastAccess: null,
+        appearOnAudit: true
       },
       {
         id: 6,
         name: 'Maria Manager',
         login: 'maria.manager',
         role: 'MANAGER',
-        lastAccess: '2024-01-15T10:30:00Z'
+        lastAccess: '2024-01-15T10:30:00Z',
+        appearOnAudit: false
       }
     ];
   }
 
+  // Para endpoints GET, retorna a resposta diretamente
   return apiRequest('/api/users');
 };
 
@@ -128,10 +189,37 @@ export const updateManager = async (id: number, name: string, login: string) => 
     };
   }
 
-  return apiRequest(`/api/users/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({ name, login }),
-  });
+  try {
+    const response = await apiRequest(`/api/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name, login }),
+    });
+    
+    // Se a resposta for null (vazia), considera sucesso
+    if (response === null) {
+      return {
+        success: true,
+        message: 'Manager atualizado com sucesso'
+      };
+    }
+    
+    // Se a resposta já tiver success e message, retorna como está
+    if (response && typeof response === 'object' && 'success' in response && 'message' in response) {
+      return response;
+    }
+    
+    // Senão, formata resposta de sucesso
+    return {
+      success: true,
+      message: 'Manager atualizado com sucesso',
+      data: response
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Erro de conexão, tente novamente'
+    };
+  }
 };
 
 export const toggleManagerAudit = async (id: number, appearOnAudit: boolean) => {
@@ -143,10 +231,37 @@ export const toggleManagerAudit = async (id: number, appearOnAudit: boolean) => 
     };
   }
 
-  return apiRequest(`/api/users/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({ appearOnAudit }),
-  });
+  try {
+    const response = await apiRequest(`/api/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ appearOnAudit }),
+    });
+    
+    // Se a resposta for null (vazia), considera sucesso
+    if (response === null) {
+      return {
+        success: true,
+        message: appearOnAudit ? 'Acesso restaurado com sucesso' : 'Acesso restrito com sucesso'
+      };
+    }
+    
+    // Se a resposta já tiver success e message, retorna como está
+    if (response && typeof response === 'object' && 'success' in response && 'message' in response) {
+      return response;
+    }
+    
+    // Senão, formata resposta de sucesso
+    return {
+      success: true,
+      message: appearOnAudit ? 'Acesso restaurado com sucesso' : 'Acesso restrito com sucesso',
+      data: response
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Erro de conexão, tente novamente'
+    };
+  }
 };
 
 export const changeManagerPassword = async (id: number, newPassword: string) => {

@@ -19,9 +19,11 @@ import {
   IonAlert,
   IonGrid,
   IonRow,
-  IonCol
+  IonCol,
+  IonRefresher,
+  IonRefresherContent
 } from '@ionic/react';
-import { add, eye, eyeOff, trash, key, create } from 'ionicons/icons';
+import { add, eye, eyeOff, trash, key, create, refresh } from 'ionicons/icons';
 import { createManager, getManagers, updateManager, toggleManagerAudit, changeManagerPassword } from '../../services/api';
 import Toast from '../../components/Toast';
 
@@ -57,14 +59,33 @@ const Managers: React.FC = () => {
 
   const loadManagers = async () => {
     try {
-      const data = await getManagers();
-      setManagers(data.map((manager: any) => ({ 
+      const response = await getManagers();
+      console.log('Resposta da API getManagers:', response);
+      
+      // Se a resposta tiver a estrutura { success, data }, extrai os dados
+      let data = response;
+      if (response && typeof response === 'object' && 'data' in response) {
+        data = response.data;
+      }
+      
+      // Filtra apenas managers (role = 'MANAGER')
+      const managersData = Array.isArray(data) ? data.filter((manager: any) => manager.role === 'MANAGER') : [];
+      
+      setManagers(managersData.map((manager: any) => ({ 
         ...manager, 
-        restricted: !manager.appearOnAudit 
+        appearOnAudit: manager.appearOnAudit !== false, // Default true se não for false
+        restricted: manager.appearOnAudit === false // true se appearOnAudit for false
       })));
+      console.log('Managers carregados e filtrados:', managersData);
     } catch (error) {
+      console.error('Erro ao carregar managers:', error);
       showToast('Erro ao carregar managers', 'danger');
     }
+  };
+
+  const handleRefresh = async (event: CustomEvent) => {
+    await loadManagers();
+    event.detail.complete();
   };
 
   const showToast = (message: string, color: string) => {
@@ -110,24 +131,17 @@ const Managers: React.FC = () => {
     try {
       const response = await createManager(newManager.name, newManager.login, newManager.password);
       
-      // Se a API retornar o objeto do manager (status 201)
-      if (response && response.id) {
-        showToast('Manager criado com sucesso!', 'success');
+      // Usa a mensagem da API
+      showToast(response.message || 'Manager criado com sucesso', response.success ? 'success' : 'danger');
+      
+      if (response.success) {
         setShowCreateModal(false);
         setNewManager({ name: '', login: '', password: '', confirmPassword: '' });
         loadManagers();
-      } else {
-        // Se retornar o formato antigo (mock)
-        showToast(response.message, response.success ? 'success' : 'danger');
-        
-        if (response.success) {
-          setShowCreateModal(false);
-          setNewManager({ name: '', login: '', password: '', confirmPassword: '' });
-          loadManagers();
-        }
       }
     } catch (error) {
-      showToast('Erro ao criar manager', 'danger');
+      console.error('Erro ao criar manager:', error);
+      showToast('Erro de conexão, tente novamente', 'danger');
     }
   };
 
@@ -140,7 +154,8 @@ const Managers: React.FC = () => {
 
     updateManager(selectedManager.id, editManager.name, editManager.login)
       .then(response => {
-        showToast(response.message, response.success ? 'success' : 'danger');
+        // Usa a mensagem da API
+        showToast(response.message || 'Manager atualizado com sucesso', response.success ? 'success' : 'danger');
         
         if (response.success) {
           setShowEditModal(false);
@@ -149,8 +164,9 @@ const Managers: React.FC = () => {
           loadManagers();
         }
       })
-      .catch(() => {
-        showToast('Erro ao atualizar manager', 'danger');
+      .catch((error) => {
+        console.error('Erro ao atualizar manager:', error);
+        showToast('Erro de conexão, tente novamente', 'danger');
       });
   };
 
@@ -163,27 +179,44 @@ const Managers: React.FC = () => {
   const handleRestrictAccess = async () => {
     if (!selectedManager) return;
 
+    console.log('Alterando acesso do manager:', { 
+      id: selectedManager.id, 
+      name: selectedManager.name,
+      currentAppearOnAudit: selectedManager.appearOnAudit 
+    });
+
     try {
       const newAppearOnAudit = !selectedManager.appearOnAudit;
       const response = await toggleManagerAudit(selectedManager.id, newAppearOnAudit);
       
-      if (response && response.id) {
-        // API real - atualiza o estado local
-        setManagers(managers.map(m => 
-          m.id === selectedManager.id ? { ...m, appearOnAudit: newAppearOnAudit, restricted: !newAppearOnAudit } : m
-        ));
-        showToast(newAppearOnAudit ? 'Acesso restaurado com sucesso' : 'Acesso restrito com sucesso', 'success');
-      } else {
-        // Mock - usa a resposta
-        showToast(response.message, response.success ? 'success' : 'danger');
-        if (response.success) {
-          setManagers(managers.map(m => 
-            m.id === selectedManager.id ? { ...m, appearOnAudit: newAppearOnAudit, restricted: !newAppearOnAudit } : m
-          ));
-        }
-      }
+      console.log('Resposta da API:', response);
+      
+      // Atualiza o estado local independentemente da resposta
+      setManagers(managers.map(m => 
+        m.id === selectedManager.id ? { 
+          ...m, 
+          appearOnAudit: newAppearOnAudit, 
+          restricted: !newAppearOnAudit 
+        } : m
+      ));
+      
+      // Usa a mensagem da API
+      showToast(response.message || (newAppearOnAudit ? 'Acesso restaurado com sucesso' : 'Acesso restrito com sucesso'), 
+                response.success ? 'success' : 'danger');
+      
     } catch (error) {
-      showToast('Erro ao alterar acesso', 'danger');
+      console.error('Erro ao alterar acesso:', error);
+      showToast('Erro de conexão, tente novamente', 'danger');
+      
+      // Mesmo com erro, tenta atualizar o estado local
+      const newAppearOnAudit = !selectedManager.appearOnAudit;
+      setManagers(managers.map(m => 
+        m.id === selectedManager.id ? { 
+          ...m, 
+          appearOnAudit: newAppearOnAudit, 
+          restricted: !newAppearOnAudit 
+        } : m
+      ));
     }
     
     setShowRestrictAlert(false);
@@ -206,20 +239,16 @@ const Managers: React.FC = () => {
     try {
       const response = await changeManagerPassword(selectedManager.id, newPassword.password);
       
-      if (response && response.id) {
-        // API real
-        showToast('Senha alterada com sucesso', 'success');
-      } else {
-        // Mock
-        showToast(response.message, response.success ? 'success' : 'danger');
-      }
+      // Usa a mensagem da API
+      showToast(response.message || 'Senha alterada com sucesso', response.success ? 'success' : 'danger');
       
-      if (response.success || response.id) {
+      if (response.success) {
         setShowPasswordModal(false);
         setNewPassword({ password: '', confirmPassword: '' });
       }
     } catch (error) {
-      showToast('Erro ao alterar senha', 'danger');
+      console.error('Erro ao alterar senha:', error);
+      showToast('Erro de conexão, tente novamente', 'danger');
     }
   };
 
@@ -236,6 +265,14 @@ const Managers: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent
+            pullingIcon={refresh}
+            pullingText="Puxe para atualizar"
+            refreshingSpinner="circles"
+            refreshingText="Atualizando..."
+          />
+        </IonRefresher>
         <div style={{ padding: '16px' }}>
           <IonButton 
             expand="block" 
@@ -349,30 +386,38 @@ const Managers: React.FC = () => {
           <IonContent>
             <div style={{ padding: '16px' }}>
               <IonItem>
-                <IonLabel position="floating">Nome</IonLabel>
                 <IonInput
+                  label="Nome"
+                  labelPlacement="floating"
+                  placeholder="Digite o nome"
                   value={newManager.name}
                   onIonInput={(e: any) => setNewManager({ ...newManager, name: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
-                <IonLabel position="floating">Login</IonLabel>
                 <IonInput
+                  label="Login"
+                  labelPlacement="floating"
+                  placeholder="Digite o login"
                   value={newManager.login}
                   onIonInput={(e: any) => setNewManager({ ...newManager, login: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
-                <IonLabel position="floating">Senha</IonLabel>
                 <IonInput
+                  label="Senha"
+                  labelPlacement="floating"
+                  placeholder="Digite a senha"
                   type="password"
                   value={newManager.password}
                   onIonInput={(e: any) => setNewManager({ ...newManager, password: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
-                <IonLabel position="floating">Repetir Senha</IonLabel>
                 <IonInput
+                  label="Repetir Senha"
+                  labelPlacement="floating"
+                  placeholder="Repita a senha"
                   type="password"
                   value={newManager.confirmPassword}
                   onIonInput={(e: any) => setNewManager({ ...newManager, confirmPassword: e.detail.value! })}
@@ -403,15 +448,19 @@ const Managers: React.FC = () => {
           <IonContent>
             <div style={{ padding: '16px' }}>
               <IonItem>
-                <IonLabel position="floating">Nome</IonLabel>
                 <IonInput
+                  label="Nome"
+                  labelPlacement="floating"
+                  placeholder="Digite o nome"
                   value={editManager.name}
                   onIonInput={(e: any) => setEditManager({ ...editManager, name: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
-                <IonLabel position="floating">Login</IonLabel>
                 <IonInput
+                  label="Login"
+                  labelPlacement="floating"
+                  placeholder="Digite o login"
                   value={editManager.login}
                   onIonInput={(e: any) => setEditManager({ ...editManager, login: e.detail.value! })}
                 />
@@ -441,16 +490,20 @@ const Managers: React.FC = () => {
           <IonContent>
             <div style={{ padding: '16px' }}>
               <IonItem>
-                <IonLabel position="floating">Nova Senha</IonLabel>
                 <IonInput
+                  label="Nova Senha"
+                  labelPlacement="floating"
+                  placeholder="Digite a nova senha"
                   type="password"
                   value={newPassword.password}
                   onIonInput={(e: any) => setNewPassword({ ...newPassword, password: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
-                <IonLabel position="floating">Repetir Nova Senha</IonLabel>
                 <IonInput
+                  label="Repetir Nova Senha"
+                  labelPlacement="floating"
+                  placeholder="Repita a nova senha"
                   type="password"
                   value={newPassword.confirmPassword}
                   onIonInput={(e: any) => setNewPassword({ ...newPassword, confirmPassword: e.detail.value! })}

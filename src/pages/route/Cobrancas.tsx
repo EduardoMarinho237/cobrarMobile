@@ -8,10 +8,21 @@ import {
   IonCard,
   IonCardHeader,
   IonCardTitle,
-  IonCardContent
+  IonCardContent,
+  IonRefresher,
+  IonRefresherContent,
+  IonIcon
 } from '@ionic/react';
+import { refresh } from 'ionicons/icons';
 
 const Cobrancas: React.FC = () => {
+  const handleRefresh = async (event: CustomEvent) => {
+    // Simular carregamento
+    setTimeout(() => {
+      event.detail.complete();
+    }, 1000);
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -20,6 +31,14 @@ const Cobrancas: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent
+            pullingIcon={refresh}
+            pullingText="Puxe para atualizar"
+            refreshingSpinner="circles"
+            refreshingText="Atualizando..."
+          />
+        </IonRefresher>
         <IonCard>
           <IonCardHeader>
             <IonCardTitle>Cobranças</IonCardTitle>

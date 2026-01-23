@@ -69,20 +69,22 @@ const Login: React.FC = () => {
                 </IonCardHeader>
                 <IonCardContent>
                   <IonItem>
-                    <IonLabel position="floating">Usuário</IonLabel>
                     <IonInput
+                      label="Usuário"
+                      labelPlacement="floating"
+                      placeholder="Digite o usuário"
                       value={username}
                       onIonInput={(e: any) => setUsername(e.detail.value!)}
-                      placeholder="Digite seu usuário"
                     />
                   </IonItem>
                   <IonItem>
-                    <IonLabel position="floating">Senha</IonLabel>
                     <IonInput
+                      label="Senha"
+                      labelPlacement="floating"
+                      placeholder="Digite a senha"
                       type="password"
                       value={password}
                       onIonInput={(e: any) => setPassword(e.detail.value!)}
-                      placeholder="Digite sua senha"
                     />
                   </IonItem>
                   <IonButton

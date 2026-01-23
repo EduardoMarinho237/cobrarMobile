@@ -19,9 +19,13 @@ import {
   IonAlert,
   IonGrid,
   IonRow,
-  IonCol
+  IonCol,
+  IonRefresher,
+  IonRefresherContent,
+  IonRadioGroup,
+  IonRadio
 } from '@ionic/react';
-import { add, trash, create, eye, arrowForward } from 'ionicons/icons';
+import { add, trash, create, eye, arrowForward, refresh } from 'ionicons/icons';
 import { getCategorias, createCategoria, deleteCategoria, CategoriaGasto } from '../../services/gastoApi';
 import Toast from '../../components/Toast';
 
@@ -45,9 +49,19 @@ const Gastos: React.FC = () => {
 
   const loadCategorias = async () => {
     try {
-      const data = await getCategorias();
-      setCategorias(data);
+      const response = await getCategorias();
+      console.log('Resposta da API getCategorias:', response);
+      
+      // Se a resposta tiver a estrutura { success, data }, extrai os dados
+      let data = response;
+      if (response && typeof response === 'object' && 'data' in response) {
+        data = response.data;
+      }
+      
+      setCategorias(Array.isArray(data) ? data : []);
+      console.log('Categorias carregadas:', data);
     } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
       showToast('Erro ao carregar categorias', 'danger');
     }
   };
@@ -62,11 +76,6 @@ const Gastos: React.FC = () => {
       return false;
     }
     
-    if (nome.includes(' ')) {
-      showToast('Nome não pode conter espaços', 'danger');
-      return false;
-    }
-    
     return true;
   };
 
@@ -77,7 +86,9 @@ const Gastos: React.FC = () => {
 
     try {
       const response = await createCategoria(newCategoria.nome);
-      showToast(response.message, response.success ? 'success' : 'danger');
+      
+      // Usa a mensagem da API
+      showToast(response.message || 'Categoria criada com sucesso', response.success ? 'success' : 'danger');
       
       if (response.success) {
         setShowCreateModal(false);
@@ -85,7 +96,8 @@ const Gastos: React.FC = () => {
         loadCategorias();
       }
     } catch (error) {
-      showToast('Erro ao criar categoria', 'danger');
+      console.error('Erro ao criar categoria:', error);
+      showToast('Erro de conexão, tente novamente', 'danger');
     }
   };
 
@@ -107,19 +119,33 @@ const Gastos: React.FC = () => {
   const handleConfirmMigrate = () => {
     if (!selectedCategoria || !migrateParaId) return;
 
+    console.log('Iniciando migração:', { 
+      sourceId: selectedCategoria.id, 
+      targetId: migrateParaId,
+      sourceName: selectedCategoria.name,
+      typesCount: selectedCategoria.expensesTypesCount
+    });
+
     deleteCategoria(selectedCategoria.id, migrateParaId)
       .then(response => {
+        console.log('Resposta da migração:', response);
         showToast(response.message, response.success ? 'success' : 'danger');
         
-        if (response.success) {
-          setShowMigrateModal(false);
-          setSelectedCategoria(null);
-          setMigrateParaId(null);
-          loadCategorias();
-        }
+        // Sempre volta para a listagem, mesmo com erro
+        setShowMigrateModal(false);
+        setSelectedCategoria(null);
+        setMigrateParaId(null);
+        loadCategorias();
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('Erro ao migrar categoria:', error);
         showToast('Erro ao migrar categoria', 'danger');
+        
+        // Mesmo com erro, volta para a listagem
+        setShowMigrateModal(false);
+        setSelectedCategoria(null);
+        setMigrateParaId(null);
+        loadCategorias();
       });
   };
 
@@ -131,9 +157,14 @@ const Gastos: React.FC = () => {
   const handleConfirmDeleteAll = () => {
     if (!selectedCategoria) return;
 
+    console.log('Excluindo categoria com tipos:', selectedCategoria.id);
+    
     deleteCategoria(selectedCategoria.id)
       .then(response => {
-        showToast(response.message, response.success ? 'success' : 'danger');
+        console.log('Resposta da exclusão:', response);
+        
+        // Usa a mensagem da API
+        showToast(response.message || 'Categoria excluída com sucesso', response.success ? 'success' : 'danger');
         
         if (response.success) {
           setShowConfirmDeleteAlert(false);
@@ -141,17 +172,23 @@ const Gastos: React.FC = () => {
           loadCategorias();
         }
       })
-      .catch(() => {
-        showToast('Erro ao excluir categoria', 'danger');
+      .catch((error) => {
+        console.error('Erro ao excluir categoria:', error);
+        showToast('Erro de conexão, tente novamente', 'danger');
       });
   };
 
   const handleDeleteEmpty = () => {
     if (!selectedCategoria) return;
 
+    console.log('Excluindo categoria vazia:', selectedCategoria.id);
+
     deleteCategoria(selectedCategoria.id)
       .then(response => {
-        showToast(response.message, response.success ? 'success' : 'danger');
+        console.log('Resposta da exclusão:', response);
+        
+        // Usa a mensagem da API
+        showToast(response.message || 'Categoria excluída com sucesso', response.success ? 'success' : 'danger');
         
         if (response.success) {
           setShowDeleteAlert(false);
@@ -159,8 +196,9 @@ const Gastos: React.FC = () => {
           loadCategorias();
         }
       })
-      .catch(() => {
-        showToast('Erro ao excluir categoria', 'danger');
+      .catch((error) => {
+        console.error('Erro ao excluir categoria:', error);
+        showToast('Erro de conexão, tente novamente', 'danger');
       });
   };
 
@@ -176,6 +214,11 @@ const Gastos: React.FC = () => {
 
   const outrasCategorias = categorias.filter(cat => cat.id !== selectedCategoria?.id);
 
+  const handleRefresh = async (event: CustomEvent) => {
+    await loadCategorias();
+    event.detail.complete();
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -184,6 +227,14 @@ const Gastos: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent
+            pullingIcon={refresh}
+            pullingText="Puxe para atualizar"
+            refreshingSpinner="circles"
+            refreshingText="Atualizando..."
+          />
+        </IonRefresher>
         <div style={{ padding: '16px' }}>
           <IonButton 
             expand="block" 
@@ -269,10 +320,12 @@ const Gastos: React.FC = () => {
           <IonContent>
             <div style={{ padding: '16px' }}>
               <IonItem>
-                <IonLabel position="floating">Nome</IonLabel>
                 <IonInput
+                  label="Nome da Categoria"
+                  labelPlacement="floating"
+                  placeholder="Digite o nome da categoria"
                   value={newCategoria.nome}
-                  onIonInput={(e: any) => setNewCategoria({ nome: e.detail.value! })}
+                  onIonInput={(e: any) => setNewCategoria({ ...newCategoria, nome: e.detail.value! })}
                 />
               </IonItem>
               <IonButton 
@@ -323,20 +376,20 @@ const Gastos: React.FC = () => {
           <IonContent>
             <div style={{ padding: '16px' }}>
               <IonItem>
-                <IonLabel position="stacked">Selecione a categoria para migrar:</IonLabel>
+                <IonLabel>
+                  <h2>Escolha uma categoria para migrar todos os {selectedCategoria?.expensesTypesCount || 0} tipos de gastos pertencentes a {selectedCategoria?.name}</h2>
+                </IonLabel>
               </IonItem>
-              {outrasCategorias.map((categoria) => (
-                <IonItem 
-                  key={categoria.id}
-                  button 
-                  onClick={() => setMigrateParaId(categoria.id)}
-                  style={{ 
-                    backgroundColor: migrateParaId === categoria.id ? '#e0e0e0' : 'transparent'
-                  }}
-                >
-                  <IonLabel>{categoria.name}</IonLabel>
-                </IonItem>
-              ))}
+              
+              <IonRadioGroup value={migrateParaId} onIonChange={(e: any) => setMigrateParaId(e.detail.value)}>
+                {outrasCategorias.map((categoria) => (
+                  <IonItem key={categoria.id}>
+                    <IonRadio value={categoria.id} slot="start" />
+                    <IonLabel>{categoria.name}</IonLabel>
+                  </IonItem>
+                ))}
+              </IonRadioGroup>
+              
               <IonButton 
                 expand="block" 
                 shape="round"

@@ -21,14 +21,17 @@ import {
   IonGrid,
   IonRow,
   IonCol,
+  IonRefresher,
+  IonRefresherContent,
   IonModal,
   IonDatetime,
   IonIcon
 } from '@ionic/react';
-import { arrowBack, calendarOutline } from 'ionicons/icons';
+import { arrowBack, refresh, calendarOutline } from 'ionicons/icons';
 import { 
   getCategorias, 
   getDetalhesGastos,
+  getTiposGastos,
   CategoriaGasto,
   GastoDetalhe,
   CategoriaDetalhesResponse,
@@ -95,10 +98,50 @@ const DetalhesGastos: React.FC = () => {
       console.log('Enviando request para detalhes:', request);
       console.log('Categoria ID:', categoriaId);
       
-      const data = await getDetalhesGastos(parseInt(categoriaId!), request);
-      console.log('Response recebido:', data);
+      // Obtém os dados de gastos (apenas os que têm valores no período)
+      const gastosResponse = await getDetalhesGastos(parseInt(categoriaId!), request);
+      console.log('Response de gastos recebido:', gastosResponse);
       
-      setDetalhes(data);
+      // Se a resposta tiver a estrutura { success, data }, extrai os dados
+      let gastosData = gastosResponse;
+      if (gastosResponse && typeof gastosResponse === 'object' && 'data' in gastosResponse) {
+        gastosData = gastosResponse.data;
+      }
+      
+      // Obtém TODOS os tipos da categoria (como na página de edição)
+      const tiposResponse = await getTiposGastos(parseInt(categoriaId!));
+      console.log('Response de tipos recebido:', tiposResponse);
+      
+      // Se a resposta tiver a estrutura { success, data }, extrai os dados
+      let todosTipos = tiposResponse;
+      if (tiposResponse && typeof tiposResponse === 'object' && 'data' in tiposResponse) {
+        todosTipos = tiposResponse.data;
+      }
+      
+      console.log('Todos os tipos da categoria:', todosTipos);
+      
+      // Mapeia os valores dos gastos por typeId
+      const valoresPorTipo: { [key: number]: number } = {};
+      gastosData.expenseTypes.forEach((gasto: GastoDetalhe) => {
+        valoresPorTipo[gasto.typeId] = gasto.amount;
+      });
+      
+      // Combina todos os tipos com seus valores (0 se não tiver gastos no período)
+      const expenseTypesCompletos = todosTipos.map((tipo: any) => ({
+        typeId: tipo.id,
+        typeName: tipo.name,
+        amount: valoresPorTipo[tipo.id] || 0.00
+      }));
+      
+      console.log('ExpenseTypes completos:', expenseTypesCompletos);
+      
+      // Atualiza os dados com todos os tipos
+      const dadosCompletos = {
+        ...gastosData,
+        expenseTypes: expenseTypesCompletos
+      };
+      
+      setDetalhes(dadosCompletos);
     } catch (error) {
       console.error('Erro ao carregar detalhes:', error);
       showToast('Erro ao carregar detalhes dos gastos', 'danger');
@@ -186,6 +229,17 @@ const DetalhesGastos: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
+        <IonRefresher slot="fixed" onIonRefresh={async (event: CustomEvent) => {
+          await Promise.all([loadCategoria(), loadDetalhes()]);
+          event.detail.complete();
+        }}>
+          <IonRefresherContent
+            pullingIcon={refresh}
+            pullingText="Puxe para atualizar"
+            refreshingSpinner="circles"
+            refreshingText="Atualizando..."
+          />
+        </IonRefresher>
         <div style={{ padding: '16px' }}>
           {/* Card de Seleção de Período */}
           <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>

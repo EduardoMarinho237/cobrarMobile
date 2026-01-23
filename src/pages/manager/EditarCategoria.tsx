@@ -21,9 +21,13 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonBackButton
+  IonBackButton,
+  IonRefresher,
+  IonRefresherContent,
+  IonRadioGroup,
+  IonRadio
 } from '@ionic/react';
-import { add, trash, create, arrowBack } from 'ionicons/icons';
+import { add, trash, create, arrowBack, refresh } from 'ionicons/icons';
 import { 
   getCategorias, 
   updateCategoria, 
@@ -31,6 +35,7 @@ import {
   createTipoGasto, 
   updateTipoGasto, 
   deleteTipoGasto,
+  migrateGastos,
   CategoriaGasto,
   TipoGasto 
 } from '../../services/gastoApi';
@@ -43,13 +48,13 @@ const EditarCategoria: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [showMigrateModal, setShowMigrateModal] = useState(false);
   const [selectedTipo, setSelectedTipo] = useState<TipoGasto | null>(null);
-  const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
-  
-  // Form states
+  const [migrateParaId, setMigrateParaId] = useState<number | null>(null);
   const [editNome, setEditNome] = useState('');
   const [newTipo, setNewTipo] = useState({ nome: '' });
   const [editTipo, setEditTipo] = useState({ nome: '' });
+  const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
 
   useEffect(() => {
     if (categoriaId) {
@@ -64,7 +69,7 @@ const EditarCategoria: React.FC = () => {
       const cat = categorias.find((c: CategoriaGasto) => c.id === parseInt(categoriaId!));
       if (cat) {
         setCategoria(cat);
-        setEditNome(cat.nome);
+        setEditNome(cat.name);
       }
     } catch (error) {
       showToast('Erro ao carregar categoria', 'danger');
@@ -73,9 +78,19 @@ const EditarCategoria: React.FC = () => {
 
   const loadTipos = async () => {
     try {
-      const data = await getTiposGastos(parseInt(categoriaId!));
-      setTipos(data);
+      const response = await getTiposGastos(parseInt(categoriaId!));
+      console.log('Resposta da API getTiposGastos:', response);
+      
+      // Se a resposta tiver a estrutura { success, data }, extrai os dados
+      let data = response;
+      if (response && typeof response === 'object' && 'data' in response) {
+        data = response.data;
+      }
+      
+      setTipos(Array.isArray(data) ? data : []);
+      console.log('Tipos de gastos carregados:', data);
     } catch (error) {
+      console.error('Erro ao carregar tipos de gastos:', error);
       showToast('Erro ao carregar tipos de gastos', 'danger');
     }
   };
@@ -90,11 +105,6 @@ const EditarCategoria: React.FC = () => {
       return false;
     }
     
-    if (nome.includes(' ')) {
-      showToast('Nome não pode conter espaços', 'danger');
-      return false;
-    }
-    
     return true;
   };
 
@@ -105,13 +115,16 @@ const EditarCategoria: React.FC = () => {
 
     try {
       const response = await updateCategoria(parseInt(categoriaId!), editNome);
-      showToast(response.message, response.success ? 'success' : 'danger');
+      
+      // Usa a mensagem da API
+      showToast(response.message || 'Categoria atualizada com sucesso', response.success ? 'success' : 'danger');
       
       if (response.success) {
         loadCategoria();
       }
     } catch (error) {
-      showToast('Erro ao atualizar categoria', 'danger');
+      console.error('Erro ao atualizar categoria:', error);
+      showToast('Erro de conexão, tente novamente', 'danger');
     }
   };
 
@@ -121,8 +134,10 @@ const EditarCategoria: React.FC = () => {
     }
 
     try {
-      const response = await createTipoGasto(parseInt(categoriaId!), newTipo.nome);
-      showToast(response.message, response.success ? 'success' : 'danger');
+      const response = await createTipoGasto(newTipo.nome, parseInt(categoriaId!));
+      
+      // Usa a mensagem da API
+      showToast(response.message || 'Tipo de gasto criado com sucesso', response.success ? 'success' : 'danger');
       
       if (response.success) {
         setShowCreateModal(false);
@@ -130,7 +145,8 @@ const EditarCategoria: React.FC = () => {
         loadTipos();
       }
     } catch (error) {
-      showToast('Erro ao criar tipo de gasto', 'danger');
+      console.error('Erro ao criar tipo de gasto:', error);
+      showToast('Erro de conexão, tente novamente', 'danger');
     }
   };
 
@@ -140,8 +156,10 @@ const EditarCategoria: React.FC = () => {
     }
 
     try {
-      const response = await updateTipoGasto(parseInt(categoriaId!), selectedTipo.id, editTipo.nome);
-      showToast(response.message, response.success ? 'success' : 'danger');
+      const response = await updateTipoGasto(selectedTipo.id, editTipo.nome, parseInt(categoriaId!));
+      
+      // Usa a mensagem da API
+      showToast(response.message || 'Tipo de gasto atualizado com sucesso', response.success ? 'success' : 'danger');
       
       if (response.success) {
         setShowEditModal(false);
@@ -150,16 +168,18 @@ const EditarCategoria: React.FC = () => {
         loadTipos();
       }
     } catch (error) {
-      showToast('Erro ao atualizar tipo de gasto', 'danger');
+      console.error('Erro ao atualizar tipo de gasto:', error);
+      showToast('Erro de conexão, tente novamente', 'danger');
     }
   };
 
   const handleDeleteTipo = () => {
     if (!selectedTipo) return;
 
-    deleteTipoGasto(parseInt(categoriaId!), selectedTipo.id)
+    deleteTipoGasto(selectedTipo.id)
       .then(response => {
-        showToast(response.message, response.success ? 'success' : 'danger');
+        // Usa a mensagem da API
+        showToast(response.message || 'Tipo de gasto excluído com sucesso', response.success ? 'success' : 'danger');
         
         if (response.success) {
           setShowDeleteAlert(false);
@@ -167,20 +187,68 @@ const EditarCategoria: React.FC = () => {
           loadTipos();
         }
       })
-      .catch(() => {
-        showToast('Erro ao excluir tipo de gasto', 'danger');
+      .catch((error) => {
+        console.error('Erro ao excluir tipo de gasto:', error);
+        showToast('Erro de conexão, tente novamente', 'danger');
+        loadTipos();
+      });
+  };
+
+  const handleMigrateTipo = () => {
+    setShowDeleteAlert(false);
+    setShowMigrateModal(true);
+  };
+
+  const handleConfirmMigrateTipo = () => {
+    if (!selectedTipo || !migrateParaId) return;
+
+    console.log('Iniciando migração de tipo:', { 
+      sourceId: selectedTipo.id, 
+      targetId: migrateParaId,
+      sourceName: selectedTipo.name
+    });
+
+    deleteTipoGasto(selectedTipo.id, migrateParaId)
+      .then(response => {
+        console.log('Resposta da migração de tipo:', response);
+        
+        // Usa a mensagem da API
+        showToast(response.message || 'Tipo de gasto migrado com sucesso', response.success ? 'success' : 'danger');
+        
+        // Sempre volta para a listagem, mesmo com erro
+        setShowMigrateModal(false);
+        setSelectedTipo(null);
+        setMigrateParaId(null);
+        loadTipos();
+      })
+      .catch((error) => {
+        console.error('Erro ao migrar tipo de gasto:', error);
+        showToast('Erro de conexão, tente novamente', 'danger');
+        
+        // Mesmo com erro, volta para a listagem
+        setShowMigrateModal(false);
+        setSelectedTipo(null);
+        setMigrateParaId(null);
+        loadTipos();
       });
   };
 
   const openEditModal = (tipo: TipoGasto) => {
     setSelectedTipo(tipo);
-    setEditTipo({ nome: tipo.nome });
+    setEditTipo({ nome: tipo.name });
     setShowEditModal(true);
   };
 
   const openDeleteAlert = (tipo: TipoGasto) => {
     setSelectedTipo(tipo);
+    // Simulando que sempre há gastos para mostrar a opção de migrar
+    // Em um caso real, você verificaria se há gastos associados
     setShowDeleteAlert(true);
+  };
+
+  const handleRefresh = async (event: CustomEvent) => {
+    await Promise.all([loadCategoria(), loadTipos()]);
+    event.detail.complete();
   };
 
   return (
@@ -194,18 +262,28 @@ const EditarCategoria: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent
+            pullingIcon={refresh}
+            pullingText="Puxe para atualizar"
+            refreshingSpinner="circles"
+            refreshingText="Atualizando..."
+          />
+        </IonRefresher>
         <div style={{ padding: '16px' }}>
           {/* Card da Categoria */}
           <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
             <IonCardHeader>
-              <IonCardTitle>Nome da Categoria</IonCardTitle>
+              <IonCardTitle>{categoria?.name || 'Editar Categoria'}</IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
               <IonItem>
                 <IonInput
+                  label="Nome da Categoria"
+                  labelPlacement="floating"
+                  placeholder="Digite o nome da categoria"
                   value={editNome}
                   onIonInput={(e: any) => setEditNome(e.detail.value!)}
-                  placeholder="Nome da categoria"
                 />
               </IonItem>
               <IonButton 
@@ -238,7 +316,7 @@ const EditarCategoria: React.FC = () => {
               {tipos.map((tipo) => (
                 <IonItem key={tipo.id} style={{ marginBottom: '8px' }}>
                   <IonLabel>
-                    <h3>{tipo.nome}</h3>
+                    <h3>{tipo.name}</h3>
                   </IonLabel>
                   <IonButton
                     fill="clear"
@@ -274,10 +352,12 @@ const EditarCategoria: React.FC = () => {
           <IonContent>
             <div style={{ padding: '16px' }}>
               <IonItem>
-                <IonLabel position="floating">Nome</IonLabel>
                 <IonInput
+                  label="Nome do Tipo"
+                  labelPlacement="floating"
+                  placeholder="Digite o nome do tipo"
                   value={newTipo.nome}
-                  onIonInput={(e: any) => setNewTipo({ nome: e.detail.value! })}
+                  onIonInput={(e: any) => setNewTipo({ ...newTipo, nome: e.detail.value! })}
                 />
               </IonItem>
               <IonButton 
@@ -305,10 +385,12 @@ const EditarCategoria: React.FC = () => {
           <IonContent>
             <div style={{ padding: '16px' }}>
               <IonItem>
-                <IonLabel position="floating">Nome</IonLabel>
                 <IonInput
+                  label="Nome do Tipo"
+                  labelPlacement="floating"
+                  placeholder="Digite o nome do tipo"
                   value={editTipo.nome}
-                  onIonInput={(e: any) => setEditTipo({ nome: e.detail.value! })}
+                  onIonInput={(e: any) => setEditTipo({ ...editTipo, nome: e.detail.value! })}
                 />
               </IonItem>
               <IonButton 
@@ -328,19 +410,64 @@ const EditarCategoria: React.FC = () => {
           isOpen={showDeleteAlert}
           onDidDismiss={() => setShowDeleteAlert(false)}
           header="Confirmar Exclusão"
-          message={`Deseja realmente excluir o tipo de gasto "${selectedTipo?.nome}"?`}
+          message={`O tipo de gasto "${selectedTipo?.name}" possui gastos associados. Deseja migrar os gastos para outro tipo ou excluí-los junto?`}
           buttons={[
             {
               text: 'Cancelar',
               role: 'cancel'
             },
             {
-              text: 'Excluir',
+              text: 'Migrar',
+              handler: handleMigrateTipo
+            },
+            {
+              text: 'Excluir tudo',
               role: 'destructive',
               handler: handleDeleteTipo
             }
           ]}
         />
+
+        {/* Modal Migrar Tipo */}
+        <IonModal isOpen={showMigrateModal} onDidDismiss={() => setShowMigrateModal(false)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>Migrar Gastos do Tipo</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setShowMigrateModal(false)}>Cancelar</IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent>
+            <div style={{ padding: '16px' }}>
+              <IonItem>
+                <IonLabel>
+                  <h2>Escolha um tipo para migrar todos os gastos pertencentes a {selectedTipo?.name}</h2>
+                </IonLabel>
+              </IonItem>
+              
+              <IonRadioGroup value={migrateParaId} onIonChange={(e: any) => setMigrateParaId(e.detail.value)}>
+                {tipos.filter(tipo => tipo.id !== selectedTipo?.id).map((tipo) => (
+                  <IonItem key={tipo.id}>
+                    <IonRadio value={tipo.id} slot="start" />
+                    <IonLabel>{tipo.name}</IonLabel>
+                  </IonItem>
+                ))}
+              </IonRadioGroup>
+              
+              <IonButton 
+                expand="block" 
+                shape="round"
+                onClick={handleConfirmMigrateTipo}
+                disabled={!migrateParaId}
+                style={{ marginTop: '16px' }}
+              >
+                <IonIcon slot="start" icon={add} />
+                Migrar
+              </IonButton>
+            </div>
+          </IonContent>
+        </IonModal>
 
         {/* Toast */}
         <Toast

@@ -1,5 +1,12 @@
 import React, { useEffect } from 'react';
 import { Redirect } from 'react-router-dom';
+import { getCurrentUser } from '../services/api';
+import {
+  IonContent,
+  IonRefresher,
+  IonRefresherContent
+} from '@ionic/react';
+import { refresh } from 'ionicons/icons';
 
 const Dashboard: React.FC = () => {
   useEffect(() => {

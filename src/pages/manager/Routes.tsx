@@ -19,9 +19,11 @@ import {
   IonAlert,
   IonGrid,
   IonRow,
-  IonCol
+  IonCol,
+  IonRefresher,
+  IonRefresherContent
 } from '@ionic/react';
-import { add, eye, eyeOff, trash, key, create } from 'ionicons/icons';
+import { add, eye, eyeOff, trash, key, create, refresh } from 'ionicons/icons';
 import { createRoute, getRoutes, updateRoute, deleteRoute } from '../../services/routeApi';
 import Toast from '../../components/Toast';
 
@@ -55,12 +57,29 @@ const Routes: React.FC = () => {
 
   const loadRoutes = async () => {
     try {
-      const data = await getRoutes();
-      const filteredData = data.filter((route: any) => route.role === 'ROUTE');
-      setRoutes(filteredData.map((route: any) => ({ ...route, restricted: false })));
+      const response = await getRoutes();
+      console.log('Resposta da API getRoutes:', response);
+      
+      // Se a resposta tiver a estrutura { success, data }, extrai os dados
+      let data = response;
+      if (response && typeof response === 'object' && 'data' in response) {
+        data = response.data;
+      }
+      
+      // Filtra apenas routes (role = 'ROUTE')
+      const routesData = Array.isArray(data) ? data.filter((route: any) => route.role === 'ROUTE') : [];
+      
+      setRoutes(routesData.map((route: any) => ({ ...route, restricted: false })));
+      console.log('Routes carregados e filtrados:', routesData);
     } catch (error) {
+      console.error('Erro ao carregar routes:', error);
       showToast('Erro ao carregar routes', 'danger');
     }
+  };
+
+  const handleRefresh = async (event: CustomEvent) => {
+    await loadRoutes();
+    event.detail.complete();
   };
 
   const showToast = (message: string, color: string) => {
@@ -105,7 +124,9 @@ const Routes: React.FC = () => {
 
     try {
       const response = await createRoute(newRoute.name, newRoute.login, newRoute.password);
-      showToast(response.message, response.success ? 'success' : 'danger');
+      
+      // Usa a mensagem da API
+      showToast(response.message || 'Route criado com sucesso', response.success ? 'success' : 'danger');
       
       if (response.success) {
         setShowCreateModal(false);
@@ -113,7 +134,8 @@ const Routes: React.FC = () => {
         loadRoutes();
       }
     } catch (error) {
-      showToast('Erro ao criar route', 'danger');
+      console.error('Erro ao criar route:', error);
+      showToast('Erro de conexão, tente novamente', 'danger');
     }
   };
 
@@ -124,19 +146,34 @@ const Routes: React.FC = () => {
 
     if (!selectedRoute) return;
 
+    console.log('Atualizando route:', { 
+      id: selectedRoute.id, 
+      name: editRoute.name, 
+      login: editRoute.login 
+    });
+
     updateRoute(selectedRoute.id, editRoute.name, editRoute.login)
       .then(response => {
-        showToast(response.message, response.success ? 'success' : 'danger');
+        console.log('Resposta da API:', response);
         
-        if (response.success) {
-          setShowEditModal(false);
-          setEditRoute({ name: '', login: '' });
-          setSelectedRoute(null);
-          loadRoutes();
-        }
+        // Usa a mensagem da API
+        showToast(response.message || 'Route atualizado com sucesso', response.success ? 'success' : 'danger');
+        
+        // Sempre volta para a listagem, mesmo com erro
+        setShowEditModal(false);
+        setEditRoute({ name: '', login: '' });
+        setSelectedRoute(null);
+        loadRoutes();
       })
-      .catch(() => {
-        showToast('Erro ao atualizar route', 'danger');
+      .catch((error) => {
+        console.error('Erro ao atualizar route:', error);
+        showToast('Erro de conexão, tente novamente', 'danger');
+        
+        // Mesmo com erro, volta para a listagem
+        setShowEditModal(false);
+        setEditRoute({ name: '', login: '' });
+        setSelectedRoute(null);
+        loadRoutes();
       });
   };
 
@@ -145,7 +182,8 @@ const Routes: React.FC = () => {
 
     deleteRoute(selectedRoute.id)
       .then(response => {
-        showToast(response.message, response.success ? 'success' : 'danger');
+        // Usa a mensagem da API
+        showToast(response.message || 'Route excluído com sucesso', response.success ? 'success' : 'danger');
         
         if (response.success) {
           setShowDeleteAlert(false);
@@ -153,8 +191,9 @@ const Routes: React.FC = () => {
           loadRoutes();
         }
       })
-      .catch(() => {
-        showToast('Erro ao excluir route', 'danger');
+      .catch((error) => {
+        console.error('Erro ao excluir route:', error);
+        showToast('Erro de conexão, tente novamente', 'danger');
       });
   };
 
@@ -204,6 +243,14 @@ const Routes: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent
+            pullingIcon={refresh}
+            pullingText="Puxe para atualizar"
+            refreshingSpinner="circles"
+            refreshingText="Atualizando..."
+          />
+        </IonRefresher>
         <div style={{ padding: '16px' }}>
           <IonButton 
             expand="block" 
@@ -329,30 +376,38 @@ const Routes: React.FC = () => {
           <IonContent>
             <div style={{ padding: '16px' }}>
               <IonItem>
-                <IonLabel position="floating">Nome</IonLabel>
                 <IonInput
+                  label="Nome"
+                  labelPlacement="floating"
+                  placeholder="Digite o nome"
                   value={newRoute.name}
                   onIonInput={(e: any) => setNewRoute({ ...newRoute, name: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
-                <IonLabel position="floating">Login</IonLabel>
                 <IonInput
+                  label="Login"
+                  labelPlacement="floating"
+                  placeholder="Digite o login"
                   value={newRoute.login}
                   onIonInput={(e: any) => setNewRoute({ ...newRoute, login: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
-                <IonLabel position="floating">Senha</IonLabel>
                 <IonInput
+                  label="Senha"
+                  labelPlacement="floating"
+                  placeholder="Digite a senha"
                   type="password"
                   value={newRoute.password}
                   onIonInput={(e: any) => setNewRoute({ ...newRoute, password: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
-                <IonLabel position="floating">Repetir Senha</IonLabel>
                 <IonInput
+                  label="Repetir Senha"
+                  labelPlacement="floating"
+                  placeholder="Repita a senha"
                   type="password"
                   value={newRoute.confirmPassword}
                   onIonInput={(e: any) => setNewRoute({ ...newRoute, confirmPassword: e.detail.value! })}
@@ -383,15 +438,19 @@ const Routes: React.FC = () => {
           <IonContent>
             <div style={{ padding: '16px' }}>
               <IonItem>
-                <IonLabel position="floating">Nome</IonLabel>
                 <IonInput
+                  label="Nome"
+                  labelPlacement="floating"
+                  placeholder="Digite o nome"
                   value={editRoute.name}
                   onIonInput={(e: any) => setEditRoute({ ...editRoute, name: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
-                <IonLabel position="floating">Login</IonLabel>
                 <IonInput
+                  label="Login"
+                  labelPlacement="floating"
+                  placeholder="Digite o login"
                   value={editRoute.login}
                   onIonInput={(e: any) => setEditRoute({ ...editRoute, login: e.detail.value! })}
                 />
@@ -421,16 +480,20 @@ const Routes: React.FC = () => {
           <IonContent>
             <div style={{ padding: '16px' }}>
               <IonItem>
-                <IonLabel position="floating">Nova Senha</IonLabel>
                 <IonInput
+                  label="Nova Senha"
+                  labelPlacement="floating"
+                  placeholder="Digite a nova senha"
                   type="password"
                   value={newPassword.password}
                   onIonInput={(e: any) => setNewPassword({ ...newPassword, password: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
-                <IonLabel position="floating">Repetir Nova Senha</IonLabel>
                 <IonInput
+                  label="Repetir Nova Senha"
+                  labelPlacement="floating"
+                  placeholder="Repita a nova senha"
                   type="password"
                   value={newPassword.confirmPassword}
                   onIonInput={(e: any) => setNewPassword({ ...newPassword, confirmPassword: e.detail.value! })}
