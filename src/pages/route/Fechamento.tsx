@@ -72,9 +72,9 @@ const Fechamento: React.FC = () => {
       
       if (response.success) {
         setDiaFechado(true);
-        // Forçar reload da página para aplicar restrições
+        // Redirecionar para a mesma página para aplicar restrições
         setTimeout(() => {
-          window.location.reload();
+          window.location.replace('/route/fechamento');
         }, 1000);
       }
     } catch (error) {

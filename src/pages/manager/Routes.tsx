@@ -21,10 +21,12 @@ import {
   IonRow,
   IonCol,
   IonRefresher,
-  IonRefresherContent
+  IonRefresherContent,
+  IonSpinner
 } from '@ionic/react';
 import { add, eye, eyeOff, trash, key, create, refresh } from 'ionicons/icons';
-import { createRoute, getRoutes, updateRoute, deleteRoute } from '../../services/routeApi';
+import { getRoutes, createRoute, updateRoute, deleteRoute } from '../../services/routeApi';
+import { toggleRouteAudit, changeManagerPassword } from '../../services/api';
 import Toast from '../../components/Toast';
 
 interface Route {
@@ -33,6 +35,7 @@ interface Route {
   login: string;
   role: string;
   lastAccess: string | null;
+  appearOnAudit?: boolean;
   restricted?: boolean;
 }
 
@@ -44,6 +47,7 @@ const Routes: React.FC = () => {
   const [showRestrictAlert, setShowRestrictAlert] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
   
   // Form states
@@ -56,6 +60,7 @@ const Routes: React.FC = () => {
   }, []);
 
   const loadRoutes = async () => {
+    setIsLoading(true);
     try {
       const response = await getRoutes();
       console.log('Resposta da API getRoutes:', response);
@@ -69,11 +74,16 @@ const Routes: React.FC = () => {
       // Filtra apenas routes (role = 'ROUTE')
       const routesData = Array.isArray(data) ? data.filter((route: any) => route.role === 'ROUTE') : [];
       
-      setRoutes(routesData.map((route: any) => ({ ...route, restricted: false })));
+      setRoutes(routesData.map((route: any) => ({ 
+        ...route, 
+        restricted: !route.appearOnAudit // Se appearOnAudit for false, restricted é true
+      })));
       console.log('Routes carregados e filtrados:', routesData);
     } catch (error) {
       console.error('Erro ao carregar routes:', error);
       showToast('Erro ao carregar routes', 'danger');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -203,18 +213,53 @@ const Routes: React.FC = () => {
     setShowEditModal(true);
   };
 
-  const handleRestrictAccess = () => {
-    if (selectedRoute) {
+  const handleRestrictAccess = async () => {
+    if (!selectedRoute) return;
+
+    console.log('Alterando acesso da route:', { 
+      id: selectedRoute.id, 
+      name: selectedRoute.name,
+      currentRestricted: selectedRoute.restricted 
+    });
+
+    try {
+      const newAppearOnAudit = selectedRoute.restricted ? true : false; // Se está restrito, volta para true (acesso restaurado)
+      const response = await toggleRouteAudit(selectedRoute.id, newAppearOnAudit);
+      
+      console.log('Resposta da API:', response);
+      
+      // Atualiza o estado local independentemente da resposta
       setRoutes(routes.map(r => 
-        r.id === selectedRoute.id ? { ...r, restricted: !r.restricted } : r
+        r.id === selectedRoute.id ? { 
+          ...r, 
+          restricted: !newAppearOnAudit // Se appearOnAudit for true, restricted é false
+        } : r
       ));
-      showToast(selectedRoute.restricted ? 'Acesso restaurado' : 'Acesso restrito', 'success');
+      
+      // Usa a mensagem da API
+      showToast(response.message || (newAppearOnAudit ? 'Acesso restaurado com sucesso' : 'Acesso restrito com sucesso'), 
+                response.success ? 'success' : 'danger');
+      
+    } catch (error) {
+      console.error('Erro ao alterar acesso:', error);
+      showToast('Erro de conexão, tente novamente', 'danger');
+      
+      // Mesmo com erro, tenta atualizar o estado local
+      setRoutes(routes.map(r => 
+        r.id === selectedRoute.id ? { 
+          ...r, 
+          restricted: !r.restricted 
+        } : r
+      ));
     }
+    
     setShowRestrictAlert(false);
     setSelectedRoute(null);
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
+    if (!selectedRoute) return;
+    
     if (!newPassword.password.trim()) {
       showToast('Senha não pode estar vazia', 'danger');
       return;
@@ -225,9 +270,23 @@ const Routes: React.FC = () => {
       return;
     }
     
-    showToast('Senha alterada com sucesso', 'success');
-    setShowPasswordModal(false);
-    setNewPassword({ password: '', confirmPassword: '' });
+    try {
+      const response = await changeManagerPassword(selectedRoute.id, newPassword.password);
+      
+      // SEMPRE usa a mensagem da API, se não tiver mensagem, mostra erro de conexão
+      const message = response?.message || 'Erro de conexão';
+      const color = response?.success === true ? 'success' : 'danger';
+      
+      showToast(message, color);
+      
+      if (response?.success === true) {
+        setShowPasswordModal(false);
+        setNewPassword({ password: '', confirmPassword: '' });
+      }
+    } catch (error) {
+      console.error('Erro ao alterar senha:', error);
+      showToast('Erro de conexão', 'danger');
+    }
   };
 
   const formatDate = (dateString: string | null) => {
@@ -252,115 +311,136 @@ const Routes: React.FC = () => {
           />
         </IonRefresher>
         <div style={{ padding: '16px' }}>
-          <IonButton 
-            expand="block" 
-            shape="round" 
-            onClick={() => setShowCreateModal(true)}
-            style={{ marginBottom: '16px' }}
-          >
-            <IonIcon slot="start" icon={add} />
-            Adicionar novo route
-          </IonButton>
+          {isLoading ? (
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              minHeight: '200px',
+              gap: '16px'
+            }}>
+              <IonSpinner name="dots" />
+              <p style={{ color: '#666', fontSize: '14px' }}>Carregando rotas...</p>
+            </div>
+          ) : (
+            <>
+              <IonButton 
+                expand="block" 
+                shape="round" 
+                onClick={() => setShowCreateModal(true)}
+                style={{ marginBottom: '16px' }}
+              >
+                <IonIcon slot="start" icon={add} />
+                Adicionar novo route
+              </IonButton>
 
-          {routes.map((route) => (
-            <IonCard 
-              key={route.id} 
-              style={{ 
-                opacity: route.restricted ? 0.6 : 1,
-                marginBottom: '16px',
-                borderRadius: '12px'
-              }}
-            >
-              <IonCardHeader>
-                <IonCardTitle>{route.name}</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonGrid>
-                  <IonRow>
-                    <IonCol size="12">
-                      <IonItem>
-                        <IonLabel>
-                          <h3>Login: {route.login}</h3>
-                        </IonLabel>
-                      </IonItem>
-                    </IonCol>
-                    <IonCol size="12">
-                      <IonItem>
-                        <IonLabel>
-                          <h3>Role: {route.role}</h3>
-                        </IonLabel>
-                      </IonItem>
-                    </IonCol>
-                    <IonCol size="12">
-                      <IonItem>
-                        <IonLabel>
-                          <h3>Último acesso: {formatDate(route.lastAccess)}</h3>
-                        </IonLabel>
-                      </IonItem>
-                    </IonCol>
-                    <IonCol size="12">
-                      <IonItem>
-                        <IonLabel>
-                          <h3>Clientes: 0</h3>
-                        </IonLabel>
-                      </IonItem>
-                    </IonCol>
-                    <IonCol size="12">
-                      <IonItem>
-                        <IonLabel>
-                          <h3>Caixa: $ 0,00</h3>
-                        </IonLabel>
-                      </IonItem>
-                    </IonCol>
-                  </IonRow>
-                  <IonRow>
-                    <IonCol size="2.4">
-                      <IonButton
-                        fill="clear"
-                        onClick={() => openEditModal(route)}
-                      >
-                        <IonIcon icon={create} />
-                      </IonButton>
-                    </IonCol>
-                    <IonCol size="2.4">
-                      <IonButton
-                        fill="clear"
-                        onClick={() => {
-                          setSelectedRoute(route);
-                          setShowRestrictAlert(true);
-                        }}
-                      >
-                        <IonIcon icon={route.restricted ? eyeOff : eye} />
-                      </IonButton>
-                    </IonCol>
-                    <IonCol size="2.4">
-                      <IonButton
-                        fill="clear"
-                        onClick={() => {
-                          setSelectedRoute(route);
-                          setShowPasswordModal(true);
-                        }}
-                      >
-                        <IonIcon icon={key} />
-                      </IonButton>
-                    </IonCol>
-                    <IonCol size="2.4">
-                      <IonButton
-                        fill="clear"
-                        color="danger"
-                        onClick={() => {
-                          setSelectedRoute(route);
-                          setShowDeleteAlert(true);
-                        }}
-                      >
-                        <IonIcon icon={trash} />
-                      </IonButton>
-                    </IonCol>
-                  </IonRow>
-                </IonGrid>
-              </IonCardContent>
-            </IonCard>
-          ))}
+              {routes.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <p>Nenhuma rota criada ainda</p>
+                </div>
+              ) : (
+                routes.map((route) => (
+                  <IonCard 
+                    key={route.id} 
+                    style={{ 
+                      opacity: route.restricted ? 0.6 : 1,
+                      marginBottom: '16px',
+                      borderRadius: '12px'
+                    }}
+                  >
+                    <IonCardHeader>
+                      <IonCardTitle>{route.name}</IonCardTitle>
+                    </IonCardHeader>
+                    <IonCardContent>
+                      <IonGrid>
+                        <IonRow>
+                          <IonCol size="12">
+                            <IonItem>
+                              <IonLabel>
+                                <h3>Login: {route.login}</h3>
+                              </IonLabel>
+                            </IonItem>
+                          </IonCol>
+                          <IonCol size="12">
+                            <IonItem>
+                              <IonLabel>
+                                <h3>Role: {route.role}</h3>
+                              </IonLabel>
+                            </IonItem>
+                          </IonCol>
+                          <IonCol size="12">
+                            <IonItem>
+                              <IonLabel>
+                                <h3>Último acesso: {formatDate(route.lastAccess)}</h3>
+                              </IonLabel>
+                            </IonItem>
+                          </IonCol>
+                          <IonCol size="12">
+                            <IonItem>
+                              <IonLabel>
+                                <h3>Clientes: 0</h3>
+                              </IonLabel>
+                            </IonItem>
+                          </IonCol>
+                          <IonCol size="12">
+                            <IonItem>
+                              <IonLabel>
+                                <h3>Caixa: $ 0,00</h3>
+                              </IonLabel>
+                            </IonItem>
+                          </IonCol>
+                        </IonRow>
+                        <IonRow>
+                          <IonCol size="2.4">
+                            <IonButton
+                              fill="clear"
+                              onClick={() => openEditModal(route)}
+                            >
+                              <IonIcon icon={create} />
+                            </IonButton>
+                          </IonCol>
+                          <IonCol size="2.4">
+                            <IonButton
+                              fill="clear"
+                              onClick={() => {
+                                setSelectedRoute(route);
+                                setShowRestrictAlert(true);
+                              }}
+                            >
+                              <IonIcon icon={route.restricted ? eyeOff : eye} />
+                            </IonButton>
+                          </IonCol>
+                          <IonCol size="2.4">
+                            <IonButton
+                              fill="clear"
+                              onClick={() => {
+                                setSelectedRoute(route);
+                                setShowPasswordModal(true);
+                              }}
+                            >
+                              <IonIcon icon={key} />
+                            </IonButton>
+                          </IonCol>
+                          <IonCol size="2.4">
+                            <IonButton
+                              fill="clear"
+                              color="danger"
+                              onClick={() => {
+                                setSelectedRoute(route);
+                                setShowDeleteAlert(true);
+                              }}
+                            >
+                              <IonIcon icon={trash} />
+                            </IonButton>
+                          </IonCol>
+                        </IonRow>
+                      </IonGrid>
+                    </IonCardContent>
+                  </IonCard>
+                )))}
+              </>
+          )}
         </div>
 
         {/* Modal Criar Route */}

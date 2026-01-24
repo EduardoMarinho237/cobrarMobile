@@ -59,9 +59,7 @@ const DetalhesGastos: React.FC = () => {
   }, [categoriaId]);
 
   useEffect(() => {
-    if (categoria) {
-      loadDetalhes();
-    }
+    // Removido carregamento automático - só carrega quando clicar em Filtrar
   }, [categoria, periodo, dataInicio, dataFim]);
 
   const loadCategoria = async () => {
@@ -72,7 +70,8 @@ const DetalhesGastos: React.FC = () => {
         setCategoria(cat);
       }
     } catch (error) {
-      showToast('Erro ao carregar categoria', 'danger');
+      console.error('Erro ao carregar categoria:', error);
+      // Removido toast automático
     }
   };
 
@@ -144,7 +143,7 @@ const DetalhesGastos: React.FC = () => {
       setDetalhes(dadosCompletos);
     } catch (error) {
       console.error('Erro ao carregar detalhes:', error);
-      showToast('Erro ao carregar detalhes dos gastos', 'danger');
+      // Removido toast automático - só mostra toast quando usuário clica em Filtrar
     }
   };
 

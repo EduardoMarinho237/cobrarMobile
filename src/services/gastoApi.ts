@@ -9,7 +9,9 @@ export interface CategoriaGasto {
 export interface TipoGasto {
   id: number;
   name: string;
-  expenseCategoryId: number;
+  expenseCategoryId: number;  // Corrigido para usar expenseCategoryId
+  visible?: boolean;
+  createdAt?: string;
 }
 
 export interface GastoDetalhe {
@@ -313,7 +315,7 @@ export const getTiposGastos = async (categoriaId?: number) => {
   }
 
   // Para endpoints GET, retorna a resposta diretamente
-  const endpoint = categoriaId ? `/api/expenses-types?expenseCategoryId=${categoriaId}` : '/api/expenses-types';
+  const endpoint = categoriaId ? `/api/expenses-types/category/${categoriaId}` : '/api/expenses-types';
   return apiRequest(endpoint);
 };
 
@@ -368,7 +370,7 @@ export const updateTipoGasto = async (id: number, nome: string, categoriaId?: nu
   }
 
   try {
-    const body = categoriaId ? { name: nome, expenseCategoryId: categoriaId } : { name: nome };
+    const body = { name: nome }; // Para PUT, só envia o nome
     const response = await apiRequest(`/api/expenses-types/${id}`, {
       method: 'PUT',
       body: JSON.stringify(body),

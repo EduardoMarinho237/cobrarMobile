@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
 import {
   IonContent,
   IonPage,
@@ -26,6 +27,7 @@ const Config: React.FC = () => {
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   const [showBloqueioAlert, setShowBloqueioAlert] = useState(false);
   const { diaFechado, carregando } = useFechamentoControl();
+  const history = useHistory();
 
   useEffect(() => {
     loadUser();
@@ -56,7 +58,7 @@ const Config: React.FC = () => {
   const confirmLogout = async () => {
     try {
       await logout();
-      window.location.href = '/login';
+      history.replace('/login');
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     }

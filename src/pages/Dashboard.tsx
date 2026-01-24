@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Redirect } from 'react-router-dom';
+import { Redirect, useHistory } from 'react-router-dom';
 import { getCurrentUser } from '../services/api';
 import {
   IonContent,
@@ -9,12 +9,14 @@ import {
 import { refresh } from 'ionicons/icons';
 
 const Dashboard: React.FC = () => {
+  const history = useHistory();
+  
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (!userStr) {
-      window.location.href = '/login';
+      history.replace('/login');
     }
-  }, []);
+  }, [history]);
 
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;

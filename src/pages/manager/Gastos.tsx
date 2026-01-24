@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
 import {
   IonContent,
   IonPage,
@@ -23,7 +24,8 @@ import {
   IonRefresher,
   IonRefresherContent,
   IonRadioGroup,
-  IonRadio
+  IonRadio,
+  IonSpinner
 } from '@ionic/react';
 import { add, trash, create, eye, arrowForward, refresh } from 'ionicons/icons';
 import { getCategorias, createCategoria, deleteCategoria, CategoriaGasto } from '../../services/gastoApi';
@@ -38,16 +40,19 @@ const Gastos: React.FC = () => {
   const [showConfirmDeleteAlert, setShowConfirmDeleteAlert] = useState(false);
   const [selectedCategoria, setSelectedCategoria] = useState<CategoriaGasto | null>(null);
   const [migrateParaId, setMigrateParaId] = useState<number | null>(null);
+  const [newCategoria, setNewCategoria] = useState({ nome: '' });
+  const [isLoading, setIsLoading] = useState(true);
+  const history = useHistory();
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
   
   // Form states
-  const [newCategoria, setNewCategoria] = useState({ nome: '' });
 
   useEffect(() => {
     loadCategorias();
   }, []);
 
   const loadCategorias = async () => {
+    setIsLoading(true);
     try {
       const response = await getCategorias();
       console.log('Resposta da API getCategorias:', response);
@@ -63,6 +68,8 @@ const Gastos: React.FC = () => {
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
       showToast('Erro ao carregar categorias', 'danger');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -131,21 +138,29 @@ const Gastos: React.FC = () => {
         console.log('Resposta da migração:', response);
         showToast(response.message, response.success ? 'success' : 'danger');
         
-        // Sempre volta para a listagem, mesmo com erro
+        // Fecha o modal e limpa os estados
         setShowMigrateModal(false);
         setSelectedCategoria(null);
         setMigrateParaId(null);
-        loadCategorias();
+        
+        // Força recarga completa da página para garantir renderização
+        setTimeout(() => {
+          window.location.reload();
+        }, 200);
       })
       .catch((error) => {
         console.error('Erro ao migrar categoria:', error);
         showToast('Erro ao migrar categoria', 'danger');
         
-        // Mesmo com erro, volta para a listagem
+        // Mesmo com erro, fecha o modal e limpa os estados
         setShowMigrateModal(false);
         setSelectedCategoria(null);
         setMigrateParaId(null);
-        loadCategorias();
+        
+        // Força recarga mesmo com erro
+        setTimeout(() => {
+          window.location.reload();
+        }, 200);
       });
   };
 
@@ -204,12 +219,12 @@ const Gastos: React.FC = () => {
 
   const handleEditCategoria = (categoria: CategoriaGasto) => {
     // Navegar para página de edição
-    window.location.href = `/manager/gastos/${categoria.id}/editar`;
+    history.push(`/manager/gastos/${categoria.id}/editar`);
   };
 
   const handleDetalhes = (categoria: CategoriaGasto) => {
     // Navegar para página de detalhes
-    window.location.href = `/manager/gastos/${categoria.id}/detalhes`;
+    history.push(`/manager/gastos/${categoria.id}/detalhes`);
   };
 
   const outrasCategorias = categorias.filter(cat => cat.id !== selectedCategoria?.id);
@@ -236,74 +251,90 @@ const Gastos: React.FC = () => {
           />
         </IonRefresher>
         <div style={{ padding: '16px' }}>
-          <IonButton 
-            expand="block" 
-            shape="round" 
-            onClick={() => setShowCreateModal(true)}
-            style={{ marginBottom: '16px' }}
-          >
-            <IonIcon slot="start" icon={add} />
-            Adicionar nova categoria
-          </IonButton>
-
-          {categorias.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p>Nenhuma categoria encontrada</p>
+          {isLoading ? (
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              minHeight: '200px',
+              gap: '16px'
+            }}>
+              <IonSpinner name="dots" />
+              <p style={{ color: '#666', fontSize: '14px' }}>Carregando categorias...</p>
             </div>
           ) : (
-            categorias.map((categoria) => (
-            <IonCard 
-              key={categoria.id} 
-              style={{ 
-                marginBottom: '16px',
-                borderRadius: '12px'
-              }}
-            >
-              <IonCardHeader>
-                <IonCardTitle>{categoria.name}</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonGrid>
-                  <IonRow>
-                    <IonCol size="12">
-                      <IonItem>
-                        <IonLabel>
-                          <h3>Tipos de gastos: {categoria.expensesTypesCount}</h3>
-                        </IonLabel>
-                      </IonItem>
-                    </IonCol>
-                  </IonRow>
-                  <IonRow>
-                    <IonCol size="3">
-                      <IonButton
-                        fill="clear"
-                        onClick={() => handleEditCategoria(categoria)}
-                      >
-                        <IonIcon icon={create} />
-                      </IonButton>
-                    </IonCol>
-                    <IonCol size="3">
-                      <IonButton
-                        fill="clear"
-                        onClick={() => handleDetalhes(categoria)}
-                      >
-                        <IonIcon icon={eye} />
-                      </IonButton>
-                    </IonCol>
-                    <IonCol size="3">
-                      <IonButton
-                        fill="clear"
-                        color="danger"
-                        onClick={() => handleDeleteClick(categoria)}
-                      >
-                        <IonIcon icon={trash} />
-                      </IonButton>
-                    </IonCol>
-                  </IonRow>
-                </IonGrid>
-              </IonCardContent>
-            </IonCard>
-            ))
+            <>
+              <IonButton 
+                expand="block" 
+                shape="round" 
+                onClick={() => setShowCreateModal(true)}
+                style={{ marginBottom: '16px' }}
+              >
+                <IonIcon slot="start" icon={add} />
+                Adicionar nova categoria
+              </IonButton>
+
+              {categorias.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <p>Nenhuma categoria criada ainda</p>
+                </div>
+              ) : (
+                categorias.map((categoria) => (
+                <IonCard 
+                  key={categoria.id} 
+                  style={{ 
+                    marginBottom: '16px',
+                    borderRadius: '12px'
+                  }}
+                >
+                  <IonCardHeader>
+                    <IonCardTitle>{categoria.name}</IonCardTitle>
+                  </IonCardHeader>
+                  <IonCardContent>
+                    <IonGrid>
+                      <IonRow>
+                        <IonCol size="12">
+                          <IonItem>
+                            <IonLabel>
+                              <h3>Tipos de gastos: {categoria.expensesTypesCount}</h3>
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                      </IonRow>
+                      <IonRow>
+                        <IonCol size="3">
+                          <IonButton
+                            fill="clear"
+                            onClick={() => handleEditCategoria(categoria)}
+                          >
+                            <IonIcon icon={create} />
+                          </IonButton>
+                        </IonCol>
+                        <IonCol size="3">
+                          <IonButton
+                            fill="clear"
+                            onClick={() => handleDetalhes(categoria)}
+                          >
+                            <IonIcon icon={eye} />
+                          </IonButton>
+                        </IonCol>
+                        <IonCol size="3">
+                          <IonButton
+                            fill="clear"
+                            color="danger"
+                            onClick={() => handleDeleteClick(categoria)}
+                          >
+                            <IonIcon icon={trash} />
+                          </IonButton>
+                        </IonCol>
+                      </IonRow>
+                    </IonGrid>
+                  </IonCardContent>
+                </IonCard>
+                ))
+              )}
+            </>
           )}
         </div>
 
@@ -380,6 +411,19 @@ const Gastos: React.FC = () => {
                   <h2>Escolha uma categoria para migrar todos os {selectedCategoria?.expensesTypesCount || 0} tipos de gastos pertencentes a {selectedCategoria?.name}</h2>
                 </IonLabel>
               </IonItem>
+              
+              <div style={{ 
+                padding: '12px', 
+                margin: '16px 0', 
+                backgroundColor: '#fee', 
+                border: '1px solid #fcc', 
+                borderRadius: '8px',
+                color: '#c00'
+              }}>
+                <p style={{ margin: 0, fontSize: '14px' }}>
+                  <strong>Atenção:</strong> Após migrar os tipos de gastos, a categoria {selectedCategoria?.name} será apagada.
+                </p>
+              </div>
               
               <IonRadioGroup value={migrateParaId} onIonChange={(e: any) => setMigrateParaId(e.detail.value)}>
                 {outrasCategorias.map((categoria) => (

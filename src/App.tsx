@@ -2,7 +2,6 @@ import { Redirect, Route } from 'react-router-dom';
 import { IonApp, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
 import AdminTabs from './pages/AdminTabs';
 import ManagerTabs from './pages/ManagerTabs';
 import RouteTabs from './pages/RouteTabs';
@@ -44,13 +43,41 @@ setupIonicReact();
 
 const App: React.FC = () => {
   const checkAuth = () => {
-    return getCurrentUser() !== null;
+    const user = getCurrentUser();
+    console.log('checkAuth - user from localStorage:', user);
+    return user !== null;
+  };
+
+  const getRedirectPath = () => {
+    const user = getCurrentUser();
+    if (!user) return '/login';
+    
+    switch (user.role) {
+      case 'ADMIN':
+        return '/admin/managers';
+      case 'MANAGER':
+        return '/manager/routes';
+      case 'ROUTE':
+        return '/route/config';
+      default:
+        return '/login';
+    }
   };
 
   const ProtectedRoute: React.FC<{ children: React.ReactNode; path?: string; exact?: boolean }> = ({ children, ...rest }) => {
+    const isAuth = checkAuth();
+    console.log('ProtectedRoute checkAuth:', isAuth, 'path:', rest.path);
+    console.log('ProtectedRoute - user completo:', getCurrentUser());
+    
+    if (!isAuth) {
+      console.log('ProtectedRoute - não autenticado, redirecionando para /login');
+      return <Redirect to="/login" />;
+    }
+    
+    console.log('ProtectedRoute - autenticado, renderizando children');
     return (
       <Route {...rest}>
-        {checkAuth() ? children : <Redirect to="/login" />}
+        {children}
       </Route>
     );
   };
@@ -60,9 +87,6 @@ const App: React.FC = () => {
       <IonReactRouter>
         <Route exact path="/login">
           <Login />
-        </Route>
-        <Route exact path="/dashboard">
-          <Dashboard />
         </Route>
         <ProtectedRoute exact path="/admin">
           <AdminTabs />
@@ -74,9 +98,6 @@ const App: React.FC = () => {
           <AdminTabs />
         </ProtectedRoute>
         <ProtectedRoute exact path="/manager">
-          <ManagerTabs />
-        </ProtectedRoute>
-        <ProtectedRoute exact path="/manager/dashboard">
           <ManagerTabs />
         </ProtectedRoute>
         <ProtectedRoute exact path="/manager/gastos">
@@ -116,7 +137,7 @@ const App: React.FC = () => {
           <DetalhesGastos />
         </ProtectedRoute>
         <Route exact path="/">
-          {checkAuth() ? <Redirect to="/dashboard" /> : <Redirect to="/login" />}
+          {checkAuth() ? <Redirect to={getRedirectPath()} /> : <Redirect to="/login" />}
         </Route>
       </IonReactRouter>
     </IonApp>

@@ -231,6 +231,11 @@ const Managers: React.FC = () => {
       return;
     }
     
+    if (newPassword.password.length < 6) {
+      showToast('Senha deve ter pelo menos 6 caracteres', 'danger');
+      return;
+    }
+    
     if (newPassword.password !== newPassword.confirmPassword) {
       showToast('Senhas não conferem', 'danger');
       return;
@@ -239,16 +244,19 @@ const Managers: React.FC = () => {
     try {
       const response = await changeManagerPassword(selectedManager.id, newPassword.password);
       
-      // Usa a mensagem da API
-      showToast(response.message || 'Senha alterada com sucesso', response.success ? 'success' : 'danger');
+      // SEMPRE usa a mensagem da API, se não tiver mensagem, mostra erro de conexão
+      const message = response?.message || 'Erro de conexão';
+      const color = response?.success === true ? 'success' : 'danger';
       
-      if (response.success) {
+      showToast(message, color);
+      
+      if (response?.success === true) {
         setShowPasswordModal(false);
         setNewPassword({ password: '', confirmPassword: '' });
       }
     } catch (error) {
       console.error('Erro ao alterar senha:', error);
-      showToast('Erro de conexão, tente novamente', 'danger');
+      showToast('Erro de conexão', 'danger');
     }
   };
 
@@ -284,7 +292,12 @@ const Managers: React.FC = () => {
             Adicionar novo manager
           </IonButton>
 
-          {managers.map((manager) => (
+          {managers.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <p>Nenhum manager criado ainda</p>
+            </div>
+          ) : (
+            managers.map((manager) => (
             <IonCard 
               key={manager.id} 
               style={{ 
@@ -370,7 +383,7 @@ const Managers: React.FC = () => {
                 </IonGrid>
               </IonCardContent>
             </IonCard>
-          ))}
+          )))}
         </div>
 
         {/* Modal Criar Manager */}

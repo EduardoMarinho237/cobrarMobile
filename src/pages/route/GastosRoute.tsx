@@ -23,7 +23,8 @@ import {
   IonRow,
   IonCol,
   IonRefresher,
-  IonRefresherContent
+  IonRefresherContent,
+  IonSpinner
 } from '@ionic/react';
 import { add, trash, create, eye, wallet, refresh } from 'ionicons/icons';
 import { 
@@ -48,6 +49,7 @@ const GastosRoute: React.FC = () => {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedGasto, setSelectedGasto] = useState<Gasto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
   
   // Form states
@@ -65,9 +67,20 @@ const GastosRoute: React.FC = () => {
   });
 
   useEffect(() => {
-    loadGastos();
-    loadCategorias();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      await Promise.all([
+        loadGastos(),
+        loadCategorias()
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const loadGastos = async () => {
     try {
@@ -252,18 +265,32 @@ const GastosRoute: React.FC = () => {
           />
         </IonRefresher>
         <div style={{ padding: '16px' }}>
-          {/* Card de Total do Dia */}
-          <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
-            <IonCardHeader>
-              <IonCardTitle>
-                <IonIcon icon={wallet} style={{ marginRight: '8px' }} />
-                Gastos do Dia
-              </IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <h2 style={{ textAlign: 'center', color: '#dc3545', margin: '0' }}>
-                {formatCurrency(totalGastos)}
-              </h2>
+          {isLoading ? (
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              minHeight: '200px',
+              gap: '16px'
+            }}>
+              <IonSpinner name="dots" />
+              <p style={{ color: '#666', fontSize: '14px' }}>Carregando gastos...</p>
+            </div>
+          ) : (
+            <>
+              {/* Card de Total do Dia */}
+              <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
+                <IonCardHeader>
+                  <IonCardTitle>
+                    <IonIcon icon={wallet} style={{ marginRight: '8px' }} />
+                    Gastos do Dia
+                  </IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  <h2 style={{ textAlign: 'center', color: '#dc3545', margin: '0' }}>
+                    {formatCurrency(totalGastos)}
+                  </h2>
             </IonCardContent>
           </IonCard>
 
@@ -279,7 +306,12 @@ const GastosRoute: React.FC = () => {
           </IonButton>
 
           {/* Lista de Gastos */}
-          {gastos.map((gasto) => (
+          {gastos.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <p>Nenhum gasto criado ainda</p>
+            </div>
+          ) : (
+            gastos.map((gasto) => (
             <IonCard 
               key={gasto.id} 
               style={{ 
@@ -332,7 +364,9 @@ const GastosRoute: React.FC = () => {
                 </IonGrid>
               </IonCardContent>
             </IonCard>
-          ))}
+          )))}
+            </>
+          )}
         </div>
 
         {/* Modal Criar Gasto */}

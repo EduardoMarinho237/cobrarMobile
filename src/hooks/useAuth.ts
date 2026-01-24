@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 import { getCurrentUser } from '../services/api';
-import { useNetworkStatus } from './useNetworkStatus';
 import { useFechamentoControl } from './useFechamentoControl';
 
 interface AuthState {
@@ -22,7 +21,6 @@ const STORAGE_KEYS = {
 
 export const useAuth = () => {
   const history = useHistory();
-  const { isOnline } = useNetworkStatus();
   const { diaFechado } = useFechamentoControl();
   
   const [authState, setAuthState] = useState<AuthState>({
@@ -32,6 +30,9 @@ export const useAuth = () => {
     loading: true,
     error: null
   });
+
+  // Simular sempre online por enquanto
+  const isOnline = true;
 
   // Verificar integridade dos dados no localStorage
   const validateStoredData = useCallback((): boolean => {
@@ -137,7 +138,21 @@ export const useAuth = () => {
 
         // Redirecionar para página correta baseado no role
         const currentPath = window.location.pathname;
-        const expectedPath = `/${userData.type.toLowerCase()}`;
+        let expectedPath = '';
+        
+        switch (userData.type) {
+          case 'ADMIN':
+            expectedPath = '/admin/managers';
+            break;
+          case 'MANAGER':
+            expectedPath = '/manager/routes';
+            break;
+          case 'ROUTE':
+            expectedPath = '/route/config';
+            break;
+          default:
+            expectedPath = '/login';
+        }
         
         if (currentPath === '/' || currentPath === '/login') {
           history.replace(expectedPath);

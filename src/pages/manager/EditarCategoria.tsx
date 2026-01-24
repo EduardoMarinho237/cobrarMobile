@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router-dom';
 import {
   IonContent,
   IonPage,
@@ -43,6 +43,7 @@ import Toast from '../../components/Toast';
 
 const EditarCategoria: React.FC = () => {
   const { categoriaId } = useParams<{ categoriaId: string }>();
+  const history = useHistory();
   const [categoria, setCategoria] = useState<CategoriaGasto | null>(null);
   const [tipos, setTipos] = useState<TipoGasto[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -59,36 +60,45 @@ const EditarCategoria: React.FC = () => {
   useEffect(() => {
     if (categoriaId) {
       loadCategoria();
-      loadTipos();
     }
   }, [categoriaId]);
 
   const loadCategoria = async () => {
     try {
-      const categorias = await getCategorias();
-      const cat = categorias.find((c: CategoriaGasto) => c.id === parseInt(categoriaId!));
+      // Carrega apenas o nome da categoria para edição
+      const categoriasResponse = await getCategorias();
+      
+      // Trata a resposta da API que pode ter estrutura {success, data}
+      let categorias = categoriasResponse;
+      if (categoriasResponse && typeof categoriasResponse === 'object' && 'success' in categoriasResponse && 'data' in categoriasResponse) {
+        categorias = categoriasResponse.data;
+      }
+      
+      const cat = Array.isArray(categorias) ? categorias.find((c: CategoriaGasto) => c.id === parseInt(categoriaId!)) : null;
       if (cat) {
         setCategoria(cat);
         setEditNome(cat.name);
       }
+      
+      // Carrega os tipos da categoria
+      await loadTipos();
     } catch (error) {
-      showToast('Erro ao carregar categoria', 'danger');
+      console.error('Erro ao carregar categoria:', error);
+      // Removido toast instantâneo ao carregar página
     }
   };
 
   const loadTipos = async () => {
     try {
       const response = await getTiposGastos(parseInt(categoriaId!));
-      console.log('Resposta da API getTiposGastos:', response);
       
       // Se a resposta tiver a estrutura { success, data }, extrai os dados
       let data = response;
-      if (response && typeof response === 'object' && 'data' in response) {
+      if (response && typeof response === 'object' && 'success' in response && response.success && 'data' in response) {
         data = response.data;
       }
       
       setTipos(Array.isArray(data) ? data : []);
-      console.log('Tipos de gastos carregados:', data);
     } catch (error) {
       console.error('Erro ao carregar tipos de gastos:', error);
       showToast('Erro ao carregar tipos de gastos', 'danger');
@@ -220,6 +230,20 @@ const EditarCategoria: React.FC = () => {
         setSelectedTipo(null);
         setMigrateParaId(null);
         loadTipos();
+        
+        // Se a migração for bem-sucedida e não houver mais tipos, volta para a listagem de categorias
+        if (response.success) {
+          // Usa setTimeout para garantir que o estado foi atualizado
+          setTimeout(() => {
+            const tiposRestantes = tipos.filter(tipo => tipo.id !== selectedTipo.id);
+            console.log('Tipos restantes após migração:', tiposRestantes.length);
+            if (tiposRestantes.length === 0) {
+              // Não há mais tipos, volta para a listagem de categorias
+              console.log('Voltando para listagem de categorias...');
+              window.location.href = '/manager/gastos';
+            }
+          }, 500); // Pequeno delay para garantir atualização do estado
+        }
       })
       .catch((error) => {
         console.error('Erro ao migrar tipo de gasto:', error);
@@ -282,8 +306,10 @@ const EditarCategoria: React.FC = () => {
                   label="Nome da Categoria"
                   labelPlacement="floating"
                   placeholder="Digite o nome da categoria"
-                  value={editNome}
-                  onIonInput={(e: any) => setEditNome(e.detail.value!)}
+                  value={editNome || ''}
+                  onIonInput={(e: any) => {
+                    setEditNome(e.detail.value || '');
+                  }}
                 />
               </IonItem>
               <IonButton 
@@ -313,7 +339,12 @@ const EditarCategoria: React.FC = () => {
                 Adicionar novo tipo
               </IonButton>
 
-              {tipos.map((tipo) => (
+              {tipos.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <p>Nenhum tipo criado ainda</p>
+                </div>
+              ) : (
+                tipos.map((tipo) => (
                 <IonItem key={tipo.id} style={{ marginBottom: '8px' }}>
                   <IonLabel>
                     <h3>{tipo.name}</h3>
@@ -334,7 +365,7 @@ const EditarCategoria: React.FC = () => {
                     <IonIcon icon={trash} />
                   </IonButton>
                 </IonItem>
-              ))}
+              )))}
             </IonCardContent>
           </IonCard>
         </div>
@@ -445,6 +476,24 @@ const EditarCategoria: React.FC = () => {
                   <h2>Escolha um tipo para migrar todos os gastos pertencentes a {selectedTipo?.name}</h2>
                 </IonLabel>
               </IonItem>
+              
+              {/* Aviso sobre exclusão da categoria */}
+              <div style={{ 
+                backgroundColor: '#ffebee', 
+                border: '1px solid #f44336', 
+                borderRadius: '8px', 
+                padding: '12px', 
+                marginBottom: '16px' 
+              }}>
+                <p style={{ 
+                  color: '#d32f2f', 
+                  fontSize: '14px', 
+                  margin: '0',
+                  textAlign: 'center'
+                }}>
+                  <strong>Atenção:</strong> Após migrar os tipos de gastos, a categoria <strong>{categoria?.name}</strong> será apagada.
+                </p>
+              </div>
               
               <IonRadioGroup value={migrateParaId} onIonChange={(e: any) => setMigrateParaId(e.detail.value)}>
                 {tipos.filter(tipo => tipo.id !== selectedTipo?.id).map((tipo) => (

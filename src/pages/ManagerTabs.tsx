@@ -31,7 +31,7 @@ const ManagerTabs: React.FC = () => {
           <Config />
         </Route>
         <Route exact path="/manager">
-          <Redirect to="/manager/dashboard" />
+          <Redirect to="/manager/routes" />
         </Route>
       </IonRouterOutlet>
       <IonTabBar slot="bottom">
