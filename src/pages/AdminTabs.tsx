@@ -11,8 +11,11 @@ import {
 import { people, settings } from 'ionicons/icons';
 import Managers from './admin/Managers';
 import Config from './Config';
+import { useTranslation } from 'react-i18next';
 
 const AdminTabs: React.FC = () => {
+  const { t } = useTranslation();
+  
   return (
     <IonTabs>
       <IonRouterOutlet>
@@ -29,11 +32,11 @@ const AdminTabs: React.FC = () => {
       <IonTabBar slot="bottom">
         <IonTabButton tab="managers" href="/admin/managers">
           <IonIcon aria-hidden="true" icon={people} />
-          <IonLabel>Managers</IonLabel>
+          <IonLabel>{t('tabs.managers')}</IonLabel>
         </IonTabButton>
         <IonTabButton tab="config" href="/admin/config">
           <IonIcon aria-hidden="true" icon={settings} />
-          <IonLabel>Config</IonLabel>
+          <IonLabel>{t('common.config')}</IonLabel>
         </IonTabButton>
       </IonTabBar>
     </IonTabs>

@@ -21,8 +21,12 @@ import {
 import { logOut, person, lockClosed, lockOpen, refresh } from 'ionicons/icons';
 import { getCurrentUser, logout } from '../services/api';
 import { useFechamentoControl } from '../hooks/useFechamentoControl';
+import { useTranslation } from 'react-i18next';
+import LanguageSelector from '../components/LanguageSelector';
+import { translateRole } from '../utils/roleTranslation';
 
 const Config: React.FC = () => {
+  const { t } = useTranslation();
   const [user, setUser] = useState<any>(null);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   const [showBloqueioAlert, setShowBloqueioAlert] = useState(false);
@@ -31,6 +35,20 @@ const Config: React.FC = () => {
 
   useEffect(() => {
     loadUser();
+    
+    // Configurar o refresher
+    const setupRefresher = () => {
+      const refresher = document.getElementById('config-refresher') as HTMLIonRefresherElement;
+      if (refresher) {
+        refresher.addEventListener('ionRefresh', async () => {
+          await loadUser();
+          refresher.complete();
+        });
+      }
+    };
+
+    // Usar setTimeout para garantir que o DOM esteja pronto
+    setTimeout(setupRefresher, 100);
   }, []);
 
   const loadUser = async () => {
@@ -42,9 +60,13 @@ const Config: React.FC = () => {
     }
   };
 
-  const handleRefresh = async (event: CustomEvent) => {
-    await loadUser();
-    event.detail.complete();
+  const confirmLogout = async () => {
+    try {
+      await logout();
+      history.replace('/login');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
   };
 
   const handleLogout = () => {
@@ -55,34 +77,20 @@ const Config: React.FC = () => {
     setShowLogoutAlert(true);
   };
 
-  const confirmLogout = async () => {
-    try {
-      await logout();
-      history.replace('/login');
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-    }
-  };
-
   if (carregando) {
-    return <div>Carregando...</div>;
+    return <div>{t('common.loading')}</div>;
   }
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Configurações</IonTitle>
+          <IonTitle>{t('config.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-          <IonRefresherContent
-            pullingIcon={refresh}
-            pullingText="Puxe para atualizar"
-            refreshingSpinner="circles"
-            refreshingText="Atualizando..."
-          />
+        <IonRefresher slot="fixed" id="config-refresher">
+          <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
         <div style={{ padding: '16px' }}>
           {/* Card de Informações do Usuário */}
@@ -90,7 +98,7 @@ const Config: React.FC = () => {
             <IonCardHeader>
               <IonCardTitle>
                 <IonIcon icon={person} style={{ marginRight: '8px' }} />
-                Informações do Usuário
+                {t('config.userInfo')}
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
@@ -98,24 +106,36 @@ const Config: React.FC = () => {
                 <>
                   <IonItem>
                     <IonLabel>
-                      <h3>Nome</h3>
+                      <h3>{t('config.name')}</h3>
                       <p>{user.name}</p>
                     </IonLabel>
                   </IonItem>
                   <IonItem>
                     <IonLabel>
-                      <h3>Login</h3>
+                      <h3>{t('config.login')}</h3>
                       <p>{user.login}</p>
                     </IonLabel>
                   </IonItem>
                   <IonItem>
                     <IonLabel>
-                      <h3>Tipo</h3>
-                      <p>{user.role}</p>
+                      <h3>{t('config.type')}</h3>
+                      <p>{translateRole(user.role, t)}</p>
                     </IonLabel>
                   </IonItem>
                 </>
               )}
+            </IonCardContent>
+          </IonCard>
+
+          {/* Card de Idioma */}
+          <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
+            <IonCardHeader>
+              <IonCardTitle>
+                {t('config.language')}
+              </IonCardTitle>
+            </IonCardHeader>
+            <IonCardContent>
+              <LanguageSelector />
             </IonCardContent>
           </IonCard>
 
@@ -128,18 +148,18 @@ const Config: React.FC = () => {
                     icon={diaFechado ? lockClosed : lockOpen} 
                     style={{ marginRight: '8px' }} 
                   />
-                  Status do Sistema
+                  {t('config.systemStatus')}
                 </IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
                 <IonItem>
                   <IonLabel>
-                    <h3>Fechamento do Dia</h3>
+                    <h3>{t('config.dayClosing')}</h3>
                     <p style={{ 
                       color: diaFechado ? '#dc3545' : '#28a745',
                       fontWeight: 'bold'
                     }}>
-                      {diaFechado ? 'FECHADO' : 'ABERTO'}
+                      {diaFechado ? t('config.closed') : t('config.open')}
                     </p>
                   </IonLabel>
                 </IonItem>
@@ -147,7 +167,7 @@ const Config: React.FC = () => {
                   <IonItem>
                     <IonLabel>
                       <p style={{ color: '#666', fontSize: '14px' }}>
-                        O sistema está bloqueado até as 00:00 do próximo dia.
+                        {t('config.systemBlocked')}
                       </p>
                     </IonLabel>
                   </IonItem>
@@ -166,7 +186,7 @@ const Config: React.FC = () => {
             style={{ marginTop: '24px' }}
           >
             <IonIcon icon={logOut} slot="start" />
-            {user?.role === 'ROUTE' && diaFechado ? 'Logout Bloqueado' : 'Sair do Sistema'}
+            {user?.role === 'ROUTE' && diaFechado ? t('config.logoutBlocked') : t('config.logoutButton')}
           </IonButton>
         </div>
 
@@ -174,15 +194,15 @@ const Config: React.FC = () => {
         <IonAlert
           isOpen={showLogoutAlert}
           onDidDismiss={() => setShowLogoutAlert(false)}
-          header="Confirmar Logout"
-          message="Tem certeza que deseja sair do sistema?"
+          header={t('alerts.confirmLogout')}
+          message={t('config.confirmLogout')}
           buttons={[
             {
-              text: 'Cancelar',
+              text: t('common.cancel'),
               role: 'cancel'
             },
             {
-              text: 'Sair',
+              text: t('common.logout'),
               role: 'destructive',
               handler: confirmLogout
             }
@@ -193,11 +213,11 @@ const Config: React.FC = () => {
         <IonAlert
           isOpen={showBloqueioAlert}
           onDidDismiss={() => setShowBloqueioAlert(false)}
-          header="Logout Bloqueado"
-          message="O dia foi fechado. Não é possível fazer logout até as 00:00 do próximo dia."
+          header={t('config.logoutBlockedTitle')}
+          message={t('config.logoutBlockedMessage')}
           buttons={[
             {
-              text: 'Entendido',
+              text: t('config.understood'),
               role: 'cancel'
             }
           ]}

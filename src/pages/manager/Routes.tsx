@@ -28,6 +28,8 @@ import { add, eye, eyeOff, trash, key, create, refresh } from 'ionicons/icons';
 import { getRoutes, createRoute, updateRoute, deleteRoute } from '../../services/routeApi';
 import { toggleRouteAudit, changeManagerPassword } from '../../services/api';
 import Toast from '../../components/Toast';
+import { useTranslation } from 'react-i18next';
+import { translateRole } from '../../utils/roleTranslation';
 
 interface Route {
   id: number;
@@ -40,6 +42,7 @@ interface Route {
 }
 
 const Routes: React.FC = () => {
+  const { t } = useTranslation();
   const [routes, setRoutes] = useState<Route[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -365,7 +368,7 @@ const Routes: React.FC = () => {
                           <IonCol size="12">
                             <IonItem>
                               <IonLabel>
-                                <h3>Role: {route.role}</h3>
+                                <h3>Role: {translateRole(route.role, t)}</h3>
                               </IonLabel>
                             </IonItem>
                           </IonCol>

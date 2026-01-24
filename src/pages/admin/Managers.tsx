@@ -26,6 +26,8 @@ import {
 import { add, eye, eyeOff, trash, key, create, refresh } from 'ionicons/icons';
 import { createManager, getManagers, updateManager, toggleManagerAudit, changeManagerPassword } from '../../services/api';
 import Toast from '../../components/Toast';
+import { useTranslation } from 'react-i18next';
+import { translateRole } from '../../utils/roleTranslation';
 
 interface Manager {
   id: number;
@@ -40,6 +42,7 @@ interface Manager {
 }
 
 const Managers: React.FC = () => {
+  const { t } = useTranslation();
   const [managers, setManagers] = useState<Manager[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -261,7 +264,7 @@ const Managers: React.FC = () => {
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Nunca acessou';
+    if (!dateString) return t('pages.managers.never');
     return new Date(dateString).toLocaleString('pt-BR');
   };
 
@@ -269,7 +272,7 @@ const Managers: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Managers</IonTitle>
+          <IonTitle>{t('pages.managers.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -289,12 +292,12 @@ const Managers: React.FC = () => {
             style={{ marginBottom: '16px' }}
           >
             <IonIcon slot="start" icon={add} />
-            Adicionar novo manager
+            {t('pages.managers.addManager')}
           </IonButton>
 
           {managers.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p>Nenhum manager criado ainda</p>
+              <p>Nenhum gerente criado ainda</p>
             </div>
           ) : (
             managers.map((manager) => (
@@ -315,35 +318,35 @@ const Managers: React.FC = () => {
                     <IonCol size="12">
                       <IonItem>
                         <IonLabel>
-                          <h3>Login: {manager.login}</h3>
+                          <h3>{t('pages.managers.login')}: {manager.login}</h3>
                         </IonLabel>
                       </IonItem>
                     </IonCol>
                     <IonCol size="12">
                       <IonItem>
                         <IonLabel>
-                          <h3>Role: {manager.role}</h3>
+                          <h3>{t('pages.managers.role')}: {translateRole(manager.role, t)}</h3>
                         </IonLabel>
                       </IonItem>
                     </IonCol>
                     <IonCol size="12">
                       <IonItem>
                         <IonLabel>
-                          <h3>Último acesso: {formatDate(manager.lastAccess)}</h3>
+                          <h3>{t('pages.managers.lastAccess')}: {formatDate(manager.lastAccess)}</h3>
                         </IonLabel>
                       </IonItem>
                     </IonCol>
                     <IonCol size="12">
                       <IonItem>
                         <IonLabel>
-                          <h3>Rotas: {manager.routeCount || 0}</h3>
+                          <h3>{t('pages.managers.routesCount')}: {manager.routeCount || 0}</h3>
                         </IonLabel>
                       </IonItem>
                     </IonCol>
                     <IonCol size="12">
                       <IonItem>
                         <IonLabel>
-                          <h3>Caixa: $ {(manager.cashBalance || 0).toFixed(2)}</h3>
+                          <h3>{t('pages.managers.cashBalance')}: $ {(manager.cashBalance || 0).toFixed(2)}</h3>
                         </IonLabel>
                       </IonItem>
                     </IonCol>
@@ -390,9 +393,9 @@ const Managers: React.FC = () => {
         <IonModal isOpen={showCreateModal} onDidDismiss={() => setShowCreateModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Novo Manager</IonTitle>
+              <IonTitle>{t('pages.managers.addManager')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowCreateModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowCreateModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -400,27 +403,27 @@ const Managers: React.FC = () => {
             <div style={{ padding: '16px' }}>
               <IonItem>
                 <IonInput
-                  label="Nome"
+                  label={t('pages.managers.name')}
                   labelPlacement="floating"
-                  placeholder="Digite o nome"
+                  placeholder={t('pages.managers.namePlaceholder')}
                   value={newManager.name}
                   onIonInput={(e: any) => setNewManager({ ...newManager, name: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Login"
+                  label={t('pages.managers.login')}
                   labelPlacement="floating"
-                  placeholder="Digite o login"
+                  placeholder={t('pages.managers.loginPlaceholder')}
                   value={newManager.login}
                   onIonInput={(e: any) => setNewManager({ ...newManager, login: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Senha"
+                  label={t('pages.managers.password')}
                   labelPlacement="floating"
-                  placeholder="Digite a senha"
+                  placeholder={t('pages.managers.passwordPlaceholder')}
                   type="password"
                   value={newManager.password}
                   onIonInput={(e: any) => setNewManager({ ...newManager, password: e.detail.value! })}
@@ -428,9 +431,9 @@ const Managers: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Repetir Senha"
+                  label={t('pages.managers.confirmPassword')}
                   labelPlacement="floating"
-                  placeholder="Repita a senha"
+                  placeholder={t('pages.managers.confirmPasswordPlaceholder')}
                   type="password"
                   value={newManager.confirmPassword}
                   onIonInput={(e: any) => setNewManager({ ...newManager, confirmPassword: e.detail.value! })}
@@ -442,7 +445,7 @@ const Managers: React.FC = () => {
                 onClick={handleCreateManager}
                 style={{ marginTop: '16px' }}
               >
-                Criar
+                {t('pages.managers.create')}
               </IonButton>
             </div>
           </IonContent>
@@ -452,9 +455,9 @@ const Managers: React.FC = () => {
         <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Editar Manager</IonTitle>
+              <IonTitle>{t('pages.managers.editManager')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowEditModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowEditModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -462,18 +465,18 @@ const Managers: React.FC = () => {
             <div style={{ padding: '16px' }}>
               <IonItem>
                 <IonInput
-                  label="Nome"
+                  label={t('pages.managers.name')}
                   labelPlacement="floating"
-                  placeholder="Digite o nome"
+                  placeholder={t('pages.managers.namePlaceholder')}
                   value={editManager.name}
                   onIonInput={(e: any) => setEditManager({ ...editManager, name: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Login"
+                  label={t('pages.managers.login')}
                   labelPlacement="floating"
-                  placeholder="Digite o login"
+                  placeholder={t('pages.managers.loginPlaceholder')}
                   value={editManager.login}
                   onIonInput={(e: any) => setEditManager({ ...editManager, login: e.detail.value! })}
                 />
@@ -484,7 +487,7 @@ const Managers: React.FC = () => {
                 onClick={handleEditManager}
                 style={{ marginTop: '16px' }}
               >
-                Salvar
+                {t('pages.managers.update')}
               </IonButton>
             </div>
           </IonContent>
@@ -494,9 +497,9 @@ const Managers: React.FC = () => {
         <IonModal isOpen={showPasswordModal} onDidDismiss={() => setShowPasswordModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Trocar Senha</IonTitle>
+              <IonTitle>{t('pages.managers.changePassword')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowPasswordModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowPasswordModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -504,9 +507,9 @@ const Managers: React.FC = () => {
             <div style={{ padding: '16px' }}>
               <IonItem>
                 <IonInput
-                  label="Nova Senha"
+                  label={t('pages.managers.password')}
                   labelPlacement="floating"
-                  placeholder="Digite a nova senha"
+                  placeholder={t('pages.managers.passwordPlaceholder')}
                   type="password"
                   value={newPassword.password}
                   onIonInput={(e: any) => setNewPassword({ ...newPassword, password: e.detail.value! })}
@@ -514,9 +517,9 @@ const Managers: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Repetir Nova Senha"
+                  label={t('pages.managers.confirmPassword')}
                   labelPlacement="floating"
-                  placeholder="Repita a nova senha"
+                  placeholder={t('pages.managers.confirmPasswordPlaceholder')}
                   type="password"
                   value={newPassword.confirmPassword}
                   onIonInput={(e: any) => setNewPassword({ ...newPassword, confirmPassword: e.detail.value! })}
@@ -528,7 +531,7 @@ const Managers: React.FC = () => {
                 onClick={handleChangePassword}
                 style={{ marginTop: '16px' }}
               >
-                Alterar Senha
+                {t('pages.managers.changePassword')}
               </IonButton>
             </div>
           </IonContent>
@@ -538,15 +541,15 @@ const Managers: React.FC = () => {
         <IonAlert
           isOpen={showRestrictAlert}
           onDidDismiss={() => setShowRestrictAlert(false)}
-          header="Confirmar"
-          message={selectedManager?.restricted ? "Restaurar acesso?" : "Restringir acesso?"}
+          header={t('common.confirm')}
+          message={selectedManager?.restricted ? t('pages.managers.restoreAccess') + "?" : t('pages.managers.restrictAccess') + "?"}
           buttons={[
             {
-              text: 'Cancelar',
+              text: t('common.cancel'),
               role: 'cancel'
             },
             {
-              text: 'Confirmar',
+              text: t('common.confirm'),
               handler: handleRestrictAccess
             }
           ]}

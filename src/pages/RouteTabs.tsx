@@ -24,8 +24,10 @@ import Creditos from './route/Creditos';
 import Fechamento from './route/Fechamento';
 import Config from './Config';
 import { useFechamentoControl } from '../hooks/useFechamentoControl';
+import { useTranslation } from 'react-i18next';
 
 const RouteTabs: React.FC = () => {
+  const { t } = useTranslation();
   const { diaFechado, podeAcessar, carregando } = useFechamentoControl();
   const [showBloqueioAlert, setShowBloqueioAlert] = React.useState(false);
 
@@ -36,7 +38,7 @@ const RouteTabs: React.FC = () => {
   };
 
   if (carregando) {
-    return <div>Carregando...</div>;
+    return <div>{t('common.loading')}</div>;
   }
 
   return (
@@ -72,7 +74,7 @@ const RouteTabs: React.FC = () => {
           disabled={diaFechado}
         >
           <IonIcon aria-hidden="true" icon={receipt} />
-          <IonLabel>Cobranças</IonLabel>
+          <IonLabel>{t('tabs.collections')}</IonLabel>
         </IonTabButton>
         <IonTabButton 
           tab="cobrados" 
@@ -81,7 +83,7 @@ const RouteTabs: React.FC = () => {
           disabled={diaFechado}
         >
           <IonIcon aria-hidden="true" icon={cash} />
-          <IonLabel>Cobrados</IonLabel>
+          <IonLabel>{t('tabs.collected')}</IonLabel>
         </IonTabButton>
         <IonTabButton 
           tab="gastos" 
@@ -90,7 +92,7 @@ const RouteTabs: React.FC = () => {
           disabled={diaFechado}
         >
           <IonIcon aria-hidden="true" icon={wallet} />
-          <IonLabel>Gastos</IonLabel>
+          <IonLabel>{t('tabs.expenses')}</IonLabel>
         </IonTabButton>
         <IonTabButton 
           tab="creditos" 
@@ -99,26 +101,26 @@ const RouteTabs: React.FC = () => {
           disabled={diaFechado}
         >
           <IonIcon aria-hidden="true" icon={card} />
-          <IonLabel>Créditos</IonLabel>
+          <IonLabel>{t('tabs.credits')}</IonLabel>
         </IonTabButton>
         <IonTabButton tab="fechamento" href="/route/fechamento">
           <IonIcon aria-hidden="true" icon={statsChart} />
-          <IonLabel>Fechamento</IonLabel>
+          <IonLabel>{t('tabs.closing')}</IonLabel>
         </IonTabButton>
         <IonTabButton tab="config" href="/route/config">
           <IonIcon aria-hidden="true" icon={settings} />
-          <IonLabel>Config</IonLabel>
+          <IonLabel>{t('common.config')}</IonLabel>
         </IonTabButton>
       </IonTabBar>
 
       <IonAlert
         isOpen={showBloqueioAlert}
         onDidDismiss={() => setShowBloqueioAlert(false)}
-        header="Acesso Bloqueado"
-        message="O dia foi fechado. Esta funcionalidade não está disponível até as 00:00 do próximo dia."
+        header={t('routeTabs.accessBlocked')}
+        message={t('routeTabs.dayClosedMessage')}
         buttons={[
           {
-            text: 'Entendido',
+            text: t('routeTabs.understood'),
             role: 'cancel'
           }
         ]}

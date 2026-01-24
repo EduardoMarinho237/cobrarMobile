@@ -16,9 +16,11 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonIcon
+  IonIcon,
+  IonRefresher,
+  IonRefresherContent
 } from '@ionic/react';
-import { lockOpen, lockClosed, cashOutline, peopleOutline, walletOutline } from 'ionicons/icons';
+import { lockOpen, lockClosed, cashOutline, peopleOutline, walletOutline, refresh } from 'ionicons/icons';
 import { 
   getFechamentoData, 
   fecharDia, 
@@ -26,8 +28,10 @@ import {
   FechamentoData 
 } from '../../services/fechamentoApi';
 import Toast from '../../components/Toast';
+import { useTranslation } from 'react-i18next';
 
 const Fechamento: React.FC = () => {
+  const { t } = useTranslation();
   const [fechamentoData, setFechamentoData] = useState<FechamentoData | null>(null);
   const [diaFechado, setDiaFechado] = useState(false);
   const [showConfirmAlert, setShowConfirmAlert] = useState(false);
@@ -37,6 +41,19 @@ const Fechamento: React.FC = () => {
   useEffect(() => {
     loadFechamentoData();
     verificarStatusFechamento();
+    
+    // Configurar o refresher
+    const setupRefresher = () => {
+      const refresher = document.getElementById('fechamento-refresher') as HTMLIonRefresherElement;
+      if (refresher) {
+        refresher.addEventListener('ionRefresh', async () => {
+          await Promise.all([loadFechamentoData(), verificarStatusFechamento()]);
+          refresher.complete();
+        });
+      }
+    };
+
+    setTimeout(setupRefresher, 100);
   }, []);
 
   const loadFechamentoData = async () => {
@@ -116,7 +133,7 @@ const Fechamento: React.FC = () => {
                   O sistema está bloqueado até as 00:00 do próximo dia.
                 </p>
                 <p style={{ color: '#666', fontSize: '14px' }}>
-                  Apenas as abas Config e Fechamento estão disponíveis.
+                  {t('pages.closing.onlyAvailableTabs')}
                 </p>
               </IonCardContent>
             </IonCard>
@@ -125,11 +142,11 @@ const Fechamento: React.FC = () => {
           <IonAlert
             isOpen={showBloqueadoAlert}
             onDidDismiss={() => setShowBloqueadoAlert(false)}
-            header="Sistema Bloqueado"
-            message="O dia foi fechado. O sistema estará disponível novamente a partir das 00:00 do próximo dia."
+            header={t('pages.closing.systemBlocked')}
+            message={t('pages.closing.blockedMessage')}
             buttons={[
               {
-                text: 'Entendido',
+                text: t('config.understood'),
                 role: 'cancel'
               }
             ]}
@@ -150,10 +167,13 @@ const Fechamento: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Fechamento</IonTitle>
+          <IonTitle>{t('pages.closing.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
+        <IonRefresher slot="fixed" id="fechamento-refresher">
+          <IonRefresherContent></IonRefresherContent>
+        </IonRefresher>
         <div style={{ padding: '16px' }}>
           {fechamentoData && (
             <>
@@ -162,7 +182,7 @@ const Fechamento: React.FC = () => {
                 <IonCardHeader>
                   <IonCardTitle>
                     <IonIcon icon={cashOutline} style={{ marginRight: '8px' }} />
-                    Expectativa de Arrecadação do Dia
+                    {t('pages.closing.collectionExpectation')}
                   </IonCardTitle>
                 </IonCardHeader>
                 <IonCardContent>
@@ -177,7 +197,7 @@ const Fechamento: React.FC = () => {
                 <IonCardHeader>
                   <IonCardTitle>
                     <IonIcon icon={walletOutline} style={{ marginRight: '8px' }} />
-                    Arrecadação do Dia
+                    {t('pages.closing.dayCollection')}
                   </IonCardTitle>
                 </IonCardHeader>
                 <IonCardContent>
@@ -195,7 +215,7 @@ const Fechamento: React.FC = () => {
                       <IonCardHeader>
                         <IonCardTitle style={{ fontSize: '16px' }}>
                           <IonIcon icon={peopleOutline} style={{ marginRight: '8px' }} />
-                          Clientes Cobrados
+                          {t('pages.closing.collectedClients')}
                         </IonCardTitle>
                       </IonCardHeader>
                       <IonCardContent>
@@ -210,7 +230,7 @@ const Fechamento: React.FC = () => {
                       <IonCardHeader>
                         <IonCardTitle style={{ fontSize: '16px' }}>
                           <IonIcon icon={walletOutline} style={{ marginRight: '8px' }} />
-                          Gastos do Dia
+                          {t('pages.closing.dayExpenses')}
                         </IonCardTitle>
                       </IonCardHeader>
                       <IonCardContent>
@@ -232,7 +252,7 @@ const Fechamento: React.FC = () => {
                 style={{ marginTop: '24px' }}
               >
                 <IonIcon icon={lockClosed} slot="start" />
-                Fechar Dia
+                {t('pages.closing.closeDay')}
               </IonButton>
             </>
           )}
@@ -242,15 +262,15 @@ const Fechamento: React.FC = () => {
         <IonAlert
           isOpen={showConfirmAlert}
           onDidDismiss={() => setShowConfirmAlert(false)}
-          header="Confirmar Fechamento"
-          message="Tem certeza que deseja fechar o dia? Após o fechamento, você não poderá mais acessar outras funcionalidades do sistema até as 00:00 do próximo dia."
+          header={t('pages.closing.confirmClosing')}
+          message={t('pages.closing.confirmClosingMessage')}
           buttons={[
             {
-              text: 'Cancelar',
+              text: t('pages.closing.cancel'),
               role: 'cancel'
             },
             {
-              text: 'Fechar Dia',
+              text: t('pages.closing.closeDay'),
               role: 'destructive',
               handler: confirmarFecharDia
             }

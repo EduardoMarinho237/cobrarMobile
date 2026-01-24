@@ -19,10 +19,13 @@ import {
   IonCol,
   IonLoading
 } from '@ionic/react';
-import { login } from '../services/api';
+import { getCurrentUser, login, logout, isDev } from '../services/api';
 import { useHistory } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import LanguageSelector from '../components/LanguageSelector';
 
 const Login: React.FC = () => {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showAlert, setShowAlert] = useState(false);
@@ -32,7 +35,7 @@ const Login: React.FC = () => {
 
   const handleLogin = async () => {
     if (!username || !password) {
-      setAlertMessage('Preencha todos os campos');
+      setAlertMessage(t('login.fillAllFields'));
       setShowAlert(true);
       return;
     }
@@ -47,7 +50,7 @@ const Login: React.FC = () => {
       
       if (!userData || !userData.role) {
         console.error('Dados do usuário incompletos:', userData);
-        setAlertMessage('Dados incompletos recebidos do servidor');
+        setAlertMessage(t('login.incompleteData'));
         setShowAlert(true);
         return;
       }
@@ -79,14 +82,14 @@ const Login: React.FC = () => {
             break;
           default:
             console.log('Role não reconhecido:', userData.role, 'voltando para login');
-            setAlertMessage('Tipo de usuário não reconhecido');
+            setAlertMessage(t('login.userTypeNotRecognized'));
             setShowAlert(true);
             window.location.href = '/login';
         }
       }, 100);
     } catch (error) {
       console.error('Erro no login:', error);
-      setAlertMessage(error instanceof Error ? error.message : 'Erro ao fazer login');
+      setAlertMessage(error instanceof Error ? error.message : t('login.loginError'));
       setShowAlert(true);
     } finally {
       setIsLoading(false);
@@ -97,7 +100,7 @@ const Login: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Login</IonTitle>
+          <IonTitle>{t('common.login')}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -107,24 +110,24 @@ const Login: React.FC = () => {
               <IonCard>
                 <IonCardHeader>
                   <IonCardTitle className="ion-text-center">
-                    Cobrar Mobile
+                    {t('login.title')}
                   </IonCardTitle>
                 </IonCardHeader>
                 <IonCardContent>
                   <IonItem>
                     <IonInput
-                      label="Usuário"
+                      label={t('login.username')}
                       labelPlacement="floating"
-                      placeholder="Digite o usuário"
+                      placeholder={t('login.usernamePlaceholder')}
                       value={username}
                       onIonInput={(e: any) => setUsername(e.detail.value!)}
                     />
                   </IonItem>
                   <IonItem>
                     <IonInput
-                      label="Senha"
+                      label={t('login.password')}
                       labelPlacement="floating"
-                      placeholder="Digite a senha"
+                      placeholder={t('login.passwordPlaceholder')}
                       type="password"
                       value={password}
                       onIonInput={(e: any) => setPassword(e.detail.value!)}
@@ -135,16 +138,21 @@ const Login: React.FC = () => {
                     className="ion-margin-top"
                     onClick={handleLogin}
                   >
-                    Entrar
+                    {t('login.loginButton')}
                   </IonButton>
-                  <div className="ion-margin-top ion-text-center">
-                    <small>
-                      <strong>Usuários de teste:</strong><br/>
-                      admin/admin (ADMIN)<br/>
-                      manager/manager (MANAGER)<br/>
-                      route/route (ROUTE)
-                    </small>
-                  </div>
+                  {isDev() && (
+                    <div className="ion-margin-top ion-text-center">
+                      <IonItem>
+                        <LanguageSelector />
+                      </IonItem>
+                      <small>
+                        <strong>{t('login.testUsers')}</strong><br/>
+                        admin/admin ({t('userRoles.ADMIN')})<br/>
+                        manager/manager ({t('userRoles.MANAGER')})<br/>
+                        route/route ({t('userRoles.ROUTE')})
+                      </small>
+                    </div>
+                  )}
                 </IonCardContent>
               </IonCard>
             </IonCol>
@@ -153,11 +161,11 @@ const Login: React.FC = () => {
         <IonAlert
           isOpen={showAlert}
           onDidDismiss={() => setShowAlert(false)}
-          header="Erro"
+          header={t('alerts.error')}
           message={alertMessage}
-          buttons={['OK']}
+          buttons={[t('common.ok')]}
         />
-        <IonLoading isOpen={isLoading} message="Fazendo login..." />
+        <IonLoading isOpen={isLoading} message={t('login.loggingIn')} />
       </IonContent>
     </IonPage>
   );

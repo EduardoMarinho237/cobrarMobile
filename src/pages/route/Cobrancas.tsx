@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   IonContent,
   IonPage,
@@ -14,37 +14,45 @@ import {
   IonIcon
 } from '@ionic/react';
 import { refresh } from 'ionicons/icons';
+import { useTranslation } from 'react-i18next';
 
 const Cobrancas: React.FC = () => {
-  const handleRefresh = async (event: CustomEvent) => {
-    // Simular carregamento
-    setTimeout(() => {
-      event.detail.complete();
-    }, 1000);
-  };
+  const { t } = useTranslation();
+  
+  useEffect(() => {
+    // Configurar o refresher
+    const setupRefresher = () => {
+      const refresher = document.getElementById('cobrancas-refresher') as HTMLIonRefresherElement;
+      if (refresher) {
+        refresher.addEventListener('ionRefresh', () => {
+          // Simular carregamento
+          setTimeout(() => {
+            refresher.complete();
+          }, 1000);
+        });
+      }
+    };
+
+    setTimeout(setupRefresher, 100);
+  }, []);
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Cobranças</IonTitle>
+          <IonTitle>{t('pages.collections.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-          <IonRefresherContent
-            pullingIcon={refresh}
-            pullingText="Puxe para atualizar"
-            refreshingSpinner="circles"
-            refreshingText="Atualizando..."
-          />
+        <IonRefresher slot="fixed" id="cobrancas-refresher">
+          <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>Cobranças</IonCardTitle>
+            <IonCardTitle>{t('pages.collections.title')}</IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
-            <p>Em desenvolvimento...</p>
+            <p>{t('pages.collections.inDevelopment')}</p>
           </IonCardContent>
         </IonCard>
       </IonContent>

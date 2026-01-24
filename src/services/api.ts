@@ -17,13 +17,16 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
   const token = user?.token;
+  const currentLanguage = localStorage.getItem('language') || 'pt-BR';
 
   console.log('apiRequest - user from localStorage:', user);
   console.log('apiRequest - token:', token);
   console.log('apiRequest - endpoint:', endpoint);
+  console.log('apiRequest - language:', currentLanguage);
 
   const headers = {
     'Content-Type': 'application/json',
+    'Accept-Language': currentLanguage,
     ...(token && { Authorization: `Bearer ${token}` }),
     ...options?.headers,
   };

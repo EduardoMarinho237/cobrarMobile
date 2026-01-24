@@ -10,9 +10,11 @@ import {
   IonCardTitle,
   IonCardContent,
   IonIcon,
-  IonSpinner
+  IonSpinner,
+  IonRefresher,
+  IonRefresherContent
 } from '@ionic/react';
-import { analytics, construct } from 'ionicons/icons';
+import { analytics, construct, refresh } from 'ionicons/icons';
 
 const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -24,6 +26,12 @@ const Dashboard: React.FC = () => {
     }, 1000);
   }, []);
 
+  const handleRefresh = async (event: CustomEvent) => {
+    // Simula recarregamento de dados
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    event.detail.complete();
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -32,6 +40,14 @@ const Dashboard: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent
+            pullingIcon={refresh}
+            pullingText="Puxe para atualizar"
+            refreshingSpinner="circles"
+            refreshingText="Atualizando..."
+          />
+        </IonRefresher>
         <div style={{ padding: '16px' }}>
           {isLoading ? (
             <div style={{ 

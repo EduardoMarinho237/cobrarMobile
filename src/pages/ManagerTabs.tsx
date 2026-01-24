@@ -13,8 +13,11 @@ import Dashboard from './manager/Dashboard';
 import Gastos from './manager/Gastos';
 import Routes from './manager/Routes';
 import Config from './Config';
+import { useTranslation } from 'react-i18next';
 
 const ManagerTabs: React.FC = () => {
+  const { t } = useTranslation();
+  
   return (
     <IonTabs>
       <IonRouterOutlet>
@@ -37,19 +40,19 @@ const ManagerTabs: React.FC = () => {
       <IonTabBar slot="bottom">
         <IonTabButton tab="dashboard" href="/manager/dashboard">
           <IonIcon aria-hidden="true" icon={barChart} />
-          <IonLabel>Dashboard</IonLabel>
+          <IonLabel>{t('tabs.dashboard')}</IonLabel>
         </IonTabButton>
         <IonTabButton tab="gastos" href="/manager/gastos">
           <IonIcon aria-hidden="true" icon={wallet} />
-          <IonLabel>Gastos</IonLabel>
+          <IonLabel>{t('tabs.expenses')}</IonLabel>
         </IonTabButton>
         <IonTabButton tab="routes" href="/manager/routes">
           <IonIcon aria-hidden="true" icon={map} />
-          <IonLabel>Routes</IonLabel>
+          <IonLabel>{t('tabs.routes')}</IonLabel>
         </IonTabButton>
         <IonTabButton tab="config" href="/manager/config">
           <IonIcon aria-hidden="true" icon={settings} />
-          <IonLabel>Config</IonLabel>
+          <IonLabel>{t('common.config')}</IonLabel>
         </IonTabButton>
       </IonTabBar>
     </IonTabs>
