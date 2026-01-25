@@ -24,35 +24,37 @@ import { lockOpen, lockClosed, cashOutline, peopleOutline, walletOutline, refres
 import { 
   getFechamentoData, 
   fecharDia, 
-  verificarFechamento,
   FechamentoData 
 } from '../../services/fechamentoApi';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
+import { useFechamentoControl } from '../../hooks/useFechamentoControl';
 
 const Fechamento: React.FC = () => {
   const { t } = useTranslation();
+  const { diaFechado } = useFechamentoControl(); // Usar hook para status de fechamento
   const [fechamentoData, setFechamentoData] = useState<FechamentoData | null>(null);
-  const [diaFechado, setDiaFechado] = useState(false);
   const [showConfirmAlert, setShowConfirmAlert] = useState(false);
   const [showBloqueadoAlert, setShowBloqueadoAlert] = useState(false);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
 
   useEffect(() => {
     loadFechamentoData();
-    verificarStatusFechamento();
+    // REMOVIDO: Não verifica mais status via API
+    // O status agora vem do hook useFechamentoControl baseado no usuário logado
     
     // Configurar o refresher
     const setupRefresher = () => {
       const refresher = document.getElementById('fechamento-refresher') as HTMLIonRefresherElement;
       if (refresher) {
         refresher.addEventListener('ionRefresh', async () => {
-          await Promise.all([loadFechamentoData(), verificarStatusFechamento()]);
+          await loadFechamentoData();
           refresher.complete();
         });
       }
     };
 
+    // Usar setTimeout para garantir que o DOM esteja pronto
     setTimeout(setupRefresher, 100);
   }, []);
 
@@ -65,14 +67,8 @@ const Fechamento: React.FC = () => {
     }
   };
 
-  const verificarStatusFechamento = async () => {
-    try {
-      const status = await verificarFechamento();
-      setDiaFechado(status.diaFechado);
-    } catch (error) {
-      console.error('Erro ao verificar status do fechamento:', error);
-    }
-  };
+  // REMOVIDO: Função verificarStatusFechamento não é mais necessária
+  // const verificarStatusFechamento = async () => { ... };
 
   const showToast = (message: string, color: string) => {
     setToast({ isOpen: true, message, color });
@@ -88,7 +84,7 @@ const Fechamento: React.FC = () => {
       showToast(response.message, response.success ? 'success' : 'danger');
       
       if (response.success) {
-        setDiaFechado(true);
+        // REMOVIDO: setDiaFechado(true) - o estado é gerenciado pelo hook
         // Redirecionar para a mesma página para aplicar restrições
         setTimeout(() => {
           window.location.replace('/route/fechamento');

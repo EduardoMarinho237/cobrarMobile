@@ -30,8 +30,10 @@ import {
 import { add, trash, create, eye, arrowForward, refresh } from 'ionicons/icons';
 import { getCategorias, createCategoria, deleteCategoria, CategoriaGasto } from '../../services/gastoApi';
 import Toast from '../../components/Toast';
+import { useTranslation } from 'react-i18next';
 
 const Gastos: React.FC = () => {
+  const { t } = useTranslation();
   const [categorias, setCategorias] = useState<CategoriaGasto[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
@@ -223,32 +225,40 @@ const Gastos: React.FC = () => {
   };
 
   const handleDetalhes = (categoria: CategoriaGasto) => {
-    // Navegar para página de detalhes
+    // Navegar para página de detalhes sem mostrar toast
     history.push(`/manager/gastos/${categoria.id}/detalhes`);
   };
 
   const outrasCategorias = categorias.filter(cat => cat.id !== selectedCategoria?.id);
 
-  const handleRefresh = async (event: CustomEvent) => {
-    await loadCategorias();
-    event.detail.complete();
-  };
+  useEffect(() => {
+    loadCategorias();
+    
+    // Configurar o refresher
+    const setupRefresher = () => {
+      const refresher = document.getElementById('gastos-refresher') as HTMLIonRefresherElement;
+      if (refresher) {
+        refresher.addEventListener('ionRefresh', async () => {
+          await loadCategorias();
+          refresher.complete();
+        });
+      }
+    };
+
+    // Usar setTimeout para garantir que o DOM esteja pronto
+    setTimeout(setupRefresher, 100);
+  }, []);
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Gastos</IonTitle>
+          <IonTitle>{t('pages.expenses.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-          <IonRefresherContent
-            pullingIcon={refresh}
-            pullingText="Puxe para atualizar"
-            refreshingSpinner="circles"
-            refreshingText="Atualizando..."
-          />
+        <IonRefresher slot="fixed" id="gastos-refresher">
+          <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
         <div style={{ padding: '16px' }}>
           {isLoading ? (
@@ -261,7 +271,7 @@ const Gastos: React.FC = () => {
               gap: '16px'
             }}>
               <IonSpinner name="dots" />
-              <p style={{ color: '#666', fontSize: '14px' }}>Carregando categorias...</p>
+              <p style={{ color: '#666', fontSize: '14px' }}>{t('pages.expenses.loadingExpenses')}</p>
             </div>
           ) : (
             <>
@@ -272,12 +282,12 @@ const Gastos: React.FC = () => {
                 style={{ marginBottom: '16px' }}
               >
                 <IonIcon slot="start" icon={add} />
-                Adicionar nova categoria
+                {t('pages.expenses.addCategory')}
               </IonButton>
 
               {categorias.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
-                  <p>Nenhuma categoria criada ainda</p>
+                  <p>{t('pages.expenses.noCategoriesFound')}</p>
                 </div>
               ) : (
                 categorias.map((categoria) => (
@@ -297,7 +307,7 @@ const Gastos: React.FC = () => {
                         <IonCol size="12">
                           <IonItem>
                             <IonLabel>
-                              <h3>Tipos de gastos: {categoria.expensesTypesCount}</h3>
+                              <h3>{t('pages.expenses.expenseTypes')} {categoria.expensesTypesCount}</h3>
                             </IonLabel>
                           </IonItem>
                         </IonCol>
@@ -342,9 +352,9 @@ const Gastos: React.FC = () => {
         <IonModal isOpen={showCreateModal} onDidDismiss={() => setShowCreateModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Nova Categoria de Gastos</IonTitle>
+              <IonTitle>{t('pages.expenses.addCategory')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowCreateModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowCreateModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -352,9 +362,9 @@ const Gastos: React.FC = () => {
             <div style={{ padding: '16px' }}>
               <IonItem>
                 <IonInput
-                  label="Nome da Categoria"
+                  label={t('pages.expenses.name')}
                   labelPlacement="floating"
-                  placeholder="Digite o nome da categoria"
+                  placeholder={t('pages.expenses.namePlaceholder')}
                   value={newCategoria.nome}
                   onIonInput={(e: any) => setNewCategoria({ ...newCategoria, nome: e.detail.value! })}
                 />
@@ -365,7 +375,7 @@ const Gastos: React.FC = () => {
                 onClick={handleCreateCategoria}
                 style={{ marginTop: '16px' }}
               >
-                Criar
+                {t('pages.expenses.save')}
               </IonButton>
             </div>
           </IonContent>
@@ -375,15 +385,15 @@ const Gastos: React.FC = () => {
         <IonAlert
           isOpen={showMigrateAlert}
           onDidDismiss={() => setShowMigrateAlert(false)}
-          header="Confirmar"
-          message={`Essa categoria de gastos possui ${selectedCategoria?.expensesTypesCount} tipos de gastos associados, deseja migrar para outra categoria ou apagá-los junto?`}
+          header={t('common.confirm')}
+          message={t('pages.expenses.confirmMigrateMessage').replace('{count}', selectedCategoria?.expensesTypesCount?.toString() || '0')}
           buttons={[
             {
-              text: 'Cancelar',
+              text: t('common.cancel'),
               role: 'cancel'
             },
             {
-              text: 'Migrar',
+              text: t('pages.expenses.migrate'),
               handler: handleMigrate
             },
             {
@@ -398,9 +408,9 @@ const Gastos: React.FC = () => {
         <IonModal isOpen={showMigrateModal} onDidDismiss={() => setShowMigrateModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Migrar Tipos de Gastos</IonTitle>
+              <IonTitle>{t('pages.expenses.migrate')} {t('pages.expenses.title')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowMigrateModal(false)}>Cancelar</IonButton>
+                <IonButton onClick={() => setShowMigrateModal(false)}>{t('common.cancel')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -408,7 +418,7 @@ const Gastos: React.FC = () => {
             <div style={{ padding: '16px' }}>
               <IonItem>
                 <IonLabel>
-                  <h2>Escolha uma categoria para migrar todos os {selectedCategoria?.expensesTypesCount || 0} tipos de gastos pertencentes a {selectedCategoria?.name}</h2>
+                  <h2>{t('pages.expenses.migrate')} {selectedCategoria?.expensesTypesCount || 0} {t('pages.expenses.title')} {t('pages.expenses.title')} {selectedCategoria?.name}</h2>
                 </IonLabel>
               </IonItem>
               
@@ -421,7 +431,7 @@ const Gastos: React.FC = () => {
                 color: '#c00'
               }}>
                 <p style={{ margin: 0, fontSize: '14px' }}>
-                  <strong>Atenção:</strong> Após migrar os tipos de gastos, a categoria {selectedCategoria?.name} será apagada.
+                  <strong>{t('common.attention')}:</strong> {t('pages.expenses.migrateWarning').replace('{categoryName}', selectedCategoria?.name || '')}
                 </p>
               </div>
               
@@ -442,7 +452,7 @@ const Gastos: React.FC = () => {
                 style={{ marginTop: '16px' }}
               >
                 <IonIcon slot="start" icon={arrowForward} />
-                Migrar
+                {t('pages.expenses.migrate')}
               </IonButton>
             </div>
           </IonContent>
@@ -452,11 +462,11 @@ const Gastos: React.FC = () => {
         <IonAlert
           isOpen={showConfirmDeleteAlert}
           onDidDismiss={() => setShowConfirmDeleteAlert(false)}
-          header="Confirmar Exclusão"
-          message="Tem certeza que deseja excluir todos os tipos de gastos junto com a categoria?"
+          header={t('pages.expenses.confirmDeleteCategory')}
+          message={t('pages.expenses.confirmDeleteCategoryMessage')}
           buttons={[
             {
-              text: 'Cancelar',
+              text: t('common.cancel'),
               role: 'cancel'
             },
             {
@@ -471,15 +481,15 @@ const Gastos: React.FC = () => {
         <IonAlert
           isOpen={showDeleteAlert}
           onDidDismiss={() => setShowDeleteAlert(false)}
-          header="Confirmar Exclusão"
-          message="Tem certeza que deseja excluir esta categoria?"
+          header={t('pages.expenses.confirmDeleteCategory')}
+          message={t('pages.expenses.confirmDeleteCategoryMessage')}
           buttons={[
             {
-              text: 'Cancelar',
+              text: t('common.cancel'),
               role: 'cancel'
             },
             {
-              text: 'Excluir',
+              text: t('common.delete'),
               role: 'destructive',
               handler: handleDeleteEmpty
             }

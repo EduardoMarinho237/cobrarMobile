@@ -24,13 +24,62 @@ export interface CategoriaDetalhesResponse {
   categoryId: number;
   categoryName: string;
   totalAmount: number;
-  expenseTypes: GastoDetalhe[];
+  expenseTypes: {
+    typeId: number;
+    typeName: string;
+    totalAmount: number;
+    expenseCount: number;
+  }[];
 }
 
 export interface DetalhesRequest {
   timePeriod?: 'TODAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'LAST_60_DAYS' | 'LAST_90_DAYS' | 'ALL_TIME';
   dateFrom?: string;
   dateTo?: string;
+}
+
+export interface DashboardRequest {
+  dashboardType: 'TOTAL' | 'EXPENSES' | 'CLIENTS' | 'CREDITS_DEBITS' | 'CATEGORIES' | 'TYPES';
+  timePeriod?: 'TODAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'LAST_60_DAYS' | 'LAST_90_DAYS' | 'ALL_TIME';
+  dateFrom?: string;
+  dateTo?: string;
+  routeIds?: number[];
+  detail?: boolean;
+}
+
+export interface DashboardResponse {
+  id: number;
+  dashboardType: string;
+  generatedAt: string;
+  timePeriod?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  routeFilter?: number[];
+  detail: boolean;
+  totalCollected: number;
+  totalExpenses: number;
+  totalBalance: number;
+  totalClients: number;
+  totalDebtors: number;
+  totalDebtAmount: number;
+  totalEfficiency: number;
+  expectedCollection?: number;
+  averageDailyCollection?: number;
+  collectionRatio?: number;
+  expenseRatio?: number;
+  dailyVariance?: number;
+  activeDays?: number;
+  daysWithoutCollection?: number;
+  overdueDebts?: number;
+  paymentDelayDays?: number;
+  routesData?: any[];
+  categoriesData?: any[];
+  typesData?: any[];
+  clientsData?: any[];
+  creditsDebitsData?: any[];
+  dailyData?: any[];
+  monthlyData?: any[];
+  yearlyData?: any[];
 }
 
 export const getCategorias = async () => {
@@ -517,17 +566,20 @@ export const getDetalhesGastos = async (categoriaId: number, request: DetalhesRe
         {
           typeId: 1,
           typeName: 'Gasolina',
-          amount: 800.00
+          totalAmount: 800.00,
+          expenseCount: 40
         },
         {
           typeId: 2,
           typeName: 'Etanol',
-          amount: 500.00
+          totalAmount: 500.00,
+          expenseCount: 25
         },
         {
           typeId: 3,
           typeName: 'Diesel',
-          amount: 200.50
+          totalAmount: 200.50,
+          expenseCount: 10
         }
       ]
     };
@@ -535,6 +587,78 @@ export const getDetalhesGastos = async (categoriaId: number, request: DetalhesRe
 
   console.log('Fazendo requisição real para:', `/api/expenses-categories/details/${categoriaId}`);
   return apiRequest(`/api/expenses-categories/details/${categoriaId}`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+};
+
+export const generateDashboard = async (request: DashboardRequest) => {
+  console.log('generateDashboard chamado com:', request);
+  
+  if (isDev()) {
+    // Mock response para dashboard
+    console.log('Usando mock response para dashboard');
+    return {
+      id: 1,
+      dashboardType: request.dashboardType,
+      generatedAt: new Date().toISOString(),
+      timePeriod: request.timePeriod,
+      dateFrom: request.dateFrom,
+      dateTo: request.dateTo,
+      routeFilter: request.routeIds,
+      detail: request.detail || false,
+      totalCollected: 5000,
+      totalExpenses: 1000,
+      totalBalance: 4000,
+      totalClients: 50,
+      totalDebtors: 15,
+      totalDebtAmount: 2000,
+      totalEfficiency: 85.5,
+      expectedCollection: 6000,
+      averageDailyCollection: 166.67,
+      collectionRatio: 83.33,
+      expenseRatio: 20.0,
+      dailyVariance: 12.5,
+      activeDays: 22,
+      daysWithoutCollection: 8,
+      overdueDebts: 8,
+      paymentDelayDays: 3.2,
+      routesData: [
+        {
+          routeId: 1,
+          routeName: 'Rota A',
+          totalCollected: 2500,
+          totalExpenses: 500,
+          totalBalance: 2000,
+          totalClients: 25,
+          totalDebtors: 7,
+          totalDebtAmount: 1000,
+          efficiency: 87.5
+        },
+        {
+          routeId: 2,
+          routeName: 'Rota B',
+          totalCollected: 2500,
+          totalExpenses: 500,
+          totalBalance: 2000,
+          totalClients: 25,
+          totalDebtors: 8,
+          totalDebtAmount: 1000,
+          efficiency: 83.5
+        }
+      ],
+      categoriesData: [],
+      typesData: [],
+      clientsData: [],
+      creditsDebitsData: [],
+      dailyData: [],
+      monthlyData: [],
+      yearlyData: []
+    };
+  }
+
+  console.log('Fazendo requisição real para:', '/api/dashboard');
+  return apiRequest('/api/dashboard', {
     method: 'POST',
     body: JSON.stringify(request),
   });

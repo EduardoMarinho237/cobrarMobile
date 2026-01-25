@@ -24,7 +24,7 @@ import {
   IonRefresherContent,
   IonSpinner
 } from '@ionic/react';
-import { add, eye, eyeOff, trash, key, create, refresh } from 'ionicons/icons';
+import { add, eye, eyeOff, trash, key, create, refresh, lockClosed, lockOpen } from 'ionicons/icons';
 import { getRoutes, createRoute, updateRoute, deleteRoute } from '../../services/routeApi';
 import { toggleRouteAudit, changeManagerPassword } from '../../services/api';
 import Toast from '../../components/Toast';
@@ -39,6 +39,7 @@ interface Route {
   lastAccess: string | null;
   appearOnAudit?: boolean;
   restricted?: boolean;
+  dayClosed?: boolean;
 }
 
 const Routes: React.FC = () => {
@@ -49,6 +50,7 @@ const Routes: React.FC = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showRestrictAlert, setShowRestrictAlert] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [showDayCloseAlert, setShowDayCloseAlert] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
@@ -90,10 +92,23 @@ const Routes: React.FC = () => {
     }
   };
 
-  const handleRefresh = async (event: CustomEvent) => {
-    await loadRoutes();
-    event.detail.complete();
-  };
+  useEffect(() => {
+    loadRoutes();
+    
+    // Configurar o refresher
+    const setupRefresher = () => {
+      const refresher = document.getElementById('routes-refresher') as HTMLIonRefresherElement;
+      if (refresher) {
+        refresher.addEventListener('ionRefresh', async () => {
+          await loadRoutes();
+          refresher.complete();
+        });
+      }
+    };
+
+    // Usar setTimeout para garantir que o DOM esteja pronto
+    setTimeout(setupRefresher, 100);
+  }, []);
 
   const showToast = (message: string, color: string) => {
     setToast({ isOpen: true, message, color });
@@ -292,8 +307,53 @@ const Routes: React.FC = () => {
     }
   };
 
+  const handleToggleDayClose = async () => {
+    if (!selectedRoute) return;
+
+    try {
+      const toOpen = selectedRoute.dayClosed; // Se está fechado, vamos abrir
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const token = user?.token;
+      const currentLanguage = localStorage.getItem('language') || 'pt-BR';
+      const currentTimezone = localStorage.getItem('timezone') || 'America/Sao_Paulo';
+
+      const response = await fetch(`/api/users/close-day/${selectedRoute.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept-Language': currentLanguage,
+          'X-Timezone': currentTimezone,
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ toOpen })
+      });
+      
+      const data = await response.json();
+      
+      // Usa a mensagem da API
+      showToast(data.message || (toOpen ? 'Dia aberto com sucesso' : 'Dia fechado com sucesso'), 
+                data.success ? 'success' : 'danger');
+      
+      if (data.success) {
+        // Atualiza o estado local
+        setRoutes(routes.map(r => 
+          r.id === selectedRoute.id ? { 
+            ...r, 
+            dayClosed: !toOpen // Inverte o estado
+          } : r
+        ));
+        setShowDayCloseAlert(false);
+        setSelectedRoute(null);
+      }
+    } catch (error) {
+      console.error('Erro ao alterar status do dia:', error);
+      showToast('Erro de conexão, tente novamente', 'danger');
+    }
+  };
+
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Nunca acessou';
+    if (!dateString) return t('pages.routes.never');
     return new Date(dateString).toLocaleString('pt-BR');
   };
 
@@ -301,17 +361,12 @@ const Routes: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Routes</IonTitle>
+          <IonTitle>{t('pages.routes.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-          <IonRefresherContent
-            pullingIcon={refresh}
-            pullingText="Puxe para atualizar"
-            refreshingSpinner="circles"
-            refreshingText="Atualizando..."
-          />
+        <IonRefresher slot="fixed" id="routes-refresher">
+          <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
         <div style={{ padding: '16px' }}>
           {isLoading ? (
@@ -324,7 +379,7 @@ const Routes: React.FC = () => {
               gap: '16px'
             }}>
               <IonSpinner name="dots" />
-              <p style={{ color: '#666', fontSize: '14px' }}>Carregando rotas...</p>
+              <p style={{ color: '#666', fontSize: '14px' }}>{t('pages.routes.loadingRoutes')}</p>
             </div>
           ) : (
             <>
@@ -335,12 +390,12 @@ const Routes: React.FC = () => {
                 style={{ marginBottom: '16px' }}
               >
                 <IonIcon slot="start" icon={add} />
-                Adicionar novo route
+                {t('pages.routes.addRoute')}
               </IonButton>
 
               {routes.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
-                  <p>Nenhuma rota criada ainda</p>
+                  <p>{t('pages.routes.noRouteCreated')}</p>
                 </div>
               ) : (
                 routes.map((route) => (
@@ -361,35 +416,42 @@ const Routes: React.FC = () => {
                           <IonCol size="12">
                             <IonItem>
                               <IonLabel>
-                                <h3>Login: {route.login}</h3>
+                                <h3>{t('pages.routes.login')}: {route.login}</h3>
                               </IonLabel>
                             </IonItem>
                           </IonCol>
                           <IonCol size="12">
                             <IonItem>
                               <IonLabel>
-                                <h3>Role: {translateRole(route.role, t)}</h3>
+                                <h3>{t('pages.routes.role')}: {translateRole(route.role, t)}</h3>
                               </IonLabel>
                             </IonItem>
                           </IonCol>
                           <IonCol size="12">
                             <IonItem>
                               <IonLabel>
-                                <h3>Último acesso: {formatDate(route.lastAccess)}</h3>
+                                <h3>{t('pages.routes.lastAccess')}: {formatDate(route.lastAccess)}</h3>
                               </IonLabel>
                             </IonItem>
                           </IonCol>
                           <IonCol size="12">
                             <IonItem>
                               <IonLabel>
-                                <h3>Clientes: 0</h3>
+                                <h3>{t('pages.routes.clients')}: 0</h3>
                               </IonLabel>
                             </IonItem>
                           </IonCol>
                           <IonCol size="12">
                             <IonItem>
                               <IonLabel>
-                                <h3>Caixa: $ 0,00</h3>
+                                <h3>{t('pages.routes.cashBalance')}: $ 0,00</h3>
+                              </IonLabel>
+                            </IonItem>
+                          </IonCol>
+                          <IonCol size="12">
+                            <IonItem>
+                              <IonLabel>
+                                <h3>{t('pages.routes.dayStatus')}: {route.dayClosed ? t('pages.routes.closed') : t('pages.routes.open')}</h3>
                               </IonLabel>
                             </IonItem>
                           </IonCol>
@@ -428,6 +490,18 @@ const Routes: React.FC = () => {
                           <IonCol size="2.4">
                             <IonButton
                               fill="clear"
+                              color={route.dayClosed ? 'success' : 'warning'}
+                              onClick={() => {
+                                setSelectedRoute(route);
+                                setShowDayCloseAlert(true);
+                              }}
+                            >
+                              <IonIcon icon={route.dayClosed ? lockOpen : lockClosed} />
+                            </IonButton>
+                          </IonCol>
+                          <IonCol size="2.4">
+                            <IonButton
+                              fill="clear"
                               color="danger"
                               onClick={() => {
                                 setSelectedRoute(route);
@@ -450,9 +524,9 @@ const Routes: React.FC = () => {
         <IonModal isOpen={showCreateModal} onDidDismiss={() => setShowCreateModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Novo Route</IonTitle>
+              <IonTitle>{t('pages.routes.addRoute')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowCreateModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowCreateModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -460,27 +534,27 @@ const Routes: React.FC = () => {
             <div style={{ padding: '16px' }}>
               <IonItem>
                 <IonInput
-                  label="Nome"
+                  label={t('pages.routes.name')}
                   labelPlacement="floating"
-                  placeholder="Digite o nome"
+                  placeholder={t('pages.routes.namePlaceholder')}
                   value={newRoute.name}
                   onIonInput={(e: any) => setNewRoute({ ...newRoute, name: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Login"
+                  label={t('pages.routes.login')}
                   labelPlacement="floating"
-                  placeholder="Digite o login"
+                  placeholder={t('pages.routes.loginPlaceholder')}
                   value={newRoute.login}
                   onIonInput={(e: any) => setNewRoute({ ...newRoute, login: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Senha"
+                  label={t('pages.routes.password')}
                   labelPlacement="floating"
-                  placeholder="Digite a senha"
+                  placeholder={t('pages.routes.passwordPlaceholder')}
                   type="password"
                   value={newRoute.password}
                   onIonInput={(e: any) => setNewRoute({ ...newRoute, password: e.detail.value! })}
@@ -488,9 +562,9 @@ const Routes: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Repetir Senha"
+                  label={t('pages.routes.confirmPassword')}
                   labelPlacement="floating"
-                  placeholder="Repita a senha"
+                  placeholder={t('pages.routes.confirmPasswordPlaceholder')}
                   type="password"
                   value={newRoute.confirmPassword}
                   onIonInput={(e: any) => setNewRoute({ ...newRoute, confirmPassword: e.detail.value! })}
@@ -502,7 +576,7 @@ const Routes: React.FC = () => {
                 onClick={handleCreateRoute}
                 style={{ marginTop: '16px' }}
               >
-                Criar
+                {t('pages.routes.create')}
               </IonButton>
             </div>
           </IonContent>
@@ -512,9 +586,9 @@ const Routes: React.FC = () => {
         <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Editar Route</IonTitle>
+              <IonTitle>{t('pages.routes.editRoute')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowEditModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowEditModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -522,18 +596,18 @@ const Routes: React.FC = () => {
             <div style={{ padding: '16px' }}>
               <IonItem>
                 <IonInput
-                  label="Nome"
+                  label={t('pages.routes.name')}
                   labelPlacement="floating"
-                  placeholder="Digite o nome"
+                  placeholder={t('pages.routes.namePlaceholder')}
                   value={editRoute.name}
                   onIonInput={(e: any) => setEditRoute({ ...editRoute, name: e.detail.value! })}
                 />
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Login"
+                  label={t('pages.routes.login')}
                   labelPlacement="floating"
-                  placeholder="Digite o login"
+                  placeholder={t('pages.routes.loginPlaceholder')}
                   value={editRoute.login}
                   onIonInput={(e: any) => setEditRoute({ ...editRoute, login: e.detail.value! })}
                 />
@@ -544,7 +618,7 @@ const Routes: React.FC = () => {
                 onClick={handleEditRoute}
                 style={{ marginTop: '16px' }}
               >
-                Salvar
+                {t('pages.routes.update')}
               </IonButton>
             </div>
           </IonContent>
@@ -554,9 +628,9 @@ const Routes: React.FC = () => {
         <IonModal isOpen={showPasswordModal} onDidDismiss={() => setShowPasswordModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Trocar Senha</IonTitle>
+              <IonTitle>{t('pages.routes.changePassword')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowPasswordModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowPasswordModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -564,9 +638,9 @@ const Routes: React.FC = () => {
             <div style={{ padding: '16px' }}>
               <IonItem>
                 <IonInput
-                  label="Nova Senha"
+                  label={t('pages.routes.password')}
                   labelPlacement="floating"
-                  placeholder="Digite a nova senha"
+                  placeholder={t('pages.routes.passwordPlaceholder')}
                   type="password"
                   value={newPassword.password}
                   onIonInput={(e: any) => setNewPassword({ ...newPassword, password: e.detail.value! })}
@@ -574,9 +648,9 @@ const Routes: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Repetir Nova Senha"
+                  label={t('pages.routes.confirmPassword')}
                   labelPlacement="floating"
-                  placeholder="Repita a nova senha"
+                  placeholder={t('pages.routes.confirmPasswordPlaceholder')}
                   type="password"
                   value={newPassword.confirmPassword}
                   onIonInput={(e: any) => setNewPassword({ ...newPassword, confirmPassword: e.detail.value! })}
@@ -588,7 +662,7 @@ const Routes: React.FC = () => {
                 onClick={handleChangePassword}
                 style={{ marginTop: '16px' }}
               >
-                Alterar Senha
+                {t('pages.routes.changePassword')}
               </IonButton>
             </div>
           </IonContent>
@@ -598,16 +672,36 @@ const Routes: React.FC = () => {
         <IonAlert
           isOpen={showRestrictAlert}
           onDidDismiss={() => setShowRestrictAlert(false)}
-          header="Confirmar"
-          message={selectedRoute?.restricted ? "Restaurar acesso?" : "Restringir acesso?"}
+          header={t('common.confirm')}
+          message={selectedRoute?.restricted ? t('pages.routes.restoreAccess') + "?" : t('pages.routes.restrictAccess') + "?"}
           buttons={[
             {
-              text: 'Cancelar',
+              text: t('common.cancel'),
               role: 'cancel'
             },
             {
-              text: 'Confirmar',
+              text: t('common.confirm'),
               handler: handleRestrictAccess
+            }
+          ]}
+        />
+
+        {/* Alert Fechar/Abrir Dia */}
+        <IonAlert
+          isOpen={showDayCloseAlert}
+          onDidDismiss={() => setShowDayCloseAlert(false)}
+          header={t('common.confirm')}
+          message={selectedRoute?.dayClosed ? 
+            t('pages.routes.confirmOpenDay', { routeName: selectedRoute?.name }) : 
+            t('pages.routes.confirmCloseDay', { routeName: selectedRoute?.name })}
+          buttons={[
+            {
+              text: t('common.cancel'),
+              role: 'cancel'
+            },
+            {
+              text: t('common.confirm'),
+              handler: handleToggleDayClose
             }
           ]}
         />
@@ -616,15 +710,15 @@ const Routes: React.FC = () => {
         <IonAlert
           isOpen={showDeleteAlert}
           onDidDismiss={() => setShowDeleteAlert(false)}
-          header="Confirmar Exclusão"
-          message={`Deseja realmente excluir o route ${selectedRoute?.name}?`}
+          header={t('pages.routes.confirmDelete')}
+          message={t('pages.routes.confirmDeleteMessage').replace('{routeName}', selectedRoute?.name || '')}
           buttons={[
             {
-              text: 'Cancelar',
+              text: t('common.cancel'),
               role: 'cancel'
             },
             {
-              text: 'Excluir',
+              text: t('common.delete'),
               role: 'destructive',
               handler: handleDeleteRoute
             }

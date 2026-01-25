@@ -23,6 +23,7 @@ import { getCurrentUser, logout } from '../services/api';
 import { useFechamentoControl } from '../hooks/useFechamentoControl';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '../components/LanguageSelector';
+import LocaleSelector from '../components/LocaleSelector';
 import { translateRole } from '../utils/roleTranslation';
 
 const Config: React.FC = () => {
@@ -127,15 +128,18 @@ const Config: React.FC = () => {
             </IonCardContent>
           </IonCard>
 
-          {/* Card de Idioma */}
+          {/* Card de País */}
           <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
             <IonCardHeader>
               <IonCardTitle>
-                {t('config.language')}
+                {t('config.country')}
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
               <LanguageSelector />
+              <div style={{ marginTop: '16px' }}>
+                <LocaleSelector />
+              </div>
             </IonCardContent>
           </IonCard>
 

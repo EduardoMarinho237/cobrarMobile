@@ -70,7 +70,12 @@
     "understood": "Entendido",
     "pullToRefresh": "Tire para actualizar",
     "refreshing": "Actualizando...",
-    "language": "Idioma"
+    "language": "Idioma",
+    "country": "País",
+    "timezone": "Horario",
+    "timezoneBrazil": "Horario de Brasil",
+    "timezoneColombia": "Horario de Colombia",
+    "timezoneUnitedStates": "Horario de Estados Unidos"
   },
   "routeTabs": {
     "accessBlocked": "Acceso Bloqueado",
@@ -136,6 +141,15 @@
     "expensesRoute": {
       "title": "Gastos",
       "loadingExpenses": "Cargando gastos...",
+      "loadingRoutes": "Cargando rutas...",
+      "noRouteCreated": "Ninguna ruta creada aún",
+      "dayStatus": "Estado del Día",
+      "open": "Abierto",
+      "closed": "Cerrado",
+      "confirmOpenDay": "¿Desea abrir el día para la ruta {{routeName}}?",
+      "confirmCloseDay": "¿Desea cerrar el día para la ruta {{routeName}}?",
+      "clients": "Clientes",
+      "cashBalance": "Saldo en Caja",
       "addExpense": "Agregar Gasto",
       "newExpense": "Nuevo Gasto",
       "category": "Categoría",

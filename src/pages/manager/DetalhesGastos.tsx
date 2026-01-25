@@ -15,7 +15,6 @@ import {
   IonLabel,
   IonSelect,
   IonSelectOption,
-  IonInput,
   IonButtons,
   IonBackButton,
   IonGrid,
@@ -27,13 +26,11 @@ import {
   IonDatetime,
   IonIcon
 } from '@ionic/react';
-import { arrowBack, refresh, calendarOutline } from 'ionicons/icons';
-import { 
-  getCategorias, 
+import { refresh } from 'ionicons/icons';
+import {
+  getCategorias,
   getDetalhesGastos,
-  getTiposGastos,
   CategoriaGasto,
-  GastoDetalhe,
   CategoriaDetalhesResponse,
   DetalhesRequest
 } from '../../services/gastoApi';
@@ -41,109 +38,59 @@ import Toast from '../../components/Toast';
 
 const DetalhesGastos: React.FC = () => {
   const { categoriaId } = useParams<{ categoriaId: string }>();
+
   const [categoria, setCategoria] = useState<CategoriaGasto | null>(null);
   const [detalhes, setDetalhes] = useState<CategoriaDetalhesResponse | null>(null);
-  const [periodo, setPeriodo] = useState<'TODAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'LAST_60_DAYS' | 'LAST_90_DAYS' | 'ALL_TIME' | 'custom'>('LAST_30_DAYS');
-  const [dataInicio, setDataInicio] = useState('');
-  const [dataFim, setDataFim] = useState('');
-  const [showCustomPeriod, setShowCustomPeriod] = useState(false);
+  const [periodo, setPeriodo] = useState<
+    'TODAY' | 'LAST_7_DAYS' | 'LAST_30_DAYS' | 'LAST_60_DAYS' | 'LAST_90_DAYS' | 'ALL_TIME' | 'custom'
+  >('LAST_30_DAYS');
+  const [dataInicio, setDataInicio] = useState<string>('');
+  const [dataFim, setDataFim] = useState<string>('');
   const [showCalendarModal, setShowCalendarModal] = useState(false);
-  const [calendarType, setCalendarType] = useState<'start' | 'end'>('start');
-  const [dataInicioValida, setDataInicioValida] = useState(false);
-  const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
+  const [isLoading, setIsLoading] = useState(false);
+  const [toast, setToast] = useState<{ isOpen: boolean; message: string; color: string }>({
+    isOpen: false,
+    message: '',
+    color: ''
+  });
 
   useEffect(() => {
-    if (categoriaId) {
-      loadCategoria();
-    }
+    loadCategoria();
   }, [categoriaId]);
-
-  useEffect(() => {
-    // Removido carregamento automático - só carrega quando clicar em Filtrar
-  }, [categoria, periodo, dataInicio, dataFim]);
 
   const loadCategoria = async () => {
     try {
-      const categorias = await getCategorias();
-      const cat = categorias.find((c: CategoriaGasto) => c.id === parseInt(categoriaId!));
-      if (cat) {
-        setCategoria(cat);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar categoria:', error);
-      // Removido toast automático
+      const data = await getCategorias();
+      const cat = data.find((c: CategoriaGasto) => c.id === Number(categoriaId));
+      setCategoria(cat || null);
+    } catch {
+      showToast('Erro ao carregar categoria', 'danger');
     }
   };
 
   const loadDetalhes = async () => {
+    setIsLoading(true);
     try {
-      let request: DetalhesRequest;
+      const request: DetalhesRequest = {};
       
       if (periodo === 'custom') {
-        if (!dataInicio || !dataFim) {
-          showToast('Selecione as datas para o período personalizado', 'danger');
+        if (dataInicio && dataFim) {
+          request.dateFrom = new Date(dataInicio).toISOString();
+          request.dateTo = new Date(dataFim).toISOString();
+        } else {
+          showToast('Selecione um período personalizado válido', 'danger');
           return;
         }
-        request = {
-          dateFrom: new Date(dataInicio).toISOString(),
-          dateTo: new Date(dataFim).toISOString()
-        };
       } else {
-        request = {
-          timePeriod: periodo
-        };
+        request.timePeriod = periodo as any;
       }
       
-      console.log('Enviando request para detalhes:', request);
-      console.log('Categoria ID:', categoriaId);
-      
-      // Obtém os dados de gastos (apenas os que têm valores no período)
-      const gastosResponse = await getDetalhesGastos(parseInt(categoriaId!), request);
-      console.log('Response de gastos recebido:', gastosResponse);
-      
-      // Se a resposta tiver a estrutura { success, data }, extrai os dados
-      let gastosData = gastosResponse;
-      if (gastosResponse && typeof gastosResponse === 'object' && 'data' in gastosResponse) {
-        gastosData = gastosResponse.data;
-      }
-      
-      // Obtém TODOS os tipos da categoria (como na página de edição)
-      const tiposResponse = await getTiposGastos(parseInt(categoriaId!));
-      console.log('Response de tipos recebido:', tiposResponse);
-      
-      // Se a resposta tiver a estrutura { success, data }, extrai os dados
-      let todosTipos = tiposResponse;
-      if (tiposResponse && typeof tiposResponse === 'object' && 'data' in tiposResponse) {
-        todosTipos = tiposResponse.data;
-      }
-      
-      console.log('Todos os tipos da categoria:', todosTipos);
-      
-      // Mapeia os valores dos gastos por typeId
-      const valoresPorTipo: { [key: number]: number } = {};
-      gastosData.expenseTypes.forEach((gasto: GastoDetalhe) => {
-        valoresPorTipo[gasto.typeId] = gasto.amount;
-      });
-      
-      // Combina todos os tipos com seus valores (0 se não tiver gastos no período)
-      const expenseTypesCompletos = todosTipos.map((tipo: any) => ({
-        typeId: tipo.id,
-        typeName: tipo.name,
-        amount: valoresPorTipo[tipo.id] || 0.00
-      }));
-      
-      console.log('ExpenseTypes completos:', expenseTypesCompletos);
-      
-      // Atualiza os dados com todos os tipos
-      const dadosCompletos = {
-        ...gastosData,
-        expenseTypes: expenseTypesCompletos
-      };
-      
-      setDetalhes(dadosCompletos);
-    } catch (error) {
-      console.error('Erro ao carregar detalhes:', error);
-      // Removido toast automático - só mostra toast quando usuário clica em Filtrar
+      const data = await getDetalhesGastos(Number(categoriaId), request);
+      setDetalhes(data);
+    } catch {
+      showToast('Erro ao carregar detalhes', 'danger');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -152,95 +99,62 @@ const DetalhesGastos: React.FC = () => {
   };
 
   const handlePeriodoChange = (value: string) => {
-    console.log('Período selecionado:', value);
-    const periodValue = value as any;
-    setPeriodo(periodValue);
-    const shouldShowCustom = value === 'custom';
-    console.log('Mostrar período personalizado:', shouldShowCustom);
-    setShowCustomPeriod(shouldShowCustom);
-    if (value !== 'custom') {
+    if (value === 'custom') {
+      setPeriodo('custom');
+      setShowCalendarModal(true);
+    } else {
+      setPeriodo(value as any);
       setDataInicio('');
       setDataFim('');
-      setDataInicioValida(false);
     }
   };
 
-  const handleDataInicioChange = (value: string) => {
-    setDataInicio(value);
-    setDataInicioValida(value !== '');
-    if (value && dataFim && new Date(dataFim) < new Date(value)) {
-      setDataFim('');
-      showToast('Data final deve ser posterior à data inicial', 'warning');
-    }
-  };
-
-  const handleDataFimChange = (value: string) => {
-    if (dataInicio && new Date(value) < new Date(dataInicio)) {
-      showToast('Data final não pode ser anterior à data inicial', 'danger');
-      return;
-    }
-    setDataFim(value);
-  };
-
-  const openCalendar = (type: 'start' | 'end') => {
-    setCalendarType(type);
-    setShowCalendarModal(true);
-  };
-
-  const handleDateSelected = (event: any) => {
-    const selectedDate = event.detail.value;
-    
-    if (calendarType === 'start') {
-      setDataInicio(selectedDate);
-      setDataInicioValida(true);
-      // Limpa data fim se for anterior à nova data início
-      if (dataFim && new Date(dataFim) < new Date(selectedDate)) {
-        setDataFim('');
+  const handleCustomPeriodApply = () => {
+    if (dataInicio && dataFim) {
+      const inicio = new Date(dataInicio);
+      const fim = new Date(dataFim);
+      
+      if (inicio >= fim) {
+        showToast('A data inicial deve ser anterior à data final', 'danger');
+        return;
       }
+      
+      setShowCalendarModal(false);
+      loadDetalhes();
     } else {
-      setDataFim(selectedDate);
+      showToast('Preencha ambas as datas', 'danger');
     }
-    
-    setShowCalendarModal(false);
   };
 
-  const formatDateDisplay = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
-  };
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonBackButton defaultHref="/manager/gastos" icon={arrowBack} />
+            <IonBackButton defaultHref="/manager/gastos" />
           </IonButtons>
           <IonTitle>Detalhes de Gastos</IonTitle>
         </IonToolbar>
       </IonHeader>
+
       <IonContent fullscreen>
-        <IonRefresher slot="fixed" onIonRefresh={async (event: CustomEvent) => {
-          await Promise.all([loadCategoria(), loadDetalhes()]);
-          event.detail.complete();
-        }}>
-          <IonRefresherContent
-            pullingIcon={refresh}
-            pullingText="Puxe para atualizar"
-            refreshingSpinner="circles"
-            refreshingText="Atualizando..."
-          />
+        <IonRefresher
+          slot="fixed"
+          onIonRefresh={async event => {
+            await Promise.all([loadCategoria(), loadDetalhes()]);
+            event.detail.complete();
+          }}
+        >
+          <IonRefresherContent />
         </IonRefresher>
+
         <div style={{ padding: '16px' }}>
-          {/* Card de Seleção de Período */}
           <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
             <IonCardHeader>
               <IonCardTitle>Selecione o período</IonCardTitle>
@@ -250,151 +164,149 @@ const DetalhesGastos: React.FC = () => {
                 <IonLabel position="stacked">Período</IonLabel>
                 <IonSelect
                   value={periodo}
-                  onIonChange={(e: any) => handlePeriodoChange(e.detail.value)}
                   placeholder="Selecione um período"
+                  onIonChange={e => handlePeriodoChange(e.detail.value)}
                 >
                   <IonSelectOption value="TODAY">Hoje</IonSelectOption>
                   <IonSelectOption value="LAST_7_DAYS">Últimos 7 dias</IonSelectOption>
                   <IonSelectOption value="LAST_30_DAYS">Últimos 30 dias</IonSelectOption>
                   <IonSelectOption value="LAST_60_DAYS">Últimos 60 dias</IonSelectOption>
                   <IonSelectOption value="LAST_90_DAYS">Últimos 90 dias</IonSelectOption>
-                  <IonSelectOption value="ALL_TIME">Todo o tempo</IonSelectOption>
+                  <IonSelectOption value="ALL_TIME">Todo o período</IonSelectOption>
                   <IonSelectOption value="custom">Período personalizado</IonSelectOption>
                 </IonSelect>
               </IonItem>
-
-              {showCustomPeriod && (
-                <>
-                  <IonItem button onClick={() => openCalendar('start')}>
-                    <IonLabel position="stacked">Data Início</IonLabel>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                      <span style={{ color: dataInicio ? '#262626' : '#999' }}>
-                        {dataInicio ? formatDateDisplay(dataInicio) : 'Selecione a data inicial'}
-                      </span>
-                      <IonIcon icon={calendarOutline} style={{ color: '#305bcb' }} />
-                    </div>
-                  </IonItem>
-                  <IonItem button onClick={() => openCalendar('end')} disabled={!dataInicioValida}>
-                    <IonLabel position="stacked">Data Fim</IonLabel>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                      <span style={{ color: dataFim ? '#262626' : '#999' }}>
-                        {dataFim ? formatDateDisplay(dataFim) : 'Selecione a data final'}
-                      </span>
-                      <IonIcon icon={calendarOutline} style={{ color: dataInicioValida ? '#305bcb' : '#ccc' }} />
-                    </div>
-                  </IonItem>
-                </>
-              )}
-
-              <IonButton 
-                expand="block" 
-                shape="round"
+              <IonButton
+                expand="block"
+                fill="outline"
                 onClick={loadDetalhes}
-                style={{ marginTop: '16px' }}
+                disabled={isLoading}
+                style={{ marginTop: '12px' }}
               >
+                <IonIcon slot="start" icon={refresh} />
                 Filtrar
               </IonButton>
             </IonCardContent>
           </IonCard>
 
-          {/* Card de Resultados */}
-          {detalhes && (
-            <IonCard style={{ borderRadius: '12px' }}>
+          {categoria && (
+            <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
               <IonCardHeader>
-                <IonCardTitle>
-                  {categoria?.name} - {formatCurrency(detalhes.totalAmount)}
-                </IonCardTitle>
+                <IonCardTitle>{categoria.name}</IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
-                <IonGrid>
-                  <IonRow>
-                    <IonCol size="12">
-                      <h3 style={{ textAlign: 'center', marginBottom: '16px' }}>
-                        Total Gasto: {formatCurrency(detalhes.totalAmount)}
-                      </h3>
-                    </IonCol>
-                  </IonRow>
-                  
-                  <IonRow>
-                    <IonCol size="12">
-                      <h4 style={{ marginBottom: '12px' }}>Gastos por Tipo:</h4>
-                    </IonCol>
-                  </IonRow>
+                <IonItem>
+                  <IonLabel>
+                    <h3>Total de Gastos</h3>
+                    <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#dc3545' }}>
+                      {formatCurrency(detalhes?.totalAmount || 0)}
+                    </p>
+                  </IonLabel>
+                </IonItem>
+              </IonCardContent>
+            </IonCard>
+          )}
 
-                  {detalhes.expenseTypes.map((detalhe, index) => (
-                    <IonRow key={index}>
-                      <IonCol size="12">
+          {isLoading ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <p>Carregando...</p>
+            </div>
+          ) : detalhes?.expenseTypes?.length ? (
+            detalhes.expenseTypes.map((expenseType: any, index: number) => (
+              <IonCard key={index} style={{ marginBottom: '12px', borderRadius: '12px' }}>
+                <IonCardHeader>
+                  <IonCardTitle>{expenseType.typeName}</IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  <IonGrid>
+                    <IonRow>
+                      <IonCol>
                         <IonItem>
                           <IonLabel>
-                            <h3>{detalhe.typeName}</h3>
-                            <p style={{ color: '#666', fontSize: '14px' }}>
-                              {formatCurrency(detalhe.amount)}
-                            </p>
+                            <h3>Quantidade</h3>
+                            <p>{expenseType.expenseCount}</p>
+                          </IonLabel>
+                        </IonItem>
+                      </IonCol>
+                      <IonCol>
+                        <IonItem>
+                          <IonLabel>
+                            <h3>Valor Total</h3>
+                            <p>{formatCurrency(expenseType.totalAmount)}</p>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
                     </IonRow>
-                  ))}
-                </IonGrid>
+                    <IonRow>
+                      <IonCol>
+                        <IonItem>
+                          <IonLabel>
+                            <h3>Valor Médio</h3>
+                            <p>{formatCurrency(expenseType.totalAmount / expenseType.expenseCount)}</p>
+                          </IonLabel>
+                        </IonItem>
+                      </IonCol>
+                    </IonRow>
+                  </IonGrid>
+                </IonCardContent>
+              </IonCard>
+            ))
+          ) : (
+            <IonCard style={{ borderRadius: '12px' }}>
+              <IonCardContent>
+                <p style={{ textAlign: 'center' }}>
+                  Nenhum gasto encontrado no período selecionado
+                </p>
               </IonCardContent>
             </IonCard>
           )}
         </div>
 
-        {/* Toast */}
-        <Toast
-          isOpen={toast.isOpen}
-          message={toast.message}
-          color={toast.color}
-          onDidDismiss={() => setToast({ ...toast, isOpen: false })}
-        />
-
-        {/* Modal de Calendário */}
-        <IonModal 
-          isOpen={showCalendarModal} 
-          onDidDismiss={() => setShowCalendarModal(false)}
-          initialBreakpoint={0.6}
-          breakpoints={[0, 0.6, 1]}
-        >
+        <IonModal isOpen={showCalendarModal} onDidDismiss={() => setShowCalendarModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>
-                {calendarType === 'start' ? 'Selecione a Data Início' : 'Selecione a Data Fim'}
-              </IonTitle>
+              <IonTitle>Período Personalizado</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowCalendarModal(false)}>Fechar</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
           <IonContent>
-            <div style={{ 
-              display: 'flex', 
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              padding: '10px',
-              minHeight: '400px',
-              maxHeight: '500px'
-            }}>
-              <IonDatetime
-                presentation="date"
-                onIonChange={handleDateSelected}
-                value={calendarType === 'start' ? dataInicio : dataFim}
-                min={calendarType === 'end' ? dataInicio : undefined}
-                locale="pt-BR"
-                firstDayOfWeek={1}
-                showDefaultButtons={true}
-                doneText="Confirmar"
-                cancelText="Cancelar"
-                style={{
-                  maxWidth: '320px',
-                  width: '100%',
-                  marginBottom: '20px'
-                }}
-              />
+            <div style={{ padding: '16px' }}>
+              <IonItem>
+                <IonLabel position="stacked">Data Início</IonLabel>
+                <IonDatetime
+                  presentation="date"
+                  value={dataInicio}
+                  onIonChange={e => setDataInicio(e.detail.value as string)}
+                />
+              </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">Data Fim</IonLabel>
+                <IonDatetime
+                  presentation="date"
+                  value={dataFim}
+                  onIonChange={e => setDataFim(e.detail.value as string)}
+                />
+              </IonItem>
+              <IonButton
+                expand="block"
+                onClick={handleCustomPeriodApply}
+                disabled={!dataInicio || !dataFim}
+                style={{ marginTop: '16px' }}
+              >
+                Aplicar Período
+              </IonButton>
             </div>
           </IonContent>
         </IonModal>
+
+        <Toast
+          isOpen={toast.isOpen}
+          message={toast.message}
+          color={toast.color}
+          onDidDismiss={() => setToast({ ...toast, isOpen: false })}
+        />
       </IonContent>
     </IonPage>
   );

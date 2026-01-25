@@ -100,6 +100,9 @@ const App: React.FC = () => {
         <ProtectedRoute exact path="/manager">
           <ManagerTabs />
         </ProtectedRoute>
+        <ProtectedRoute exact path="/manager/dashboard">
+          <ManagerTabs />
+        </ProtectedRoute>
         <ProtectedRoute exact path="/manager/gastos">
           <ManagerTabs />
         </ProtectedRoute>
@@ -121,7 +124,10 @@ const App: React.FC = () => {
         <ProtectedRoute exact path="/route/gastos">
           <RouteTabs />
         </ProtectedRoute>
-        <ProtectedRoute exact path="/route/creditos">
+        <ProtectedRoute exact path="/route/credits">
+          <RouteTabs />
+        </ProtectedRoute>
+        <ProtectedRoute exact path="/route/clients">
           <RouteTabs />
         </ProtectedRoute>
         <ProtectedRoute exact path="/route/fechamento">

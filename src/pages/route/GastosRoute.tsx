@@ -236,10 +236,23 @@ const GastosRoute: React.FC = () => {
     setShowViewModal(true);
   };
 
-  const handleRefresh = async (event: CustomEvent) => {
-    await loadGastos();
-    event.detail.complete();
-  };
+  useEffect(() => {
+    loadData();
+    
+    // Configurar o refresher
+    const setupRefresher = () => {
+      const refresher = document.getElementById('gastosroute-refresher') as HTMLIonRefresherElement;
+      if (refresher) {
+        refresher.addEventListener('ionRefresh', async () => {
+          await loadData();
+          refresher.complete();
+        });
+      }
+    };
+
+    // Usar setTimeout para garantir que o DOM esteja pronto
+    setTimeout(setupRefresher, 100);
+  }, []);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -256,13 +269,8 @@ const GastosRoute: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-          <IonRefresherContent
-            pullingIcon={refresh}
-            pullingText="Puxe para atualizar"
-            refreshingSpinner="circles"
-            refreshingText="Atualizando..."
-          />
+        <IonRefresher slot="fixed" id="gastosroute-refresher">
+          <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
         <div style={{ padding: '16px' }}>
           {isLoading ? (

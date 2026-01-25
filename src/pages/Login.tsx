@@ -158,6 +158,23 @@ const Login: React.FC = () => {
             </IonCol>
           </IonRow>
         </IonGrid>
+        
+        {/* Language Selector na parte inferior */}
+        <div style={{ 
+          position: 'fixed', 
+          bottom: '20px', 
+          left: '50%', 
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          padding: '10px 20px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          minWidth: '250px'
+        }}>
+          <LanguageSelector />
+        </div>
+        
         <IonAlert
           isOpen={showAlert}
           onDidDismiss={() => setShowAlert(false)}

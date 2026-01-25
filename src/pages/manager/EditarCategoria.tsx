@@ -270,10 +270,24 @@ const EditarCategoria: React.FC = () => {
     setShowDeleteAlert(true);
   };
 
-  const handleRefresh = async (event: CustomEvent) => {
-    await Promise.all([loadCategoria(), loadTipos()]);
-    event.detail.complete();
-  };
+  useEffect(() => {
+    loadCategoria();
+    loadTipos();
+    
+    // Configurar o refresher
+    const setupRefresher = () => {
+      const refresher = document.getElementById('editarcategoria-refresher') as HTMLIonRefresherElement;
+      if (refresher) {
+        refresher.addEventListener('ionRefresh', async () => {
+          await Promise.all([loadCategoria(), loadTipos()]);
+          refresher.complete();
+        });
+      }
+    };
+
+    // Usar setTimeout para garantir que o DOM esteja pronto
+    setTimeout(setupRefresher, 100);
+  }, [categoriaId]);
 
   return (
     <IonPage>
@@ -286,13 +300,8 @@ const EditarCategoria: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-          <IonRefresherContent
-            pullingIcon={refresh}
-            pullingText="Puxe para atualizar"
-            refreshingSpinner="circles"
-            refreshingText="Atualizando..."
-          />
+        <IonRefresher slot="fixed" id="editarcategoria-refresher">
+          <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
         <div style={{ padding: '16px' }}>
           {/* Card da Categoria */}

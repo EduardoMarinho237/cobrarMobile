@@ -15,13 +15,15 @@ import {
   wallet, 
   card, 
   statsChart, 
-  settings 
+  settings,
+  people
 } from 'ionicons/icons';
 import Cobrancas from './route/Cobrancas';
 import Cobrados from './route/Cobrados';
-import GastosRoute from './route/GastosRoute';
-import Creditos from './route/Creditos';
+import Expenses from './route/Expenses';
+import Credits from './route/Credits';
 import Fechamento from './route/Fechamento';
+import Clients from './route/Clients';
 import Config from './Config';
 import { useFechamentoControl } from '../hooks/useFechamentoControl';
 import { useTranslation } from 'react-i18next';
@@ -51,10 +53,13 @@ const RouteTabs: React.FC = () => {
           {!diaFechado ? <Cobrados /> : <Redirect to="/route/fechamento" />}
         </Route>
         <Route exact path="/route/gastos">
-          {!diaFechado ? <GastosRoute /> : <Redirect to="/route/fechamento" />}
+          {!diaFechado ? <Expenses /> : <Redirect to="/route/fechamento" />}
         </Route>
-        <Route exact path="/route/creditos">
-          {!diaFechado ? <Creditos /> : <Redirect to="/route/fechamento" />}
+        <Route exact path="/route/credits">
+          {!diaFechado ? <Credits /> : <Redirect to="/route/fechamento" />}
+        </Route>
+        <Route exact path="/route/clients">
+          {!diaFechado ? <Clients /> : <Redirect to="/route/fechamento" />}
         </Route>
         <Route exact path="/route/fechamento">
           <Fechamento />
@@ -95,13 +100,22 @@ const RouteTabs: React.FC = () => {
           <IonLabel>{t('tabs.expenses')}</IonLabel>
         </IonTabButton>
         <IonTabButton 
-          tab="creditos" 
-          href={diaFechado ? "#" : "/route/creditos"}
+          tab="credits" 
+          href={diaFechado ? "#" : "/route/credits"}
           onClick={diaFechado ? handleTabBloqueada : undefined}
           disabled={diaFechado}
         >
           <IonIcon aria-hidden="true" icon={card} />
           <IonLabel>{t('tabs.credits')}</IonLabel>
+        </IonTabButton>
+        <IonTabButton 
+          tab="clients" 
+          href={diaFechado ? "#" : "/route/clients"}
+          onClick={diaFechado ? handleTabBloqueada : undefined}
+          disabled={diaFechado}
+        >
+          <IonIcon aria-hidden="true" icon={people} />
+          <IonLabel>Clientes</IonLabel>
         </IonTabButton>
         <IonTabButton tab="fechamento" href="/route/fechamento">
           <IonIcon aria-hidden="true" icon={statsChart} />

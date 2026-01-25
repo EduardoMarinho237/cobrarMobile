@@ -2,6 +2,11 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'DEV';
 
 export const isDev = () => API_BASE_URL === 'DEV';
 
+// Inicializa o timezone padrão se não existir
+if (!localStorage.getItem('timezone')) {
+  localStorage.setItem('timezone', 'America/Sao_Paulo');
+}
+
 console.log('API_BASE_URL:', API_BASE_URL);
 console.log('isDev():', isDev());
 
@@ -18,6 +23,7 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
   const user = userStr ? JSON.parse(userStr) : null;
   const token = user?.token;
   const currentLanguage = localStorage.getItem('language') || 'pt-BR';
+  const currentTimezone = localStorage.getItem('timezone') || 'America/Sao_Paulo';
 
   console.log('apiRequest - user from localStorage:', user);
   console.log('apiRequest - token:', token);
@@ -27,6 +33,7 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
   const headers = {
     'Content-Type': 'application/json',
     'Accept-Language': currentLanguage,
+    'X-Timezone': currentTimezone,
     ...(token && { Authorization: `Bearer ${token}` }),
     ...options?.headers,
   };
@@ -55,6 +62,15 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
         }
       } catch (e) {
         // Se não conseguir parsear, continua sem os dados
+      }
+      
+      // Verificar se é erro de dia fechado
+      if (errorData && errorData.data === "closed-day") {
+        console.log('Dia fechado detectado na resposta da API');
+        // Redirecionar para tela de fechamento
+        if (window.location.pathname !== '/route/fechamento') {
+          window.location.replace('/route/fechamento');
+        }
       }
       
       // Retorna o erro diretamente em vez de lançar exceção
@@ -100,9 +116,9 @@ export const login = async (login: string, password: string) => {
     console.log('Usando modo mock');
     // Mock login
     const mockUsers = {
-      admin: { password: 'admin', name: 'ADM', role: 'ADMIN', token: 'mock-token-admin' },
-      manager: { password: 'manager', name: 'Manager', role: 'MANAGER', token: 'mock-token-manager' },
-      route: { password: 'route', name: 'Route', role: 'ROUTE', token: 'mock-token-route' }
+      admin: { password: 'admin', name: 'ADM', role: 'ADMIN', token: 'mock-token-admin', closedDay: false },
+      manager: { password: 'manager', name: 'Manager', role: 'MANAGER', token: 'mock-token-manager', closedDay: false },
+      route: { password: 'route', name: 'Route', role: 'ROUTE', token: 'mock-token-route', closedDay: false }
     };
     
     const user = mockUsers[login as keyof typeof mockUsers];
@@ -114,7 +130,8 @@ export const login = async (login: string, password: string) => {
         role: user.role,
         token: user.token,
         userId: 1,
-        type: 'Bearer'
+        type: 'Bearer',
+        closedDay: user.closedDay
       };
     }
     console.log('Credenciais mock inválidas');

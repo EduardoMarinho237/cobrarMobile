@@ -86,10 +86,23 @@ const Managers: React.FC = () => {
     }
   };
 
-  const handleRefresh = async (event: CustomEvent) => {
-    await loadManagers();
-    event.detail.complete();
-  };
+  useEffect(() => {
+    loadManagers();
+    
+    // Configurar o refresher
+    const setupRefresher = () => {
+      const refresher = document.getElementById('managers-refresher') as HTMLIonRefresherElement;
+      if (refresher) {
+        refresher.addEventListener('ionRefresh', async () => {
+          await loadManagers();
+          refresher.complete();
+        });
+      }
+    };
+
+    // Usar setTimeout para garantir que o DOM esteja pronto
+    setTimeout(setupRefresher, 100);
+  }, []);
 
   const showToast = (message: string, color: string) => {
     setToast({ isOpen: true, message, color });
@@ -276,13 +289,8 @@ const Managers: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
-          <IonRefresherContent
-            pullingIcon={refresh}
-            pullingText="Puxe para atualizar"
-            refreshingSpinner="circles"
-            refreshingText="Atualizando..."
-          />
+        <IonRefresher slot="fixed" id="managers-refresher">
+          <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
         <div style={{ padding: '16px' }}>
           <IonButton 
