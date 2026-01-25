@@ -2,21 +2,10 @@ import React, { useState } from 'react';
 import {
   IonContent,
   IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
   IonInput,
   IonButton,
   IonItem,
-  IonLabel,
   IonAlert,
-  IonGrid,
-  IonRow,
-  IonCol,
   IonLoading
 } from '@ionic/react';
 import { getCurrentUser, login, logout, isDev } from '../services/api';
@@ -98,81 +87,103 @@ const Login: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>{t('common.login')}</IonTitle>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent fullscreen>
-        <IonGrid>
-          <IonRow className="ion-justify-content-center">
-            <IonCol size="12" sizeMd="6" sizeLg="4">
-              <IonCard>
-                <IonCardHeader>
-                  <IonCardTitle className="ion-text-center">
-                    {t('login.title')}
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <IonItem>
-                    <IonInput
-                      label={t('login.username')}
-                      labelPlacement="floating"
-                      placeholder={t('login.usernamePlaceholder')}
-                      value={username}
-                      onIonInput={(e: any) => setUsername(e.detail.value!)}
-                    />
-                  </IonItem>
-                  <IonItem>
-                    <IonInput
-                      label={t('login.password')}
-                      labelPlacement="floating"
-                      placeholder={t('login.passwordPlaceholder')}
-                      type="password"
-                      value={password}
-                      onIonInput={(e: any) => setPassword(e.detail.value!)}
-                    />
-                  </IonItem>
-                  <IonButton
-                    expand="block"
-                    className="ion-margin-top"
-                    onClick={handleLogin}
-                  >
-                    {t('login.loginButton')}
-                  </IonButton>
-                  {isDev() && (
-                    <div className="ion-margin-top ion-text-center">
-                      <IonItem>
-                        <LanguageSelector />
-                      </IonItem>
-                      <small>
-                        <strong>{t('login.testUsers')}</strong><br/>
-                        admin/admin ({t('userRoles.ADMIN')})<br/>
-                        manager/manager ({t('userRoles.MANAGER')})<br/>
-                        route/route ({t('userRoles.ROUTE')})
-                      </small>
-                    </div>
-                  )}
-                </IonCardContent>
-              </IonCard>
-            </IonCol>
-          </IonRow>
-        </IonGrid>
-        
-        {/* Language Selector na parte inferior */}
-        <div style={{ 
-          position: 'fixed', 
-          bottom: '20px', 
-          left: '50%', 
-          transform: 'translateX(-50%)',
-          zIndex: 1000,
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          padding: '10px 20px',
-          borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          minWidth: '250px'
+      <IonContent fullscreen className="ion-no-padding">
+        <div style={{
+          minHeight: '100vh',
+          width: '100vw',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '20px',
+          margin: 0,
+          boxSizing: 'border-box'
         }}>
-          <LanguageSelector />
+          <div style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            borderRadius: '20px',
+            padding: '40px 30px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+            width: '100%',
+            maxWidth: '400px',
+            textAlign: 'center'
+          }}>
+            <h1 style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              fontSize: '32px',
+              fontWeight: 'bold',
+              margin: '0 0 10px 0',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              CobranzasApp
+            </h1>
+            <p style={{
+              color: '#666',
+              fontSize: '16px',
+              margin: '0 0 40px 0',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              su app de gestión de préstamos
+            </p>
+            
+            <IonItem style={{ marginBottom: '20px', '--background': 'transparent' }}>
+              <IonInput
+                label={t('login.username')}
+                labelPlacement="floating"
+                placeholder={t('login.usernamePlaceholder')}
+                value={username}
+                onIonInput={(e: any) => setUsername(e.detail.value!)}
+              />
+            </IonItem>
+            
+            <IonItem style={{ marginBottom: '30px', '--background': 'transparent' }}>
+              <IonInput
+                label={t('login.password')}
+                labelPlacement="floating"
+                placeholder={t('login.passwordPlaceholder')}
+                type="password"
+                value={password}
+                onIonInput={(e: any) => setPassword(e.detail.value!)}
+              />
+            </IonItem>
+            
+            <IonButton
+              expand="block"
+              style={{ 
+                marginBottom: '20px',
+                '--background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                '--background-hover': 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)'
+              }}
+              onClick={handleLogin}
+            >
+              {t('login.loginButton')}
+            </IonButton>
+            
+            {isDev() && (
+              <div style={{ marginTop: '20px' }}>
+                <small style={{ color: '#666' }}>
+                  <strong>{t('login.testUsers')}</strong><br/>
+                  admin/admin ({t('userRoles.ADMIN')})<br/>
+                  manager/manager ({t('userRoles.MANAGER')})<br/>
+                  route/route ({t('userRoles.ROUTE')})
+                </small>
+              </div>
+            )}
+          </div>
+          
+          <div style={{
+            marginTop: '30px',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            padding: '15px 25px',
+            borderRadius: '12px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          }}>
+            <LanguageSelector />
+          </div>
         </div>
         
         <IonAlert

@@ -3,7 +3,7 @@ http://ionicframework.com/docs/theming/ */
 
 :root {
   /* Cores principais do tema claro */
-  --ion-color-primary: #305bcb;
+  --ion-color-primary: #3963db;
   --ion-color-primary-rgb: 48, 91, 203;
   --ion-color-primary-contrast: #efefef;
   --ion-color-primary-contrast-rgb: 239, 239, 239;
@@ -74,8 +74,8 @@ http://ionicframework.com/docs/theming/ */
   --ion-border-color: rgba(38, 38, 38, 0.2);
 
   /* Cores do header */
-  --ion-toolbar-background: #305bcb;
-  --ion-toolbar-border-color: #305bcb;
+  --ion-toolbar-background: #3963db;
+  --ion-toolbar-border-color: #3963db;
   --ion-toolbar-color: #efefef;
   --ion-toolbar-text-color: #efefef;
 
@@ -90,17 +90,17 @@ http://ionicframework.com/docs/theming/ */
   --ion-card-color: #262626;
 
   /* Cores dos botões */
-  --ion-button-background: #305bcb;
+  --ion-button-background: #3963db;
   --ion-button-color: #efefef;
 
   /* Cores dos ícones */
-  --ion-icon-color: #305bcb;
+  --ion-icon-color: #3963db;
 }
 
 @media (prefers-color-scheme: dark) {
   /* Manter o tema claro mesmo em modo escuro do sistema */
   :root {
-    --ion-color-primary: #305bcb;
+    --ion-color-primary: #3963db;
     --ion-color-primary-rgb: 48, 91, 203;
     --ion-color-primary-contrast: #efefef;
     --ion-color-primary-contrast-rgb: 239, 239, 239;
@@ -127,8 +127,8 @@ http://ionicframework.com/docs/theming/ */
     --ion-text-color-rgb: 38, 38, 38;
     --ion-border-color: rgba(38, 38, 38, 0.2);
 
-    --ion-toolbar-background: #305bcb;
-    --ion-toolbar-border-color: #305bcb;
+    --ion-toolbar-background: #3963db;
+    --ion-toolbar-border-color: #3963db;
     --ion-toolbar-color: #efefef;
     --ion-toolbar-text-color: #efefef;
 
@@ -140,9 +140,9 @@ http://ionicframework.com/docs/theming/ */
     --ion-card-background: transparent;
     --ion-card-color: #262626;
 
-    --ion-button-background: #305bcb;
+    --ion-button-background: #3963db;
     --ion-button-color: #efefef;
 
-    --ion-icon-color: #305bcb;
+    --ion-icon-color: #3963db;
   }
 }
