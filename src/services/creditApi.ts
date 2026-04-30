@@ -20,18 +20,17 @@ export interface Credit {
 export interface CreateCreditRequest {
   initialValue: number;
   startDate: string;
-  tax: number;
   quantityDays: number;
   clientId: number;
-  overdue: 'CAPITALIZE_DEBT' | 'EXTEND_TERM';
+  overdue?: 'CAPITALIZE_DEBT' | 'EXTEND_TERM';
 }
 
 export interface UpdateCreditRequest {
   initialValue: number;
   startDate: string;
-  tax: number;
   quantityDays: number;
   clientId: number;
+  overdue?: 'CAPITALIZE_DEBT' | 'EXTEND_TERM';
 }
 
 export interface ApiResponse<T> {
@@ -153,20 +152,25 @@ export const createCredit = async (credit: CreateCreditRequest): Promise<ApiResp
 
     // Se for modo mock, cria um novo crédito mockado
     if (response.mock) {
+      // Obter taxa do usuário logado (route)
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const tax = user?.tax || 0; // Taxa padrão 0 se não encontrada
+      
       const newCredit: Credit = {
         id: Math.max(...mockCredits.map(c => c.id)) + 1,
         initialValue: credit.initialValue,
         startDate: credit.startDate,
-        tax: credit.tax,
-        totalDebt: credit.initialValue + (credit.initialValue * credit.tax / 100),
+        tax: tax,
+        totalDebt: credit.initialValue + (credit.initialValue * tax / 100),
         quantityDays: credit.quantityDays,
         finalDate: new Date(new Date(credit.startDate).getTime() + credit.quantityDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        dayValue: Math.round((credit.initialValue + (credit.initialValue * credit.tax / 100)) / credit.quantityDays),
+        dayValue: Math.round((credit.initialValue + (credit.initialValue * tax / 100)) / credit.quantityDays),
         lastInstallment: credit.quantityDays,
         clientId: credit.clientId,
         clientName: `Cliente ${credit.clientId}`, // Em um app real, buscaria o nome do cliente
         visible: true,
-        overdue: credit.overdue
+        overdue: 'EXTEND_TERM' // Valor padrão da aplicação
       };
 
       mockCredits.push(newCredit);
@@ -212,15 +216,20 @@ export const updateCredit = async (id: number, credit: UpdateCreditRequest): Pro
       }
 
       const existingCredit = mockCredits[creditIndex];
+      // Obter taxa do usuário logado (route)
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const tax = user?.tax || 0; // Taxa padrão 0 se não encontrada
+      
       const updatedCredit: Credit = {
         ...existingCredit,
         initialValue: credit.initialValue,
         startDate: credit.startDate,
-        tax: credit.tax,
-        totalDebt: credit.initialValue + (credit.initialValue * credit.tax / 100),
+        tax: tax,
+        totalDebt: credit.initialValue + (credit.initialValue * tax / 100),
         quantityDays: credit.quantityDays,
         finalDate: new Date(new Date(credit.startDate).getTime() + credit.quantityDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        dayValue: Math.round((credit.initialValue + (credit.initialValue * credit.tax / 100)) / credit.quantityDays),
+        dayValue: Math.round((credit.initialValue + (credit.initialValue * tax / 100)) / credit.quantityDays),
         lastInstallment: credit.quantityDays,
         clientId: credit.clientId,
         clientName: `Cliente ${credit.clientId}` // Em um app real, buscaria o nome do cliente

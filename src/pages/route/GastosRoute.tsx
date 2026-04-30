@@ -27,6 +27,7 @@ import {
   IonSpinner
 } from '@ionic/react';
 import { add, trash, create, eye, wallet, refresh } from 'ionicons/icons';
+import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { 
   getGastosDoDia, 
   createGasto, 
@@ -38,8 +39,10 @@ import {
 } from '../../services/gastoIndividualApi';
 import { getCategorias, getTiposGastos, CategoriaGasto, TipoGasto } from '../../services/gastoApi';
 import Toast from '../../components/Toast';
+import { useTranslation } from 'react-i18next';
 
 const GastosRoute: React.FC = () => {
+  const { t } = useTranslation();
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [totalGastos, setTotalGastos] = useState(0);
   const [categorias, setCategorias] = useState<CategoriaGasto[]>([]);
@@ -91,7 +94,7 @@ const GastosRoute: React.FC = () => {
       setGastos(gastosData);
       setTotalGastos(totalData.total);
     } catch (error) {
-      showToast('Erro ao carregar gastos', 'danger');
+      showToast(t('pages.expensesRoute.errorLoadingExpenses'), 'danger');
     }
   };
 
@@ -100,7 +103,7 @@ const GastosRoute: React.FC = () => {
       const data = await getCategorias();
       setCategorias(data);
     } catch (error) {
-      showToast('Erro ao carregar categorias', 'danger');
+      showToast(t('pages.expensesRoute.errorLoadingCategories'), 'danger');
     }
   };
 
@@ -109,7 +112,7 @@ const GastosRoute: React.FC = () => {
       const data = await getTiposGastos(categoriaId);
       setTipos(data);
     } catch (error) {
-      showToast('Erro ao carregar tipos', 'danger');
+      showToast(t('pages.expensesRoute.errorLoadingTypes'), 'danger');
     }
   };
 
@@ -119,22 +122,22 @@ const GastosRoute: React.FC = () => {
 
   const validateFields = (gasto: GastoForm) => {
     if (!gasto.categoriaId) {
-      showToast('Selecione uma categoria', 'danger');
+      showToast(t('pages.expensesRoute.selectCategory'), 'danger');
       return false;
     }
     
     if (!gasto.tipoId) {
-      showToast('Selecione um tipo', 'danger');
+      showToast(t('pages.expensesRoute.selectType'), 'danger');
       return false;
     }
     
     if (!gasto.valor || gasto.valor <= 0) {
-      showToast('Informe um valor válido', 'danger');
+      showToast(t('pages.expensesRoute.validValue'), 'danger');
       return false;
     }
     
     if (!gasto.descricao.trim()) {
-      showToast('Informe uma descrição', 'danger');
+      showToast(t('pages.expensesRoute.descriptionRequired'), 'danger');
       return false;
     }
     
@@ -157,7 +160,7 @@ const GastosRoute: React.FC = () => {
         loadGastos();
       }
     } catch (error) {
-      showToast('Erro ao criar gasto', 'danger');
+      showToast(t('pages.expensesRoute.errorCreatingExpense'), 'danger');
     }
   };
 
@@ -178,7 +181,7 @@ const GastosRoute: React.FC = () => {
         loadGastos();
       }
     } catch (error) {
-      showToast('Erro ao atualizar gasto', 'danger');
+      showToast(t('pages.expensesRoute.errorUpdatingExpense'), 'danger');
     }
   };
 
@@ -196,7 +199,7 @@ const GastosRoute: React.FC = () => {
         }
       })
       .catch(() => {
-        showToast('Erro ao excluir gasto', 'danger');
+        showToast(t('pages.expensesRoute.errorDeletingExpense'), 'danger');
       });
   };
 
@@ -254,18 +257,11 @@ const GastosRoute: React.FC = () => {
     setTimeout(setupRefresher, 100);
   }, []);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Gastos</IonTitle>
+          <IonTitle>{t('pages.expensesRoute.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -283,7 +279,7 @@ const GastosRoute: React.FC = () => {
               gap: '16px'
             }}>
               <IonSpinner name="dots" />
-              <p style={{ color: '#666', fontSize: '14px' }}>Carregando gastos...</p>
+              <p style={{ color: '#666', fontSize: '14px' }}>{t('pages.expensesRoute.loadingExpenses')}</p>
             </div>
           ) : (
             <>
@@ -292,87 +288,88 @@ const GastosRoute: React.FC = () => {
                 <IonCardHeader>
                   <IonCardTitle>
                     <IonIcon icon={wallet} style={{ marginRight: '8px' }} />
-                    Gastos do Dia
+                    {t('pages.expensesRoute.dailyExpenses')}
                   </IonCardTitle>
                 </IonCardHeader>
                 <IonCardContent>
                   <h2 style={{ textAlign: 'center', color: '#dc3545', margin: '0' }}>
-                    {formatCurrency(totalGastos)}
+                    {formatCurrencyWithSymbol(totalGastos)}
                   </h2>
-            </IonCardContent>
-          </IonCard>
+                </IonCardContent>
+              </IonCard>
 
-          {/* Botão Adicionar */}
-          <IonButton 
-            expand="block" 
-            shape="round" 
-            onClick={() => setShowCreateModal(true)}
-            style={{ marginBottom: '16px' }}
-          >
-            <IonIcon slot="start" icon={add} />
-            Adicionar Gasto
-          </IonButton>
+              {/* Botão Adicionar */}
+              <IonButton 
+                expand="block" 
+                shape="round" 
+                onClick={() => setShowCreateModal(true)}
+                style={{ marginBottom: '16px' }}
+              >
+                <IonIcon slot="start" icon={add} />
+                {t('pages.expensesRoute.addExpense')}
+              </IonButton>
 
-          {/* Lista de Gastos */}
-          {gastos.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p>Nenhum gasto criado ainda</p>
-            </div>
-          ) : (
-            gastos.map((gasto) => (
-            <IonCard 
-              key={gasto.id} 
-              style={{ 
-                marginBottom: '16px',
-                borderRadius: '12px'
-              }}
-            >
-              <IonCardHeader>
-                <IonCardTitle>{gasto.categoriaNome} - {gasto.tipoNome}</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonGrid>
-                  <IonRow>
-                    <IonCol size="12">
-                      <IonItem>
-                        <IonLabel>
-                          <h3>Valor: {formatCurrency(gasto.valor)}</h3>
-                          <p>{gasto.descricao}</p>
-                        </IonLabel>
-                      </IonItem>
-                    </IonCol>
-                  </IonRow>
-                  <IonRow>
-                    <IonCol size="3">
-                      <IonButton
-                        fill="clear"
-                        onClick={() => openViewModal(gasto)}
-                      >
-                        <IonIcon icon={eye} />
-                      </IonButton>
-                    </IonCol>
-                    <IonCol size="3">
-                      <IonButton
-                        fill="clear"
-                        onClick={() => openEditModal(gasto)}
-                      >
-                        <IonIcon icon={create} />
-                      </IonButton>
-                    </IonCol>
-                    <IonCol size="3">
-                      <IonButton
-                        fill="clear"
-                        color="danger"
-                        onClick={() => openDeleteAlert(gasto)}
-                      >
-                        <IonIcon icon={trash} />
-                      </IonButton>
-                    </IonCol>
-                  </IonRow>
-                </IonGrid>
-              </IonCardContent>
-            </IonCard>
-          )))}
+              {/* Lista de Gastos */}
+              {gastos.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <p>{t('pages.expensesRoute.noExpensesCreated')}</p>
+                </div>
+              ) : (
+                gastos.map((gasto) => (
+                  <IonCard 
+                    key={gasto.id} 
+                    style={{ 
+                      marginBottom: '16px',
+                      borderRadius: '12px'
+                    }}
+                  >
+                    <IonCardHeader>
+                      <IonCardTitle>{gasto.categoriaNome} - {gasto.tipoNome}</IonCardTitle>
+                    </IonCardHeader>
+                    <IonCardContent>
+                      <IonGrid>
+                        <IonRow>
+                          <IonCol size="12">
+                            <IonItem>
+                              <IonLabel>
+                                <h3>{t('pages.expensesRoute.value')}: {formatCurrencyWithSymbol(gasto.valor)}</h3>
+                                <p>{gasto.descricao}</p>
+                              </IonLabel>
+                            </IonItem>
+                          </IonCol>
+                        </IonRow>
+                        <IonRow>
+                          <IonCol size="3">
+                            <IonButton
+                              fill="clear"
+                              onClick={() => openViewModal(gasto)}
+                            >
+                              <IonIcon icon={eye} />
+                            </IonButton>
+                          </IonCol>
+                          <IonCol size="3">
+                            <IonButton
+                              fill="clear"
+                              onClick={() => openEditModal(gasto)}
+                            >
+                              <IonIcon icon={create} />
+                            </IonButton>
+                          </IonCol>
+                          <IonCol size="3">
+                            <IonButton
+                              fill="clear"
+                              color="danger"
+                              onClick={() => openDeleteAlert(gasto)}
+                            >
+                              <IonIcon icon={trash} />
+                            </IonButton>
+                          </IonCol>
+                        </IonRow>
+                      </IonGrid>
+                    </IonCardContent>
+                  </IonCard>
+                ))
+              )}
             </>
           )}
         </div>
@@ -381,21 +378,21 @@ const GastosRoute: React.FC = () => {
         <IonModal isOpen={showCreateModal} onDidDismiss={() => setShowCreateModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Novo Gasto</IonTitle>
+              <IonTitle>{t('pages.expensesRoute.newExpense')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowCreateModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowCreateModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
           <IonContent>
             <div style={{ padding: '16px' }}>
               <IonItem>
-                <IonLabel position="stacked">Categoria</IonLabel>
+                <IonLabel position="stacked">{t('pages.expensesRoute.category')}</IonLabel>
                 <IonSelect
                   value={newGasto.categoriaId}
                   onIonChange={(e: any) => handleCategoriaChange(e.detail.value)}
                 >
-                  <IonSelectOption value={0}>Selecione...</IonSelectOption>
+                  <IonSelectOption value={0}>{t('pages.expensesRoute.select')}</IonSelectOption>
                   {categorias.map((categoria) => (
                     <IonSelectOption key={categoria.id} value={categoria.id}>
                       {categoria.name}
@@ -405,13 +402,13 @@ const GastosRoute: React.FC = () => {
               </IonItem>
               
               <IonItem>
-                <IonLabel position="stacked">Tipo</IonLabel>
+                <IonLabel position="stacked">{t('pages.expensesRoute.type')}</IonLabel>
                 <IonSelect
                   value={newGasto.tipoId}
                   onIonChange={(e: any) => setNewGasto({ ...newGasto, tipoId: e.detail.value })}
                   disabled={newGasto.categoriaId === 0}
                 >
-                  <IonSelectOption value={0}>Selecione...</IonSelectOption>
+                  <IonSelectOption value={0}>{t('pages.expensesRoute.select')}</IonSelectOption>
                   {tipos.map((tipo) => (
                     <IonSelectOption key={tipo.id} value={tipo.id}>
                       {tipo.name}
@@ -422,9 +419,9 @@ const GastosRoute: React.FC = () => {
               
               <IonItem>
                 <IonInput
-                  label="Valor"
+                  label={t('pages.expensesRoute.value')}
                   labelPlacement="floating"
-                  placeholder="Digite o valor"
+                  placeholder={t('pages.expensesRoute.enterValue')}
                   type="number"
                   value={newGasto.valor}
                   onIonInput={(e: any) => setNewGasto({ ...newGasto, valor: e.detail.value! })}
@@ -433,9 +430,9 @@ const GastosRoute: React.FC = () => {
               
               <IonItem>
                 <IonInput
-                  label="Descrição"
+                  label={t('pages.expensesRoute.description')}
                   labelPlacement="floating"
-                  placeholder="Digite a descrição"
+                  placeholder={t('pages.expensesRoute.enterDescription')}
                   value={newGasto.descricao}
                   onIonInput={(e: any) => setNewGasto({ ...newGasto, descricao: e.detail.value! })}
                 />
@@ -447,7 +444,7 @@ const GastosRoute: React.FC = () => {
                 onClick={handleCreateGasto}
                 style={{ marginTop: '16px' }}
               >
-                Criar
+                {t('pages.expensesRoute.create')}
               </IonButton>
             </div>
           </IonContent>
@@ -457,21 +454,21 @@ const GastosRoute: React.FC = () => {
         <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Editar Gasto</IonTitle>
+              <IonTitle>{t('pages.expensesRoute.editExpense')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowEditModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowEditModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
           <IonContent>
             <div style={{ padding: '16px' }}>
               <IonItem>
-                <IonLabel position="stacked">Categoria</IonLabel>
+                <IonLabel position="stacked">{t('pages.expensesRoute.category')}</IonLabel>
                 <IonSelect
                   value={editGasto.categoriaId}
                   onIonChange={(e: any) => handleCategoriaChange(e.detail.value, true)}
                 >
-                  <IonSelectOption value={0}>Selecione...</IonSelectOption>
+                  <IonSelectOption value={0}>{t('pages.expensesRoute.select')}</IonSelectOption>
                   {categorias.map((categoria) => (
                     <IonSelectOption key={categoria.id} value={categoria.id}>
                       {categoria.name}
@@ -481,13 +478,13 @@ const GastosRoute: React.FC = () => {
               </IonItem>
               
               <IonItem>
-                <IonLabel position="stacked">Tipo</IonLabel>
+                <IonLabel position="stacked">{t('pages.expensesRoute.type')}</IonLabel>
                 <IonSelect
                   value={editGasto.tipoId}
                   onIonChange={(e: any) => setEditGasto({ ...editGasto, tipoId: e.detail.value })}
                   disabled={editGasto.categoriaId === 0}
                 >
-                  <IonSelectOption value={0}>Selecione...</IonSelectOption>
+                  <IonSelectOption value={0}>{t('pages.expensesRoute.select')}</IonSelectOption>
                   {tipos.map((tipo) => (
                     <IonSelectOption key={tipo.id} value={tipo.id}>
                       {tipo.name}
@@ -498,9 +495,9 @@ const GastosRoute: React.FC = () => {
               
               <IonItem>
                 <IonInput
-                  label="Valor"
+                  label={t('pages.expensesRoute.value')}
                   labelPlacement="floating"
-                  placeholder="Digite o valor"
+                  placeholder={t('pages.expensesRoute.enterValue')}
                   type="number"
                   value={editGasto.valor}
                   onIonInput={(e: any) => setEditGasto({ ...editGasto, valor: e.detail.value! })}
@@ -509,9 +506,9 @@ const GastosRoute: React.FC = () => {
               
               <IonItem>
                 <IonInput
-                  label="Descrição"
+                  label={t('pages.expensesRoute.description')}
                   labelPlacement="floating"
-                  placeholder="Digite a descrição"
+                  placeholder={t('pages.expensesRoute.enterDescription')}
                   value={editGasto.descricao}
                   onIonInput={(e: any) => setEditGasto({ ...editGasto, descricao: e.detail.value! })}
                 />
@@ -523,7 +520,7 @@ const GastosRoute: React.FC = () => {
                 onClick={handleUpdateGasto}
                 style={{ marginTop: '16px' }}
               >
-                Salvar
+                {t('pages.expensesRoute.save')}
               </IonButton>
             </div>
           </IonContent>
@@ -533,9 +530,9 @@ const GastosRoute: React.FC = () => {
         <IonModal isOpen={showViewModal} onDidDismiss={() => setShowViewModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Detalhes do Gasto</IonTitle>
+              <IonTitle>{t('pages.expensesRoute.expenseDetails')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowViewModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowViewModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -549,19 +546,19 @@ const GastosRoute: React.FC = () => {
                   <IonCardContent>
                     <IonItem>
                       <IonLabel>
-                        <h3>Valor</h3>
-                        <p>{formatCurrency(selectedGasto.valor)}</p>
+                        <h3>{t('pages.expensesRoute.value')}</h3>
+                        <p>{formatCurrencyWithSymbol(selectedGasto.valor)}</p>
                       </IonLabel>
                     </IonItem>
                     <IonItem>
                       <IonLabel>
-                        <h3>Descrição</h3>
+                        <h3>{t('pages.expensesRoute.description')}</h3>
                         <p>{selectedGasto.descricao}</p>
                       </IonLabel>
                     </IonItem>
                     <IonItem>
                       <IonLabel>
-                        <h3>Data</h3>
+                        <h3>{t('pages.expensesRoute.date')}</h3>
                         <p>{new Date(selectedGasto.data).toLocaleString('pt-BR')}</p>
                       </IonLabel>
                     </IonItem>
@@ -576,15 +573,15 @@ const GastosRoute: React.FC = () => {
         <IonAlert
           isOpen={showDeleteAlert}
           onDidDismiss={() => setShowDeleteAlert(false)}
-          header="Confirmar Exclusão"
-          message={`Deseja realmente excluir o gasto "${selectedGasto?.descricao}"?`}
+          header={t('pages.expensesRoute.confirmDelete')}
+          message={t('pages.expensesRoute.confirmDeleteMessage').replace('{expenseDescription}', selectedGasto?.descricao || '')}
           buttons={[
             {
-              text: 'Cancelar',
+              text: t('common.cancel'),
               role: 'cancel'
             },
             {
-              text: 'Excluir',
+              text: t('pages.expensesRoute.delete'),
               role: 'destructive',
               handler: handleDeleteGasto
             }

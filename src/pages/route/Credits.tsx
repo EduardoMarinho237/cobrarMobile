@@ -27,7 +27,8 @@ import {
   IonSpinner,
   IonProgressBar
 } from '@ionic/react';
-import { add, create, trash } from 'ionicons/icons';
+import { add, trash, create, eye, wallet, refresh } from 'ionicons/icons';
+import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { 
   Credit, 
   CreateCreditRequest, 
@@ -54,7 +55,6 @@ const Credits: React.FC = () => {
   const [newCredit, setNewCredit] = useState<CreateCreditRequest>({ 
     initialValue: 0,
     startDate: new Date().toISOString().split('T')[0],
-    tax: 0,
     quantityDays: 1,
     clientId: 0,
     overdue: 'CAPITALIZE_DEBT'
@@ -62,7 +62,6 @@ const Credits: React.FC = () => {
   const [editCredit, setEditCredit] = useState<UpdateCreditRequest>({ 
     initialValue: 0,
     startDate: new Date().toISOString().split('T')[0],
-    tax: 0,
     quantityDays: 1,
     clientId: 0
   });
@@ -118,7 +117,6 @@ const Credits: React.FC = () => {
         setNewCredit({ 
           initialValue: 0,
           startDate: new Date().toISOString().split('T')[0],
-          tax: 0,
           quantityDays: 1,
           clientId: 0,
           overdue: 'CAPITALIZE_DEBT'
@@ -158,7 +156,6 @@ const Credits: React.FC = () => {
         setEditCredit({ 
           initialValue: 0,
           startDate: new Date().toISOString().split('T')[0],
-          tax: 0,
           quantityDays: 1,
           clientId: 0
         });
@@ -196,19 +193,12 @@ const Credits: React.FC = () => {
     setEditCredit({ 
       initialValue: credit.initialValue,
       startDate: credit.startDate,
-      tax: credit.tax,
       quantityDays: credit.quantityDays,
       clientId: credit.clientId
     });
     setShowEditModal(true);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
@@ -288,14 +278,14 @@ const Credits: React.FC = () => {
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Valor Inicial: {formatCurrency(credit.initialValue)}</h3>
+                            <h3>Valor Inicial: {formatCurrencyWithSymbol(credit.initialValue)}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Valor Total: {formatCurrency(credit.totalDebt)}</h3>
+                            <h3>Valor Total: {formatCurrencyWithSymbol(credit.totalDebt)}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
@@ -309,7 +299,7 @@ const Credits: React.FC = () => {
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Valor Diário: {formatCurrency(credit.dayValue)}</h3>
+                            <h3>Valor Diário: {formatCurrencyWithSymbol(credit.dayValue)}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
@@ -358,10 +348,10 @@ const Credits: React.FC = () => {
                           />
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
                             <span style={{ fontSize: '12px', color: '#666' }}>
-                              Pago: {formatCurrency(progress.paidValue)}
+                              Pago: {formatCurrencyWithSymbol(progress.paidValue)}
                             </span>
                             <span style={{ fontSize: '12px', color: '#666' }}>
-                              Total: {formatCurrency(progress.totalValue)}
+                              Total: {formatCurrencyWithSymbol(progress.totalValue)}
                             </span>
                           </div>
                         </div>
@@ -445,16 +435,6 @@ const Credits: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Taxa (%) *"
-                  labelPlacement="floating"
-                  placeholder="0"
-                  type="number"
-                  value={newCredit.tax}
-                  onIonInput={(e: any) => setNewCredit({ ...newCredit, tax: Number(e.detail.value) })}
-                />
-              </IonItem>
-              <IonItem>
-                <IonInput
                   label="Quantidade de Dias *"
                   labelPlacement="floating"
                   placeholder="1"
@@ -531,16 +511,6 @@ const Credits: React.FC = () => {
                   type="date"
                   value={editCredit.startDate}
                   onIonInput={(e: any) => setEditCredit({ ...editCredit, startDate: e.detail.value })}
-                />
-              </IonItem>
-              <IonItem>
-                <IonInput
-                  label="Taxa (%) *"
-                  labelPlacement="floating"
-                  placeholder="0"
-                  type="number"
-                  value={editCredit.tax}
-                  onIonInput={(e: any) => setEditCredit({ ...editCredit, tax: Number(e.detail.value) })}
                 />
               </IonItem>
               <IonItem>

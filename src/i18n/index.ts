@@ -12,15 +12,26 @@ const resources = {
   'es-CO': { translation: esCO }
 };
 
-// Obtendo o idioma salvo no localStorage ou usando o padrão
-const savedLanguage = localStorage.getItem('language') || 'pt-BR';
+// Obtendo o idioma salvo no localStorage ou usando o padrão (es-CO)
+const savedLanguage = localStorage.getItem('language') || 'es-CO';
+
+// Garantir que o idioma padrão (espanhol) esteja no localStorage
+if (!localStorage.getItem('language')) {
+  localStorage.setItem('language', 'es-CO');
+}
 
 i18n
   .use(initReactI18next)
   .init({
     resources,
     lng: savedLanguage,
-    fallbackLng: 'pt-BR',
+    fallbackLng: false,
+    parseMissingKeyHandler: (key) => {
+      // Retorna "NECESSITA_TRADUCAO" quando a chave não é encontrada
+      return 'NECESSITA_TRADUCAO';
+    },
+    missingKeyNoValueFallbackToKey: false,
+    saveMissing: false,
     interpolation: {
       escapeValue: false
     },

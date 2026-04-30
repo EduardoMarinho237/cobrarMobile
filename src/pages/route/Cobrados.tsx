@@ -23,6 +23,7 @@ import {
   IonSpinner
 } from '@ionic/react';
 import { refresh, timeOutline, personOutline, cashOutline } from 'ionicons/icons';
+import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { 
   getDebits, 
   undoDebit, 
@@ -30,7 +31,10 @@ import {
 } from '../../services/debitApi';
 import Toast from '../../components/Toast';
 
+import { useTranslation } from 'react-i18next';
+
 const Cobrados: React.FC = () => {
+  const { t } = useTranslation();
   const [debits, setDebits] = useState<Debit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showUndoAlert, setShowUndoAlert] = useState(false);
@@ -52,7 +56,7 @@ const Cobrados: React.FC = () => {
       setDebits(sortedDebits);
     } catch (error: any) {
       console.error('Erro ao carregar débitos:', error);
-      showToast(error.message || 'Erro ao carregar débitos', 'danger');
+      showToast(error.message || t('pages.collected.errorLoadingDebits'), 'danger');
     } finally {
       setIsLoading(false);
     }
@@ -73,24 +77,18 @@ const Cobrados: React.FC = () => {
     try {
       const response = await undoDebit(selectedDebit.id);
       if (response.success) {
-        showToast('Débito desfeito com sucesso', 'success');
+        showToast(t('pages.collected.debitUndoneSuccess'), 'success');
         setShowUndoAlert(false);
         setSelectedDebit(null);
         loadData(); // Recarregar lista
       } else {
-        showToast(response.message || 'Erro ao desfazer débito', 'danger');
+        showToast(response.message || t('pages.collected.errorUndoingDebit'), 'danger');
       }
     } catch (error) {
-      showToast('Erro ao desfazer débito', 'danger');
+      showToast(t('pages.collected.errorUndoingDebit'), 'danger');
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -106,7 +104,7 @@ const Cobrados: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Cobrados</IonTitle>
+          <IonTitle>{t('pages.collected.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -118,11 +116,11 @@ const Cobrados: React.FC = () => {
           {isLoading ? (
             <div style={{ textAlign: 'center', padding: '40px' }}>
               <IonSpinner name="dots" />
-              <p style={{ color: '#666', marginTop: '16px' }}>Carregando cobranças...</p>
+              <p style={{ color: '#666', marginTop: '16px' }}>{t('pages.collected.loadingCollections')}</p>
             </div>
           ) : debits.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p>Nenhuma cobrança realizada ainda</p>
+              <p>{t('pages.collected.noCollectionsMade')}</p>
             </div>
           ) : (
             debits.map((debit) => (
@@ -144,7 +142,7 @@ const Cobrados: React.FC = () => {
                           <IonIcon icon={cashOutline} style={{ marginRight: '8px', color: '#28a745' }} />
                           <IonLabel>
                             <h3 style={{ color: '#28a745' }}>
-                              {formatCurrency(debit.value)}
+                              {formatCurrencyWithSymbol(debit.value)}
                             </h3>
                           </IonLabel>
                         </IonItem>
@@ -164,7 +162,7 @@ const Cobrados: React.FC = () => {
                           onClick={() => handleUndo(debit)}
                           style={{ margin: 0 }}
                         >
-                          Desfazer
+                          {t('pages.collected.undo')}
                         </IonButton>
                       </IonCol>
                     </IonRow>
@@ -179,15 +177,15 @@ const Cobrados: React.FC = () => {
         <IonAlert
           isOpen={showUndoAlert}
           onDidDismiss={() => setShowUndoAlert(false)}
-          header="Desfazer Cobrança"
-          message={`Deseja desfazer a cobrança de ${formatCurrency(selectedDebit?.value || 0)} de ${selectedDebit?.clientName || 'este cliente'}?`}
+          header={t('pages.collected.undoCollection')}
+          message={t('pages.collected.undoCollectionMessage').replace('{value}', formatCurrencyWithSymbol(selectedDebit?.value || 0)).replace('{clientName}', selectedDebit?.clientName || 'este cliente')}
           buttons={[
             {
-              text: 'Cancelar',
+              text: t('common.cancel'),
               role: 'cancel'
             },
             {
-              text: 'Desfazer',
+              text: t('pages.collected.undo'),
               handler: confirmUndo
             }
           ]}

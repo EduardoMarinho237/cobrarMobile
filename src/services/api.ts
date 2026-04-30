@@ -1,6 +1,26 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'DEV';
+const APP_VERSION = import.meta.env.VITE_APP_VERSION || '0.0.0';
 
 export const isDev = () => API_BASE_URL === 'DEV';
+
+// Event emitter para app desatualizado
+let appUpdateCallback: ((message: string, downloadUrl: string) => void) | null = null;
+
+export const setAppUpdateCallback = (callback: (message: string, downloadUrl: string) => void) => {
+  appUpdateCallback = callback;
+};
+
+// Importar o event emitter (importação dinâmica para evitar circular dependency)
+let fechamentoEvents: any = null;
+const getFechamentoEvents = () => {
+  if (!fechamentoEvents) {
+    // Importação dinâmica para evitar circular dependency
+    import('../hooks/useFechamentoControl').then(module => {
+      fechamentoEvents = module.fechamentoEvents;
+    });
+  }
+  return fechamentoEvents;
+};
 
 // Inicializa o timezone padrão se não existir
 if (!localStorage.getItem('timezone')) {
@@ -30,10 +50,16 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
   console.log('apiRequest - endpoint:', endpoint);
   console.log('apiRequest - language:', currentLanguage);
 
+  // Verificar se endpoint é exceção (não precisa de X-App-Version)
+  const isAuthEndpoint = endpoint.startsWith('/api/auth');
+  const isPublicEndpoint = endpoint.startsWith('/api/public');
+  const skipVersionHeader = isAuthEndpoint || isPublicEndpoint;
+
   const headers = {
     'Content-Type': 'application/json',
     'Accept-Language': currentLanguage,
     'X-Timezone': currentTimezone,
+    ...(!skipVersionHeader && { 'X-App-Version': APP_VERSION }),
     ...(token && { Authorization: `Bearer ${token}` }),
     ...options?.headers,
   };
@@ -63,11 +89,38 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
       } catch (e) {
         // Se não conseguir parsear, continua sem os dados
       }
-      
-      // Verificar se é erro de dia fechado
-      if (errorData && errorData.data === "closed-day") {
-        console.log('Dia fechado detectado na resposta da API');
-        // Redirecionar para tela de fechamento
+
+      // Verificar se é erro de app desatualizado (needToUpdate: true)
+      if (errorData && errorData.needToUpdate === true) {
+        console.log('App desatualizado detectado:', errorData);
+        console.log('appUpdateCallback existe?', !!appUpdateCallback);
+        if (appUpdateCallback && errorData.message && errorData.data) {
+          console.log('Chamando appUpdateCallback com link:', errorData.data);
+          appUpdateCallback(errorData.message, errorData.data);
+          console.log('appUpdateCallback chamado com sucesso');
+        }
+        return errorData;
+      }
+
+      // Verificar se é erro de dia fechado ou usuário bloqueado
+      if (errorData && (errorData.data === "closed-day" || errorData.data === "blocked")) {
+        console.log('Dia fechado ou usuário bloqueado detectado na resposta da API:', errorData.data);
+        
+        // Emitir evento para o hook
+        const events = getFechamentoEvents();
+        if (events) {
+          events.emit(true); // true = dia fechado/bloqueado
+        }
+        
+        // Se for "blocked", redireciona para página de bloqueio (bloqueio total)
+        if (errorData.data === "blocked") {
+          console.log('Usuário bloqueado, redirecionando para página de bloqueio');
+          localStorage.removeItem('user'); // Remove usuário do localStorage
+          window.location.replace('/route/blocked');
+          return;
+        }
+        
+        // Se for "closed-day", redireciona para tela de fechamento
         if (window.location.pathname !== '/route/fechamento') {
           window.location.replace('/route/fechamento');
         }
@@ -89,6 +142,15 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     try {
       const parsed = JSON.parse(text);
       console.log('JSON parseado com sucesso:', parsed);
+      
+      // Se a resposta não tiver "closed-day", emitir evento de dia aberto
+      if (parsed && parsed.data !== "closed-day") {
+        const events = getFechamentoEvents();
+        if (events) {
+          events.emit(false); // false = dia aberto
+        }
+      }
+      
       return parsed;
     } catch (error) {
       console.error('Erro ao fazer parse do JSON:', error);
@@ -97,11 +159,12 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     }
   } catch (error) {
     console.error('Erro no apiRequest:', error);
+
     // Se for erro de rede ou conexão, usa mensagem padrão
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Erro de conexão, tente novamente');
     }
-    
+
     // Se já for uma mensagem de erro personalizada, propaga
     throw error;
   }
@@ -181,6 +244,12 @@ export const login = async (login: string, password: string) => {
       ...userData,
       login: login
     };
+    
+    // Salva o closedDay no localStorage separadamente se existir
+    if (userData.closedDay !== undefined) {
+      localStorage.setItem('closedDay', JSON.stringify(userData.closedDay));
+    }
+    
     console.log('Login API successful:', result);
     console.log('=== FIM DO LOGIN (SUCESSO) ===');
     return result;

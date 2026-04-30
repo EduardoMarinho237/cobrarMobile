@@ -1,13 +1,14 @@
 import { Redirect, Route } from 'react-router-dom';
-import { IonApp, setupIonicReact } from '@ionic/react';
+import { IonApp, setupIonicReact, IonAlert } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
+import { useState, useEffect } from 'react';
 import Login from './pages/Login';
 import AdminTabs from './pages/AdminTabs';
 import ManagerTabs from './pages/ManagerTabs';
 import RouteTabs from './pages/RouteTabs';
 import EditarCategoria from './pages/manager/EditarCategoria';
 import DetalhesGastos from './pages/manager/DetalhesGastos';
-import { getCurrentUser } from './services/api';
+import { getCurrentUser, setAppUpdateCallback } from './services/api';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -42,6 +43,29 @@ import './theme/variables.css';
 setupIonicReact();
 
 const App: React.FC = () => {
+  const [showUpdateAlert, setShowUpdateAlert] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState('');
+  const [downloadUrl, setDownloadUrl] = useState('');
+
+  useEffect(() => {
+    // Registrar callback para quando o app estiver desatualizado
+    console.log('App - Registrando callback de atualização');
+    setAppUpdateCallback((message: string, url: string) => {
+      console.log('App - Callback de atualização chamado:', { message, url });
+      setUpdateMessage(message);
+      setDownloadUrl(url);
+      setShowUpdateAlert(true);
+      console.log('App - Estado atualizado, showUpdateAlert deve ser true');
+    });
+  }, []);
+
+  const handleDownload = () => {
+    if (downloadUrl) {
+      window.open(downloadUrl, '_blank');
+    }
+    setShowUpdateAlert(false);
+  };
+
   const checkAuth = () => {
     const user = getCurrentUser();
     console.log('checkAuth - user from localStorage:', user);
@@ -146,6 +170,20 @@ const App: React.FC = () => {
           {checkAuth() ? <Redirect to={getRedirectPath()} /> : <Redirect to="/login" />}
         </Route>
       </IonReactRouter>
+
+      {/* Alert de Atualização do App */}
+      <IonAlert
+        isOpen={showUpdateAlert}
+        onDidDismiss={() => setShowUpdateAlert(false)}
+        header={updateMessage}
+        buttons={[
+          {
+            text: 'Download',
+            handler: handleDownload,
+          },
+        ]}
+        backdropDismiss={false}
+      />
     </IonApp>
   );
 };

@@ -11,7 +11,8 @@ import {
 import { getCurrentUser, login, logout, isDev } from '../services/api';
 import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import LanguageSelector from '../components/LanguageSelector';
+// NOTE: Language selector temporarily disabled - only Spanish (es-CO) is available now
+// import LanguageSelector from '../components/LanguageSelector';
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
@@ -175,6 +176,7 @@ const Login: React.FC = () => {
             )}
           </div>
           
+          {/* NOTE: Language selector temporarily disabled - only Spanish (es-CO) is available now
           <div style={{
             marginTop: '30px',
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -184,6 +186,7 @@ const Login: React.FC = () => {
           }}>
             <LanguageSelector />
           </div>
+          */}
         </div>
         
         <IonAlert

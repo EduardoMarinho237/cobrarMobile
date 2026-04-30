@@ -77,9 +77,7 @@
     "timezone": "Horario",
     "timezoneBrazil": "Horario de Brasil",
     "timezoneColombia": "Horario de Colombia",
-    "timezoneUnitedStates": "Horario de Estados Unidos",
-    "support": "Soporte",
-    "reportError": "¿Reportó un error? Haga clic aquí para hablar con el soporte"
+    "timezoneUnitedStates": "Horario de Estados Unidos"
   },
   "routeTabs": {
     "accessBlocked": "Acceso Bloqueado",
@@ -196,8 +194,7 @@
       "collected": "Recaudado",
       "balance": "Saldo",
       "noDetailedDataFound": "No se encontraron datos detallados",
-      "checkRecords": "verifique los registros",
-      "featureInDevelopment": "Esta funcionalidad está en desarrollo."
+      "checkRecords": "verifique los registros"
     },
     "routes": {
       "title": "Rutas",
