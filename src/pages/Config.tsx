@@ -18,11 +18,12 @@ import {
   IonRefresher,
   IonRefresherContent
 } from '@ionic/react';
-import { logOut, person, lockClosed, lockOpen, refresh } from 'ionicons/icons';
+import { logOut, person, lockClosed, lockOpen, refresh, helpCircle } from 'ionicons/icons';
 import { getCurrentUser, logout } from '../services/api';
 import { useFechamentoControl } from '../hooks/useFechamentoControl';
 import { useTranslation } from 'react-i18next';
-import LanguageSelector from '../components/LanguageSelector';
+// NOTE: Language selector temporarily disabled - only Spanish (es-CO) is available now
+// import LanguageSelector from '../components/LanguageSelector';
 import LocaleSelector from '../components/LocaleSelector';
 import { translateRole } from '../utils/roleTranslation';
 
@@ -136,7 +137,9 @@ const Config: React.FC = () => {
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
+              {/* NOTE: Language selector temporarily disabled - only Spanish (es-CO) is available now
               <LanguageSelector />
+              */}
               <div style={{ marginTop: '16px' }}>
                 <LocaleSelector />
               </div>
@@ -179,6 +182,30 @@ const Config: React.FC = () => {
               </IonCardContent>
             </IonCard>
           )}
+
+          {/* Card de Suporte */}
+          <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
+            <IonCardHeader>
+              <IonCardTitle>
+                <IonIcon icon={helpCircle} style={{ marginRight: '8px' }} />
+                {t('config.support')}
+              </IonCardTitle>
+            </IonCardHeader>
+            <IonCardContent>
+              <IonItem 
+                button 
+                onClick={() => window.open(import.meta.env.VITE_SUPPORT_LINK, '_blank')}
+                style={{ cursor: 'pointer' }}
+              >
+                <IonLabel>
+                  <p style={{ color: '#007bff', fontSize: '14px' }}>
+                    {t('config.reportError')}
+                  </p>
+                </IonLabel>
+                <IonIcon icon={helpCircle} slot="end" color="primary" />
+              </IonItem>
+            </IonCardContent>
+          </IonCard>
 
           {/* Botão de Logout */}
           <IonButton

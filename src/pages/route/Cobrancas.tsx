@@ -27,6 +27,7 @@ import {
   IonText
 } from '@ionic/react';
 import { create, refresh, cashOutline, personOutline, locationOutline, callOutline } from 'ionicons/icons';
+import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { 
   getDailySchedule, 
   createDebit, 
@@ -36,18 +37,19 @@ import {
 } from '../../services/debitApi';
 import { getClientById, Client } from '../../services/clientApi';
 import Toast from '../../components/Toast';
+import { useTranslation } from 'react-i18next';
 
 const Cobrancas: React.FC = () => {
+  const { t } = useTranslation();
   const [dailySchedule, setDailySchedule] = useState<DailySchedule | null>(null);
   const [clients, setClients] = useState<{ [key: number]: Client }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showClientModal, setShowClientModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showPaymentAlert, setShowPaymentAlert] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(null);
+  const [editingPaymentId, setEditingPaymentId] = useState<number | null>(null);
   const [editedValue, setEditedValue] = useState<number>(0);
-  const [changeAllDays, setChangeAllDays] = useState(false);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
 
   useEffect(() => {
@@ -78,7 +80,7 @@ const Cobrancas: React.FC = () => {
       setClients(clientMap);
     } catch (error: any) {
       console.error('Erro ao carregar agenda diária:', error);
-      showToast(error.message || 'Erro ao carregar agenda diária', 'danger');
+      showToast(error.message || t('pages.collections.errorLoadingSchedule'), 'danger');
       setDailySchedule({
         pendingPayments: [],
         dailyExpectation: 0,
@@ -97,15 +99,12 @@ const Cobrancas: React.FC = () => {
   const handlePayment = (payment: PendingPayment) => {
     setSelectedPayment(payment);
     setEditedValue(payment.installmentValue);
-    setChangeAllDays(false);
     setShowPaymentAlert(true);
   };
 
   const handleEditPayment = (payment: PendingPayment) => {
-    setSelectedPayment(payment);
+    setEditingPaymentId(payment.creditId);
     setEditedValue(payment.installmentValue);
-    setChangeAllDays(false);
-    setShowEditModal(true);
   };
 
   const confirmPayment = async () => {
@@ -114,31 +113,26 @@ const Cobrancas: React.FC = () => {
     const debitRequest: CreateDebitRequest = {
       value: editedValue,
       creditId: selectedPayment.creditId,
-      changeAllDays: changeAllDays
+      changeAllDays: false
     };
 
     try {
       const response = await createDebit(debitRequest);
       if (response.success) {
-        showToast('Pagamento registrado com sucesso', 'success');
+        showToast(t('pages.collections.paymentRegisteredSuccess'), 'success');
         setShowPaymentAlert(false);
-        setShowEditModal(false);
         setSelectedPayment(null);
+        setEditingPaymentId(null);
         loadData(); // Recarregar agenda
       } else {
-        showToast(response.message || 'Erro ao registrar pagamento', 'danger');
+        showToast(response.message || t('pages.collections.errorRegisteringPayment'), 'danger');
       }
     } catch (error) {
-      showToast('Erro ao registrar pagamento', 'danger');
+      showToast(t('pages.collections.errorRegisteringPayment'), 'danger');
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
+  
 
   const getClientInfo = (clientId: number) => {
     return clients[clientId];
@@ -156,7 +150,7 @@ const Cobrancas: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Cobranças</IonTitle>
+          <IonTitle>{t('pages.collections.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -170,35 +164,35 @@ const Cobrancas: React.FC = () => {
             <IonGrid style={{ marginBottom: '20px' }}>
               <IonRow>
                 <IonCol size="4">
-                  <IonCard style={{ textAlign: 'center', borderRadius: '12px' }}>
+                  <IonCard style={{ textAlign: 'center', borderRadius: '12px', background: 'var(--ion-color-light)' }}>
                     <IonCardContent>
                       <IonIcon icon={cashOutline} style={{ fontSize: '24px', color: '#007bff' }} />
                       <h4 style={{ margin: '8px 0 4px 0', color: '#007bff' }}>
-                        {formatCurrency(dailySchedule.dailyExpectation)}
+                        {formatCurrencyWithSymbol(dailySchedule.dailyExpectation)}
                       </h4>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>Meta do Dia</p>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{t('pages.collections.dailyGoal')}</p>
                     </IonCardContent>
                   </IonCard>
                 </IonCol>
                 <IonCol size="4">
-                  <IonCard style={{ textAlign: 'center', borderRadius: '12px' }}>
+                  <IonCard style={{ textAlign: 'center', borderRadius: '12px', background: 'var(--ion-color-light)' }}>
                     <IonCardContent>
                       <IonIcon icon={cashOutline} style={{ fontSize: '24px', color: '#28a745' }} />
                       <h4 style={{ margin: '8px 0 4px 0', color: '#28a745' }}>
-                        {formatCurrency(dailySchedule.collectedToday)}
+                        {formatCurrencyWithSymbol(dailySchedule.collectedToday)}
                       </h4>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>Arrecadado</p>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{t('pages.collections.collected')}</p>
                     </IonCardContent>
                   </IonCard>
                 </IonCol>
                 <IonCol size="4">
-                  <IonCard style={{ textAlign: 'center', borderRadius: '12px' }}>
+                  <IonCard style={{ textAlign: 'center', borderRadius: '12px', background: 'var(--ion-color-light)' }}>
                     <IonCardContent>
                       <IonIcon icon={cashOutline} style={{ fontSize: '24px', color: '#dc3545' }} />
                       <h4 style={{ margin: '8px 0 4px 0', color: '#dc3545' }}>
-                        {formatCurrency(dailySchedule.remainingToCollect)}
+                        {formatCurrencyWithSymbol(dailySchedule.remainingToCollect)}
                       </h4>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>Restante</p>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{t('pages.collections.remaining')}</p>
                     </IonCardContent>
                   </IonCard>
                 </IonCol>
@@ -209,11 +203,11 @@ const Cobrancas: React.FC = () => {
           {isLoading ? (
             <div style={{ textAlign: 'center', padding: '40px' }}>
               <IonSpinner name="dots" />
-              <p style={{ color: '#666', marginTop: '16px' }}>Carregando cobranças...</p>
+              <p style={{ color: '#666', marginTop: '16px' }}>{t('pages.collections.loadingCollections')}</p>
             </div>
           ) : !dailySchedule || dailySchedule.pendingPayments.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p>Nenhuma cobrança para hoje</p>
+              <p>{t('pages.collections.noCollectionsToday')}</p>
             </div>
           ) : (
             dailySchedule.pendingPayments.map((payment) => {
@@ -223,66 +217,138 @@ const Cobrancas: React.FC = () => {
                   key={payment.creditId} 
                   style={{ 
                     marginBottom: '16px',
-                    borderRadius: '12px'
+                    borderRadius: '12px',
+                    background: '#ffffff'
                   }}
                 >
                   <IonCardHeader>
                     <IonCardTitle>{payment.clientName}</IonCardTitle>
                   </IonCardHeader>
-                  <IonCardContent>
-                    <IonGrid>
-                      <IonRow>
-                        <IonCol size="9">
-                          <IonItem button onClick={() => openClientModal(payment.clientId)}>
-                            <IonIcon icon={locationOutline} style={{ marginRight: '8px', color: '#666' }} />
-                            <IonLabel>
-                              <p style={{ color: '#666', fontSize: '14px' }}>
-                                {clientInfo?.address || 'Endereço não disponível'}
-                              </p>
-                            </IonLabel>
-                          </IonItem>
-                          <IonItem>
-                            <IonIcon icon={callOutline} style={{ marginRight: '8px', color: '#666' }} />
-                            <IonLabel>
-                              <p style={{ color: '#666', fontSize: '14px' }}>
-                                {clientInfo?.phone || 'Telefone não disponível'}
-                              </p>
-                            </IonLabel>
-                          </IonItem>
-                        </IonCol>
-                        <IonCol size="3" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <div style={{ textAlign: 'center' }}>
-                            <IonButton
-                              color="success"
-                              size="small"
-                              onClick={() => handlePayment(payment)}
-                              style={{ margin: 0 }}
-                            >
-                              {formatCurrency(payment.installmentValue)}
-                            </IonButton>
-                            <IonButton
-                              fill="clear"
-                              size="small"
-                              onClick={() => handleEditPayment(payment)}
-                              style={{ margin: '4px 0 0 0' }}
-                            >
-                              <IonIcon icon={create} />
-                            </IonButton>
+                  <IonCardContent style={{ padding: '16px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {/* Linha principal: informações e valor */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                        {/* Informações do cliente */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              marginBottom: '8px',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => openClientModal(payment.clientId)}
+                          >
+                            <IonIcon 
+                              icon={locationOutline} 
+                              style={{ 
+                                marginRight: '8px', 
+                                color: '#666', 
+                                fontSize: '14px',
+                                flexShrink: 0
+                              }} 
+                            />
+                            <p style={{ 
+                              color: '#666', 
+                              fontSize: '13px', 
+                              margin: 0,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {clientInfo?.address || t('pages.collections.addressNotAvailable')}
+                            </p>
                           </div>
-                        </IonCol>
-                      </IonRow>
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <IonIcon 
+                              icon={callOutline} 
+                              style={{ 
+                                marginRight: '8px', 
+                                color: '#666', 
+                                fontSize: '14px',
+                                flexShrink: 0
+                              }} 
+                            />
+                            <p style={{ 
+                              color: '#666', 
+                              fontSize: '13px', 
+                              margin: 0,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {clientInfo?.phone || t('pages.collections.phoneNotAvailable')}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Campo de valor e botão */}
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '8px',
+                          flexShrink: 0,
+                          width: '120px'
+                        }}>
+                          <div style={{ flex: 1 }}>
+                            {editingPaymentId === payment.creditId ? (
+                              <IonInput
+                                type="number"
+                                value={editedValue}
+                                onIonInput={(e: any) => setEditedValue(Number(e.detail.value))}
+                                onIonBlur={() => setEditingPaymentId(null)}
+                                style={{ 
+                                  textAlign: 'center', 
+                                  fontSize: '13px',
+                                  height: '36px'
+                                }}
+                              />
+                            ) : (
+                              <div
+                                onClick={() => handleEditPayment(payment)}
+                                style={{ 
+                                  textAlign: 'center', 
+                                  fontSize: '13px',
+                                  height: '36px',
+                                  background: '#ffffff',
+                                  borderRadius: '8px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  border: '1px solid #e0e0e0'
+                                }}
+                              >
+                                {payment.installmentValue.toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                          <IonButton
+                            color="success"
+                            size="small"
+                            onClick={() => handlePayment(payment)}
+                            style={{ 
+                              margin: 0,
+                              width: '36px',
+                              height: '36px',
+                              '--padding-start': '0',
+                              '--padding-end': '0'
+                            }}
+                          >
+                            <IonIcon icon={cashOutline} style={{ fontSize: '16px' }} />
+                          </IonButton>
+                        </div>
+                      </div>
                       {payment.hasOverdueInstallments && (
-                        <IonRow style={{ marginTop: '8px' }}>
-                          <IonCol size="12">
-                            <IonText color="danger">
-                              <p style={{ fontSize: '12px', margin: 0 }}>
-                                ⚠️ {payment.overdueInstallmentsCount} dias em atraso - {formatCurrency(payment.accumulatedOverdueValue)} acumulado
-                              </p>
-                            </IonText>
-                          </IonCol>
-                        </IonRow>
+                        <div style={{ marginTop: '8px' }}>
+                          <IonText color="danger">
+                            <p style={{ fontSize: '12px', margin: 0 }}>
+                              ⚠️ {payment.overdueInstallmentsCount} {t('pages.collections.daysLate')} - {formatCurrencyWithSymbol(payment.accumulatedOverdueValue)} {t('pages.collections.accumulated')}
+                            </p>
+                          </IonText>
+                        </div>
                       )}
-                    </IonGrid>
+                    </div>
                   </IonCardContent>
                 </IonCard>
               );
@@ -294,9 +360,9 @@ const Cobrancas: React.FC = () => {
         <IonModal isOpen={showClientModal} onDidDismiss={() => setShowClientModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Informações do Cliente</IonTitle>
+              <IonTitle>{t('pages.collections.clientInfo')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowClientModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowClientModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -306,34 +372,34 @@ const Cobrancas: React.FC = () => {
                 <IonItem>
                   <IonIcon icon={personOutline} style={{ marginRight: '12px', color: '#666' }} />
                   <IonLabel>
-                    <h3>Nome</h3>
+                    <h3>{t('pages.collections.name')}</h3>
                     <p>{selectedClient.name}</p>
                   </IonLabel>
                 </IonItem>
                 <IonItem>
                   <IonIcon icon={callOutline} style={{ marginRight: '12px', color: '#666' }} />
                   <IonLabel>
-                    <h3>Telefone</h3>
-                    <p>{selectedClient.phone || 'Não informado'}</p>
+                    <h3>{t('pages.collections.phone')}</h3>
+                    <p>{selectedClient.phone || t('pages.collections.notInformed')}</p>
                   </IonLabel>
                 </IonItem>
                 <IonItem>
                   <IonIcon icon={locationOutline} style={{ marginRight: '12px', color: '#666' }} />
                   <IonLabel>
-                    <h3>Endereço</h3>
-                    <p>{selectedClient.address || 'Não informado'}</p>
+                    <h3>{t('pages.collections.address')}</h3>
+                    <p>{selectedClient.address || t('pages.collections.notInformed')}</p>
                   </IonLabel>
                 </IonItem>
                 <IonItem>
                   <IonLabel>
-                    <h3>Loja</h3>
-                    <p>{selectedClient.shop || 'Não informada'}</p>
+                    <h3>{t('pages.collections.shop')}</h3>
+                    <p>{selectedClient.shop || t('pages.collections.notInformed')}</p>
                   </IonLabel>
                 </IonItem>
                 <IonItem>
                   <IonLabel>
-                    <h3>CPF</h3>
-                    <p>{selectedClient.cpf || 'Não informado'}</p>
+                    <h3>{t('pages.collections.cpf')}</h3>
+                    <p>{selectedClient.cpf || t('pages.collections.notInformed')}</p>
                   </IonLabel>
                 </IonItem>
               </div>
@@ -341,64 +407,20 @@ const Cobrancas: React.FC = () => {
           </IonContent>
         </IonModal>
 
-        {/* Modal de Editar Valor */}
-        <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>Editar Valor do Pagamento</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowEditModal(false)}>Fechar</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent>
-            <div style={{ padding: '16px' }}>
-              <IonItem>
-                <IonInput
-                  label="Valor do Pagamento"
-                  labelPlacement="floating"
-                  type="number"
-                  value={editedValue}
-                  onIonInput={(e: any) => setEditedValue(Number(e.detail.value))}
-                />
-              </IonItem>
-              <IonItem>
-                <IonCheckbox
-                  checked={changeAllDays}
-                  onIonChange={(e) => setChangeAllDays(e.detail.checked)}
-                />
-                <IonLabel style={{ marginLeft: '16px' }}>
-                  Alterar valor para todos os dias restantes
-                </IonLabel>
-              </IonItem>
-              <IonButton 
-                expand="block" 
-                shape="round"
-                onClick={() => {
-                  setShowEditModal(false);
-                  setShowPaymentAlert(true);
-                }}
-                style={{ marginTop: '16px' }}
-              >
-                Confirmar Pagamento
-              </IonButton>
-            </div>
-          </IonContent>
-        </IonModal>
-
+        
         {/* Alert de Confirmação de Pagamento */}
         <IonAlert
           isOpen={showPaymentAlert}
           onDidDismiss={() => setShowPaymentAlert(false)}
-          header="Confirmar Pagamento"
-          message={`Deseja registrar o pagamento de ${formatCurrency(editedValue)} para ${selectedPayment?.clientName || 'este cliente'}?`}
+          header={t('pages.collections.confirmPayment')}
+          message={t('pages.collections.confirmPaymentMessage').replace('{value}', formatCurrencyWithSymbol(editedValue)).replace('{clientName}', selectedPayment?.clientName || t('pages.collections.thisClient'))}
           buttons={[
             {
-              text: 'Cancelar',
+              text: t('common.cancel'),
               role: 'cancel'
             },
             {
-              text: 'Confirmar',
+              text: t('pages.collections.confirm'),
               handler: confirmPayment
             }
           ]}

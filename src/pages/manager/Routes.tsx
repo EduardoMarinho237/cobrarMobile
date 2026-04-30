@@ -27,6 +27,7 @@ import {
 import { add, eye, eyeOff, trash, key, create, refresh, lockClosed, lockOpen } from 'ionicons/icons';
 import { getRoutes, createRoute, updateRoute, deleteRoute } from '../../services/routeApi';
 import { toggleRouteAudit, changeManagerPassword } from '../../services/api';
+import { fecharDiaRoute, abrirDiaRoute } from '../../services/fechamentoApi';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
 import { translateRole } from '../../utils/roleTranslation';
@@ -40,6 +41,7 @@ interface Route {
   appearOnAudit?: boolean;
   restricted?: boolean;
   dayClosed?: boolean;
+  tax?: number;
 }
 
 const Routes: React.FC = () => {
@@ -56,8 +58,8 @@ const Routes: React.FC = () => {
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
   
   // Form states
-  const [newRoute, setNewRoute] = useState({ name: '', login: '', password: '', confirmPassword: '' });
-  const [editRoute, setEditRoute] = useState({ name: '', login: '' });
+  const [newRoute, setNewRoute] = useState({ name: '', login: '', password: '', confirmPassword: '', tax: '' });
+  const [editRoute, setEditRoute] = useState({ name: '', login: '', tax: '' });
   const [newPassword, setNewPassword] = useState({ password: '', confirmPassword: '' });
 
   useEffect(() => {
@@ -86,7 +88,7 @@ const Routes: React.FC = () => {
       console.log('Routes carregados e filtrados:', routesData);
     } catch (error) {
       console.error('Erro ao carregar routes:', error);
-      showToast('Erro ao carregar routes', 'danger');
+      showToast(t('pages.routes.errorLoadingRoutes'), 'danger');
     } finally {
       setIsLoading(false);
     }
@@ -114,30 +116,43 @@ const Routes: React.FC = () => {
     setToast({ isOpen: true, message, color });
   };
 
-  const validateFields = (name: string, login: string, password?: string, confirmPassword?: string) => {
+  const validateFields = (name: string, login: string, password?: string, confirmPassword?: string, tax?: string) => {
     if (!name.trim()) {
-      showToast('Nome não pode estar vazio', 'danger');
+      showToast(t('pages.routes.nameRequired'), 'danger');
       return false;
     }
     
     if (!login.trim()) {
-      showToast('Login não pode estar vazio', 'danger');
+      showToast(t('pages.routes.loginRequired'), 'danger');
       return false;
     }
     
     if (login.includes(' ')) {
-      showToast('Login não pode conter espaços', 'danger');
+      showToast(t('pages.routes.loginNoSpaces'), 'danger');
       return false;
+    }
+    
+    if (tax !== undefined) {
+      if (!tax.trim()) {
+        showToast(t('pages.routes.taxRequired'), 'danger');
+        return false;
+      }
+      
+      const taxValue = parseInt(tax);
+      if (isNaN(taxValue) || taxValue < 0) {
+        showToast(t('pages.routes.taxInvalid'), 'danger');
+        return false;
+      }
     }
     
     if (password !== undefined && confirmPassword !== undefined) {
       if (!password.trim()) {
-        showToast('Senha não pode estar vazia', 'danger');
+        showToast(t('pages.routes.passwordRequired'), 'danger');
         return false;
       }
       
       if (password !== confirmPassword) {
-        showToast('Senhas não conferem', 'danger');
+        showToast(t('pages.routes.passwordMismatch'), 'danger');
         return false;
       }
     }
@@ -146,29 +161,29 @@ const Routes: React.FC = () => {
   };
 
   const handleCreateRoute = async () => {
-    if (!validateFields(newRoute.name, newRoute.login, newRoute.password, newRoute.confirmPassword)) {
+    if (!validateFields(newRoute.name, newRoute.login, newRoute.password, newRoute.confirmPassword, newRoute.tax)) {
       return;
     }
 
     try {
-      const response = await createRoute(newRoute.name, newRoute.login, newRoute.password);
+      const response = await createRoute(newRoute.name, newRoute.login, newRoute.password, parseInt(newRoute.tax));
       
       // Usa a mensagem da API
-      showToast(response.message || 'Route criado com sucesso', response.success ? 'success' : 'danger');
+      showToast(response.message || t('pages.routes.routeCreatedSuccess'), response.success ? 'success' : 'danger');
       
       if (response.success) {
         setShowCreateModal(false);
-        setNewRoute({ name: '', login: '', password: '', confirmPassword: '' });
+        setNewRoute({ name: '', login: '', password: '', confirmPassword: '', tax: '' });
         loadRoutes();
       }
     } catch (error) {
       console.error('Erro ao criar route:', error);
-      showToast('Erro de conexão, tente novamente', 'danger');
+      showToast(t('pages.routes.connectionError'), 'danger');
     }
   };
 
   const handleEditRoute = () => {
-    if (!validateFields(editRoute.name, editRoute.login)) {
+    if (!validateFields(editRoute.name, editRoute.login, undefined, undefined, editRoute.tax)) {
       return;
     }
 
@@ -177,29 +192,30 @@ const Routes: React.FC = () => {
     console.log('Atualizando route:', { 
       id: selectedRoute.id, 
       name: editRoute.name, 
-      login: editRoute.login 
+      login: editRoute.login,
+      tax: parseInt(editRoute.tax)
     });
 
-    updateRoute(selectedRoute.id, editRoute.name, editRoute.login)
+    updateRoute(selectedRoute.id, editRoute.name, editRoute.login, parseInt(editRoute.tax))
       .then(response => {
         console.log('Resposta da API:', response);
         
         // Usa a mensagem da API
-        showToast(response.message || 'Route atualizado com sucesso', response.success ? 'success' : 'danger');
+        showToast(response.message || t('pages.routes.routeUpdatedSuccess'), response.success ? 'success' : 'danger');
         
         // Sempre volta para a listagem, mesmo com erro
         setShowEditModal(false);
-        setEditRoute({ name: '', login: '' });
+        setEditRoute({ name: '', login: '', tax: '' });
         setSelectedRoute(null);
         loadRoutes();
       })
       .catch((error) => {
         console.error('Erro ao atualizar route:', error);
-        showToast('Erro de conexão, tente novamente', 'danger');
+        showToast(t('pages.routes.connectionError'), 'danger');
         
         // Mesmo com erro, volta para a listagem
         setShowEditModal(false);
-        setEditRoute({ name: '', login: '' });
+        setEditRoute({ name: '', login: '', tax: '' });
         setSelectedRoute(null);
         loadRoutes();
       });
@@ -211,7 +227,7 @@ const Routes: React.FC = () => {
     deleteRoute(selectedRoute.id)
       .then(response => {
         // Usa a mensagem da API
-        showToast(response.message || 'Route excluído com sucesso', response.success ? 'success' : 'danger');
+        showToast(response.message || t('pages.routes.routeDeletedSuccess'), response.success ? 'success' : 'danger');
         
         if (response.success) {
           setShowDeleteAlert(false);
@@ -221,13 +237,13 @@ const Routes: React.FC = () => {
       })
       .catch((error) => {
         console.error('Erro ao excluir route:', error);
-        showToast('Erro de conexão, tente novamente', 'danger');
+        showToast(t('pages.routes.connectionError'), 'danger');
       });
   };
 
   const openEditModal = (route: Route) => {
     setSelectedRoute(route);
-    setEditRoute({ name: route.name, login: route.login });
+    setEditRoute({ name: route.name, login: route.login, tax: route.tax?.toString() || '' });
     setShowEditModal(true);
   };
 
@@ -255,12 +271,12 @@ const Routes: React.FC = () => {
       ));
       
       // Usa a mensagem da API
-      showToast(response.message || (newAppearOnAudit ? 'Acesso restaurado com sucesso' : 'Acesso restrito com sucesso'), 
+      showToast(response.message || (newAppearOnAudit ? t('pages.routes.accessRestored') : t('pages.routes.accessRestricted')), 
                 response.success ? 'success' : 'danger');
       
     } catch (error) {
       console.error('Erro ao alterar acesso:', error);
-      showToast('Erro de conexão, tente novamente', 'danger');
+      showToast(t('pages.routes.connectionError'), 'danger');
       
       // Mesmo com erro, tenta atualizar o estado local
       setRoutes(routes.map(r => 
@@ -279,12 +295,12 @@ const Routes: React.FC = () => {
     if (!selectedRoute) return;
     
     if (!newPassword.password.trim()) {
-      showToast('Senha não pode estar vazia', 'danger');
+      showToast(t('pages.routes.passwordRequired'), 'danger');
       return;
     }
     
     if (newPassword.password !== newPassword.confirmPassword) {
-      showToast('Senhas não conferem', 'danger');
+      showToast(t('pages.routes.passwordMismatch'), 'danger');
       return;
     }
     
@@ -292,7 +308,7 @@ const Routes: React.FC = () => {
       const response = await changeManagerPassword(selectedRoute.id, newPassword.password);
       
       // SEMPRE usa a mensagem da API, se não tiver mensagem, mostra erro de conexão
-      const message = response?.message || 'Erro de conexão';
+      const message = response?.message || t('pages.routes.connectionErrorSimple');
       const color = response?.success === true ? 'success' : 'danger';
       
       showToast(message, color);
@@ -303,52 +319,53 @@ const Routes: React.FC = () => {
       }
     } catch (error) {
       console.error('Erro ao alterar senha:', error);
-      showToast('Erro de conexão', 'danger');
+      showToast(t('pages.routes.connectionErrorSimple'), 'danger');
     }
   };
 
   const handleToggleDayClose = async () => {
     if (!selectedRoute) return;
 
-    try {
-      const toOpen = selectedRoute.dayClosed; // Se está fechado, vamos abrir
-      const userStr = localStorage.getItem('user');
-      const user = userStr ? JSON.parse(userStr) : null;
-      const token = user?.token;
-      const currentLanguage = localStorage.getItem('language') || 'pt-BR';
-      const currentTimezone = localStorage.getItem('timezone') || 'America/Sao_Paulo';
+    console.log('=== INÍCIO handleToggleDayClose ===');
+    console.log('selectedRoute:', selectedRoute);
+    console.log('dayClosed:', selectedRoute.dayClosed);
 
-      const response = await fetch(`/api/users/close-day/${selectedRoute.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept-Language': currentLanguage,
-          'X-Timezone': currentTimezone,
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-        body: JSON.stringify({ toOpen })
-      });
+    try {
+      const isCurrentlyClosed = selectedRoute.dayClosed;
       
-      const data = await response.json();
+      let response;
+      if (isCurrentlyClosed) {
+        // Abrir dia fechado
+        response = await abrirDiaRoute(selectedRoute.id);
+      } else {
+        // Fechar dia aberto
+        response = await fecharDiaRoute(selectedRoute.id);
+      }
+      
+      console.log('Resposta da API:', response);
       
       // Usa a mensagem da API
-      showToast(data.message || (toOpen ? 'Dia aberto com sucesso' : 'Dia fechado com sucesso'), 
-                data.success ? 'success' : 'danger');
+      showToast(response.message || (isCurrentlyClosed ? t('pages.routes.dayOpened') : t('pages.routes.dayClosed')), 
+                response.success ? 'success' : 'danger');
       
-      if (data.success) {
+      if (response.success) {
         // Atualiza o estado local
         setRoutes(routes.map(r => 
           r.id === selectedRoute.id ? { 
             ...r, 
-            dayClosed: !toOpen // Inverte o estado
+            dayClosed: !isCurrentlyClosed // Inverte o estado
           } : r
         ));
         setShowDayCloseAlert(false);
         setSelectedRoute(null);
+        console.log('=== FIM handleToggleDayClose (SUCESSO) ===');
+      } else {
+        console.log('=== FIM handleToggleDayClose (ERRO API) ===');
       }
     } catch (error) {
       console.error('Erro ao alterar status do dia:', error);
-      showToast('Erro de conexão, tente novamente', 'danger');
+      console.log('=== FIM handleToggleDayClose (ERRO CATCH) ===');
+      showToast(t('pages.routes.connectionError'), 'danger');
     }
   };
 
@@ -452,6 +469,13 @@ const Routes: React.FC = () => {
                             <IonItem>
                               <IonLabel>
                                 <h3>{t('pages.routes.dayStatus')}: {route.dayClosed ? t('pages.routes.closed') : t('pages.routes.open')}</h3>
+                              </IonLabel>
+                            </IonItem>
+                          </IonCol>
+                          <IonCol size="12">
+                            <IonItem>
+                              <IonLabel>
+                                <h3>{t('pages.routes.tax')}: {route.tax || 0}%</h3>
                               </IonLabel>
                             </IonItem>
                           </IonCol>
@@ -570,6 +594,16 @@ const Routes: React.FC = () => {
                   onIonInput={(e: any) => setNewRoute({ ...newRoute, confirmPassword: e.detail.value! })}
                 />
               </IonItem>
+              <IonItem>
+                <IonInput
+                  label={t('pages.routes.tax')}
+                  labelPlacement="floating"
+                  placeholder={t('pages.routes.taxPlaceholder')}
+                  type="number"
+                  value={newRoute.tax}
+                  onIonInput={(e: any) => setNewRoute({ ...newRoute, tax: e.detail.value! })}
+                />
+              </IonItem>
               <IonButton 
                 expand="block" 
                 shape="round"
@@ -610,6 +644,16 @@ const Routes: React.FC = () => {
                   placeholder={t('pages.routes.loginPlaceholder')}
                   value={editRoute.login}
                   onIonInput={(e: any) => setEditRoute({ ...editRoute, login: e.detail.value! })}
+                />
+              </IonItem>
+              <IonItem>
+                <IonInput
+                  label={t('pages.routes.tax')}
+                  labelPlacement="floating"
+                  placeholder={t('pages.routes.taxPlaceholder')}
+                  type="number"
+                  value={editRoute.tax}
+                  onIonInput={(e: any) => setEditRoute({ ...editRoute, tax: e.detail.value! })}
                 />
               </IonItem>
               <IonButton 

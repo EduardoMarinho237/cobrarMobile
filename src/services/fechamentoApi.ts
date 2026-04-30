@@ -157,12 +157,60 @@ export const fecharDia = async () => {
   if (isDev()) {
     return {
       success: true,
-      message: 'Dia fechado com sucesso'
+      message: 'Dia fechado com sucesso',
+      data: null
     };
   }
 
-  return apiRequest('/api/fechamento/fechar', {
-    method: 'POST'
+  return apiRequest('/api/users/close-day', {
+    method: 'POST',
+    body: JSON.stringify({ toClose: true })
+  });
+};
+
+export const abrirDia = async () => {
+  if (isDev()) {
+    return {
+      success: true,
+      message: 'Dia aberto com sucesso',
+      data: null
+    };
+  }
+
+  return apiRequest('/api/users/open-day', {
+    method: 'POST',
+    body: JSON.stringify({ toOpen: true })
+  });
+};
+
+// Funções para MANAGER controlar dia de ROUTE
+export const fecharDiaRoute = async (routeId: number) => {
+  if (isDev()) {
+    return {
+      success: true,
+      message: 'Dia fechado com sucesso',
+      data: null
+    };
+  }
+
+  return apiRequest(`/api/users/${routeId}/close-day`, {
+    method: 'POST',
+    body: JSON.stringify({ toClose: true })
+  });
+};
+
+export const abrirDiaRoute = async (routeId: number) => {
+  if (isDev()) {
+    return {
+      success: true,
+      message: 'Dia aberto com sucesso',
+      data: null
+    };
+  }
+
+  return apiRequest(`/api/users/${routeId}/open-day`, {
+    method: 'POST',
+    body: JSON.stringify({ toOpen: true })
   });
 };
 

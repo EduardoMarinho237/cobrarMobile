@@ -26,7 +26,8 @@ import {
   IonCol,
   IonSpinner
 } from '@ionic/react';
-import { add, create, trash } from 'ionicons/icons';
+import { add, trash, create, eye, wallet, refresh } from 'ionicons/icons';
+import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { 
   Expense, 
   CreateExpenseRequest, 
@@ -38,8 +39,10 @@ import {
 } from '../../services/expenseApi';
 import { getExpenseCategories, getExpenseTypes, ExpenseCategory, ExpenseType } from '../../services/expenseApi';
 import Toast from '../../components/Toast';
+import { useTranslation } from 'react-i18next';
 
 const Expenses: React.FC = () => {
+  const { t } = useTranslation();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [types, setTypes] = useState<ExpenseType[]>([]);
@@ -86,7 +89,7 @@ const Expenses: React.FC = () => {
       const sortedCategories = categoriesData.sort((a: ExpenseCategory, b: ExpenseCategory) => a.name.localeCompare(b.name));
       setCategories(sortedCategories);
     } catch (error) {
-      showToast('Erro ao carregar dados', 'danger');
+      showToast(t('pages.expenses.errorLoadingData'), 'danger');
     } finally {
       setIsLoading(false);
     }
@@ -115,19 +118,19 @@ const Expenses: React.FC = () => {
 
   const handleCreateExpense = async () => {
     if (!newExpense.expenseTypeId) {
-      showToast('O tipo de despesa é obrigatório', 'danger');
+      showToast(t('pages.expenses.typeRequired'), 'danger');
       return;
     }
 
     if (newExpense.value < 1) {
-      showToast('O valor deve ser maior que 0', 'danger');
+      showToast(t('pages.expenses.valueGreaterThanZero'), 'danger');
       return;
     }
 
     try {
       const response = await createExpense(newExpense);
       if (response.success) {
-        showToast('Despesa criada com sucesso', 'success');
+        showToast(t('pages.expenses.createdSuccess'), 'success');
         setShowCreateModal(false);
         setNewExpense({ 
           value: 0,
@@ -138,21 +141,21 @@ const Expenses: React.FC = () => {
         setTypes([]);
         loadData();
       } else {
-        showToast(response.message || 'Erro ao criar despesa', 'danger');
+        showToast(response.message || t('pages.expenses.errorCreating'), 'danger');
       }
     } catch (error) {
-      showToast('Erro ao criar despesa', 'danger');
+      showToast(t('pages.expenses.errorCreating'), 'danger');
     }
   };
 
   const handleEditExpense = async () => {
     if (!editExpense.expenseTypeId) {
-      showToast('O tipo de despesa é obrigatório', 'danger');
+      showToast(t('pages.expenses.typeRequired'), 'danger');
       return;
     }
 
     if (editExpense.value < 1) {
-      showToast('O valor deve ser maior que 0', 'danger');
+      showToast(t('pages.expenses.valueGreaterThanZero'), 'danger');
       return;
     }
 
@@ -161,7 +164,7 @@ const Expenses: React.FC = () => {
     try {
       const response = await updateExpense(selectedExpense.id, editExpense);
       if (response.success) {
-        showToast('Despesa atualizada com sucesso', 'success');
+        showToast(t('pages.expenses.updatedSuccess'), 'success');
         setShowEditModal(false);
         setEditExpense({ 
           value: 0,
@@ -173,10 +176,10 @@ const Expenses: React.FC = () => {
         setSelectedExpense(null);
         loadData();
       } else {
-        showToast(response.message || 'Erro ao atualizar despesa', 'danger');
+        showToast(response.message || t('pages.expenses.errorUpdating'), 'danger');
       }
     } catch (error) {
-      showToast('Erro ao atualizar despesa', 'danger');
+      showToast(t('pages.expenses.errorUpdating'), 'danger');
     }
   };
 
@@ -185,7 +188,7 @@ const Expenses: React.FC = () => {
 
     deleteExpense(selectedExpense.id)
       .then(response => {
-        showToast(response.message || 'Despesa excluída com sucesso', response.success ? 'success' : 'danger');
+        showToast(response.message || t('pages.expenses.deletedSuccess'), response.success ? 'success' : 'danger');
         
         if (response.success) {
           setShowDeleteAlert(false);
@@ -195,7 +198,7 @@ const Expenses: React.FC = () => {
       })
       .catch((error) => {
         console.error('Erro ao excluir despesa:', error);
-        showToast('Erro de conexão, tente novamente', 'danger');
+        showToast(t('pages.expenses.connectionError'), 'danger');
       });
   };
 
@@ -229,12 +232,6 @@ const Expenses: React.FC = () => {
     setShowEditModal(true);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('pt-BR');
@@ -261,7 +258,7 @@ const Expenses: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Gastos</IonTitle>
+          <IonTitle>{t('pages.expenses.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -277,17 +274,17 @@ const Expenses: React.FC = () => {
             style={{ marginBottom: '16px' }}
           >
             <IonIcon slot="start" icon={add} />
-            Adicionar Gasto
+            {t('pages.expenses.addExpense')}
           </IonButton>
 
           {isLoading ? (
             <div style={{ textAlign: 'center', padding: '40px' }}>
               <IonSpinner name="dots" />
-              <p style={{ color: '#666', marginTop: '16px' }}>Carregando gastos...</p>
+              <p style={{ color: '#666', marginTop: '16px' }}>{t('pages.expenses.loadingExpenses')}</p>
             </div>
           ) : expenses.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p>Nenhum gasto cadastrado ainda</p>
+              <p>{t('pages.expenses.noExpensesRegistered')}</p>
             </div>
           ) : (
             expenses.map((expense) => (
@@ -299,7 +296,7 @@ const Expenses: React.FC = () => {
                 }}
               >
                 <IonCardHeader>
-                  <IonCardTitle>{expense.expenseTypeName}</IonCardTitle>
+                  {expense.expenseTypeName}
                 </IonCardHeader>
                 <IonCardContent>
                   <IonGrid>
@@ -307,28 +304,28 @@ const Expenses: React.FC = () => {
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Valor: {formatCurrency(expense.value)}</h3>
+                            <h3>{t('pages.expenses.value')}: {formatCurrencyWithSymbol(expense.value)}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Tipo: {expense.expenseTypeName}</h3>
+                            <h3>{t('pages.expenses.type')}: {expense.expenseTypeName}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Descrição: {expense.description || 'Sem descrição'}</h3>
+                            <h3>{t('pages.expenses.description')}: {expense.description || t('pages.expenses.noDescription')}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Data: {formatDateTime(expense.createdAt)}</h3>
+                            <h3>{t('pages.expenses.date')}: {formatDateTime(expense.createdAt)}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
@@ -366,9 +363,9 @@ const Expenses: React.FC = () => {
         <IonModal isOpen={showCreateModal} onDidDismiss={() => setShowCreateModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Adicionar Gasto</IonTitle>
+              <IonTitle>{t('pages.expenses.addExpense')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowCreateModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowCreateModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -376,7 +373,7 @@ const Expenses: React.FC = () => {
             <div style={{ padding: '16px' }}>
               <IonItem>
                 <IonSelect
-                  label="Categoria *"
+                  label={t('pages.expenses.category')}
                   labelPlacement="floating"
                   value={selectedCategory}
                   onIonChange={(e) => handleCategoryChange(e.detail.value as number)}
@@ -390,7 +387,7 @@ const Expenses: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonSelect
-                  label="Tipo *"
+                  label={t('pages.expenses.type')}
                   labelPlacement="floating"
                   value={newExpense.expenseTypeId}
                   onIonChange={(e) => setNewExpense({ ...newExpense, expenseTypeId: e.detail.value as number })}
@@ -405,9 +402,9 @@ const Expenses: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Valor *"
+                  label={t('pages.expenses.value')}
                   labelPlacement="floating"
-                  placeholder="0,00"
+                  placeholder={t('pages.expenses.valuePlaceholder')}
                   type="number"
                   value={newExpense.value}
                   onIonInput={(e: any) => setNewExpense({ ...newExpense, value: Number(e.detail.value) })}
@@ -415,9 +412,9 @@ const Expenses: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Descrição"
+                  label={t('pages.expenses.description')}
                   labelPlacement="floating"
-                  placeholder="Descrição do gasto"
+                  placeholder={t('pages.expenses.descriptionPlaceholder')}
                   value={newExpense.description}
                   onIonInput={(e: any) => setNewExpense({ ...newExpense, description: e.detail.value })}
                 />
@@ -428,7 +425,7 @@ const Expenses: React.FC = () => {
                 onClick={handleCreateExpense}
                 style={{ marginTop: '16px' }}
               >
-                Criar
+                {t('pages.expenses.create')}
               </IonButton>
             </div>
           </IonContent>
@@ -438,9 +435,9 @@ const Expenses: React.FC = () => {
         <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Editar Gasto</IonTitle>
+              <IonTitle>{t('pages.expenses.editExpense')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowEditModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowEditModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -448,7 +445,7 @@ const Expenses: React.FC = () => {
             <div style={{ padding: '16px' }}>
               <IonItem>
                 <IonSelect
-                  label="Categoria *"
+                  label={t('pages.expenses.category')}
                   labelPlacement="floating"
                   value={editSelectedCategory}
                   onIonChange={(e) => handleEditCategoryChange(e.detail.value as number)}
@@ -462,7 +459,7 @@ const Expenses: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonSelect
-                  label="Tipo *"
+                  label={t('pages.expenses.type')}
                   labelPlacement="floating"
                   value={editExpense.expenseTypeId}
                   onIonChange={(e) => setEditExpense({ ...editExpense, expenseTypeId: e.detail.value as number })}
@@ -477,9 +474,9 @@ const Expenses: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Valor *"
+                  label={t('pages.expenses.value')}
                   labelPlacement="floating"
-                  placeholder="0,00"
+                  placeholder={t('pages.expenses.valuePlaceholder')}
                   type="number"
                   value={editExpense.value}
                   onIonInput={(e: any) => setEditExpense({ ...editExpense, value: Number(e.detail.value) })}
@@ -487,9 +484,9 @@ const Expenses: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Descrição"
+                  label={t('pages.expenses.description')}
                   labelPlacement="floating"
-                  placeholder="Descrição do gasto"
+                  placeholder={t('pages.expenses.descriptionPlaceholder')}
                   value={editExpense.description}
                   onIonInput={(e: any) => setEditExpense({ ...editExpense, description: e.detail.value })}
                 />
@@ -500,7 +497,7 @@ const Expenses: React.FC = () => {
                 onClick={handleEditExpense}
                 style={{ marginTop: '16px' }}
               >
-                Atualizar
+                {t('pages.expenses.update')}
               </IonButton>
             </div>
           </IonContent>
@@ -510,15 +507,15 @@ const Expenses: React.FC = () => {
         <IonAlert
           isOpen={showDeleteAlert}
           onDidDismiss={() => setShowDeleteAlert(false)}
-          header="Confirmar"
-          message={`Tem certeza que deseja excluir o gasto de "${selectedExpense?.expenseTypeName}" no valor de ${selectedExpense ? formatCurrency(selectedExpense.value) : ''}?`}
+          header={t('pages.expenses.confirm')}
+          message={t('pages.expenses.confirmDeleteMessage').replace('{expenseTypeName}', selectedExpense?.expenseTypeName || '').replace('{value}', selectedExpense ? formatCurrencyWithSymbol(selectedExpense.value) : '')}
           buttons={[
             {
-              text: 'Cancelar',
+              text: t('common.cancel'),
               role: 'cancel'
             },
             {
-              text: 'Confirmar',
+              text: t('pages.expenses.confirm'),
               handler: handleDeleteExpense
             }
           ]}

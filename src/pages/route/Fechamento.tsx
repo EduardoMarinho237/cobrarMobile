@@ -20,7 +20,8 @@ import {
   IonRefresher,
   IonRefresherContent
 } from '@ionic/react';
-import { lockOpen, lockClosed, cashOutline, peopleOutline, walletOutline, refresh } from 'ionicons/icons';
+import { cashOutline, peopleOutline, walletOutline, lockClosed, refresh } from 'ionicons/icons';
+import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { 
   getFechamentoData, 
   fecharDia, 
@@ -32,7 +33,17 @@ import { useFechamentoControl } from '../../hooks/useFechamentoControl';
 
 const Fechamento: React.FC = () => {
   const { t } = useTranslation();
-  const { diaFechado } = useFechamentoControl(); // Usar hook para status de fechamento
+  const { diaFechado, carregando, verificando, verificarStatus } = useFechamentoControl(); // Usar hook para status de fechamento
+  
+  // Estado visual: mantém o estado atual durante a verificação
+  const [estadoVisual, setEstadoVisual] = useState(diaFechado);
+  
+  // Atualiza o estado visual quando o hook muda (mas não durante verificação)
+  useEffect(() => {
+    if (!verificando) {
+      setEstadoVisual(diaFechado);
+    }
+  }, [diaFechado, verificando]);
   const [fechamentoData, setFechamentoData] = useState<FechamentoData | null>(null);
   const [showConfirmAlert, setShowConfirmAlert] = useState(false);
   const [showBloqueadoAlert, setShowBloqueadoAlert] = useState(false);
@@ -99,19 +110,28 @@ const Fechamento: React.FC = () => {
     setShowBloqueadoAlert(true);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const handleVerificarLiberacao = async () => {
+    try {
+      // Usa a função do hook para verificar status na API
+      await verificarStatus();
+      
+      // Mostra mensagem de sucesso
+      showToast(t('pages.closing.verifyingLiberation'), 'primary');
+      
+      // Se o dia foi aberto, a interface vai atualizar automaticamente
+      // Se ainda estiver fechado, continua mostrando a tela de bloqueio
+    } catch (error) {
+      showToast(t('pages.closing.errorVerifyingLiberation'), 'danger');
+    }
   };
 
-  if (diaFechado) {
+
+  if (estadoVisual) {
     return (
       <IonPage>
         <IonHeader>
           <IonToolbar>
-            <IonTitle>Fechamento</IonTitle>
+            <IonTitle>{t('pages.closing.title')}</IonTitle>
           </IonToolbar>
         </IonHeader>
         <IonContent fullscreen>
@@ -123,14 +143,25 @@ const Fechamento: React.FC = () => {
                   style={{ fontSize: '64px', color: '#dc3545', marginBottom: '16px' }}
                 />
                 <h2 style={{ color: '#dc3545', marginBottom: '16px' }}>
-                  Dia Fechado
+                  {t('pages.closing.dayClosed')}
                 </h2>
                 <p style={{ color: '#666', marginBottom: '16px' }}>
-                  O sistema está bloqueado até as 00:00 do próximo dia.
+                  {t('pages.closing.blockedMessage')}
                 </p>
                 <p style={{ color: '#666', fontSize: '14px' }}>
                   {t('pages.closing.onlyAvailableTabs')}
                 </p>
+                <IonButton
+                  expand="block"
+                  shape="round"
+                  fill="outline"
+                  onClick={handleVerificarLiberacao}
+                  disabled={verificando || carregando}
+                  style={{ marginTop: '16px' }}
+                >
+                  <IonIcon icon={refresh} slot="start" />
+                  {verificando || carregando ? t('pages.closing.verifying') : t('pages.closing.verifyLiberation')}
+                </IonButton>
               </IonCardContent>
             </IonCard>
           </div>
@@ -183,7 +214,7 @@ const Fechamento: React.FC = () => {
                 </IonCardHeader>
                 <IonCardContent>
                   <h2 style={{ textAlign: 'center', color: '#28a745', margin: '0' }}>
-                    {formatCurrency(fechamentoData.expectativaArrecadacao)}
+                    {formatCurrencyWithSymbol(fechamentoData.expectativaArrecadacao)}
                   </h2>
                 </IonCardContent>
               </IonCard>
@@ -198,7 +229,7 @@ const Fechamento: React.FC = () => {
                 </IonCardHeader>
                 <IonCardContent>
                   <h2 style={{ textAlign: 'center', color: '#007bff', margin: '0' }}>
-                    {formatCurrency(fechamentoData.arrecadacaoDia)}
+                    {formatCurrencyWithSymbol(fechamentoData.arrecadacaoDia)}
                   </h2>
                 </IonCardContent>
               </IonCard>
@@ -231,7 +262,7 @@ const Fechamento: React.FC = () => {
                       </IonCardHeader>
                       <IonCardContent>
                         <h3 style={{ textAlign: 'center', color: '#dc3545', margin: '0' }}>
-                          {formatCurrency(fechamentoData.gastosDia)}
+                          {formatCurrencyWithSymbol(fechamentoData.gastosDia)}
                         </h3>
                       </IonCardContent>
                     </IonCard>

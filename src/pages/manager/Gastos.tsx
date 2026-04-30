@@ -69,7 +69,7 @@ const Gastos: React.FC = () => {
       console.log('Categorias carregadas:', data);
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
-      showToast('Erro ao carregar categorias', 'danger');
+      showToast(t('pages.expenses.errorLoadingCategories'), 'danger');
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +81,7 @@ const Gastos: React.FC = () => {
 
   const validateFields = (nome: string) => {
     if (!nome.trim()) {
-      showToast('Nome não pode estar vazio', 'danger');
+      showToast(t('pages.expenses.nameRequired'), 'danger');
       return false;
     }
     
@@ -97,7 +97,7 @@ const Gastos: React.FC = () => {
       const response = await createCategoria(newCategoria.nome);
       
       // Usa a mensagem da API
-      showToast(response.message || 'Categoria criada com sucesso', response.success ? 'success' : 'danger');
+      showToast(response.message || t('pages.expenses.categoryCreatedSuccess'), response.success ? 'success' : 'danger');
       
       if (response.success) {
         setShowCreateModal(false);
@@ -106,7 +106,7 @@ const Gastos: React.FC = () => {
       }
     } catch (error) {
       console.error('Erro ao criar categoria:', error);
-      showToast('Erro de conexão, tente novamente', 'danger');
+      showToast(t('pages.expenses.connectionError'), 'danger');
     }
   };
 
@@ -152,7 +152,7 @@ const Gastos: React.FC = () => {
       })
       .catch((error) => {
         console.error('Erro ao migrar categoria:', error);
-        showToast('Erro ao migrar categoria', 'danger');
+        showToast(t('pages.expenses.errorMigratingCategory'), 'danger');
         
         // Mesmo com erro, fecha o modal e limpa os estados
         setShowMigrateModal(false);
@@ -181,7 +181,7 @@ const Gastos: React.FC = () => {
         console.log('Resposta da exclusão:', response);
         
         // Usa a mensagem da API
-        showToast(response.message || 'Categoria excluída com sucesso', response.success ? 'success' : 'danger');
+        showToast(response.message || t('pages.expenses.categoryDeletedSuccess'), response.success ? 'success' : 'danger');
         
         if (response.success) {
           setShowConfirmDeleteAlert(false);
@@ -191,7 +191,7 @@ const Gastos: React.FC = () => {
       })
       .catch((error) => {
         console.error('Erro ao excluir categoria:', error);
-        showToast('Erro de conexão, tente novamente', 'danger');
+        showToast(t('pages.expenses.connectionError'), 'danger');
       });
   };
 
@@ -205,7 +205,7 @@ const Gastos: React.FC = () => {
         console.log('Resposta da exclusão:', response);
         
         // Usa a mensagem da API
-        showToast(response.message || 'Categoria excluída com sucesso', response.success ? 'success' : 'danger');
+        showToast(response.message || t('pages.expenses.categoryDeletedSuccess'), response.success ? 'success' : 'danger');
         
         if (response.success) {
           setShowDeleteAlert(false);
@@ -215,7 +215,7 @@ const Gastos: React.FC = () => {
       })
       .catch((error) => {
         console.error('Erro ao excluir categoria:', error);
-        showToast('Erro de conexão, tente novamente', 'danger');
+        showToast(t('pages.expenses.connectionError'), 'danger');
       });
   };
 
@@ -321,14 +321,14 @@ const Gastos: React.FC = () => {
                             <IonIcon icon={create} />
                           </IonButton>
                         </IonCol>
-                        <IonCol size="3">
+                        {/* <IonCol size="3">
                           <IonButton
                             fill="clear"
                             onClick={() => handleDetalhes(categoria)}
                           >
                             <IonIcon icon={eye} />
                           </IonButton>
-                        </IonCol>
+                        </IonCol> */}
                         <IonCol size="3">
                           <IonButton
                             fill="clear"
@@ -397,7 +397,7 @@ const Gastos: React.FC = () => {
               handler: handleMigrate
             },
             {
-              text: 'Excluir tudo',
+              text: t('pages.expenses.deleteAll'),
               role: 'destructive',
               handler: handleDeleteAll
             }
@@ -470,7 +470,7 @@ const Gastos: React.FC = () => {
               role: 'cancel'
             },
             {
-              text: 'Excluir tudo',
+              text: t('pages.expenses.deleteAll'),
               role: 'destructive',
               handler: handleConfirmDeleteAll
             }

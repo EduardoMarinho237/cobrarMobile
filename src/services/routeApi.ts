@@ -1,17 +1,10 @@
 import { apiRequest, isDev } from './api';
 
-export const createRoute = async (name: string, login: string, password: string) => {
-  if (isDev()) {
-    return {
-      success: true,
-      message: 'Route criado com sucesso'
-    };
-  }
-
+export const createRoute = async (name: string, login: string, password: string, tax: number) => {
   try {
     const response = await apiRequest('/api/users', {
       method: 'POST',
-      body: JSON.stringify({ name, login, password }),
+      body: JSON.stringify({ name, login, password, tax }),
     });
     
     // Se a resposta for null (vazia), considera sucesso
@@ -42,42 +35,15 @@ export const createRoute = async (name: string, login: string, password: string)
 };
 
 export const getRoutes = async () => {
-  if (isDev()) {
-    // Mock response
-    return [
-      {
-        id: 8,
-        name: 'Carlos Route',
-        login: 'carlos.route',
-        role: 'ROUTE',
-        lastAccess: null
-      },
-      {
-        id: 9,
-        name: 'Ana Route',
-        login: 'ana.route',
-        role: 'ROUTE',
-        lastAccess: '2024-01-15T10:30:00Z'
-      }
-    ];
-  }
-
-  // Para endpoints GET, retorna a resposta diretamente
+  // Para endpoints GET, retorna a resposta diretamente da API real
   return apiRequest('/api/users');
 };
 
-export const updateRoute = async (id: number, name: string, login: string) => {
-  if (isDev()) {
-    return {
-      success: true,
-      message: 'Route atualizado com sucesso'
-    };
-  }
-
+export const updateRoute = async (id: number, name: string, login: string, tax: number) => {
   try {
     const response = await apiRequest(`/api/users/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ name, login }),
+      body: JSON.stringify({ name, login, tax }),
     });
     
     // Se a resposta for null (vazia), considera sucesso
@@ -108,13 +74,6 @@ export const updateRoute = async (id: number, name: string, login: string) => {
 };
 
 export const deleteRoute = async (id: number) => {
-  if (isDev()) {
-    return {
-      success: true,
-      message: 'Route excluído com sucesso'
-    };
-  }
-
   try {
     const response = await apiRequest(`/api/users/${id}`, {
       method: 'DELETE',

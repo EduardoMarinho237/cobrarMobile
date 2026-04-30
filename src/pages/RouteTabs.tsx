@@ -21,7 +21,6 @@ import {
 import Cobrancas from './route/Cobrancas';
 import Cobrados from './route/Cobrados';
 import Expenses from './route/Expenses';
-import Credits from './route/Credits';
 import Fechamento from './route/Fechamento';
 import Clients from './route/Clients';
 import Config from './Config';
@@ -55,10 +54,7 @@ const RouteTabs: React.FC = () => {
         <Route exact path="/route/gastos">
           {!diaFechado ? <Expenses /> : <Redirect to="/route/fechamento" />}
         </Route>
-        <Route exact path="/route/credits">
-          {!diaFechado ? <Credits /> : <Redirect to="/route/fechamento" />}
-        </Route>
-        <Route exact path="/route/clients">
+                <Route exact path="/route/clients">
           {!diaFechado ? <Clients /> : <Redirect to="/route/fechamento" />}
         </Route>
         <Route exact path="/route/fechamento">
@@ -99,23 +95,14 @@ const RouteTabs: React.FC = () => {
           <IonIcon aria-hidden="true" icon={wallet} />
           <IonLabel>{t('tabs.expenses')}</IonLabel>
         </IonTabButton>
-        <IonTabButton 
-          tab="credits" 
-          href={diaFechado ? "#" : "/route/credits"}
-          onClick={diaFechado ? handleTabBloqueada : undefined}
-          disabled={diaFechado}
-        >
-          <IonIcon aria-hidden="true" icon={card} />
-          <IonLabel>{t('tabs.credits')}</IonLabel>
-        </IonTabButton>
-        <IonTabButton 
+                <IonTabButton 
           tab="clients" 
           href={diaFechado ? "#" : "/route/clients"}
           onClick={diaFechado ? handleTabBloqueada : undefined}
           disabled={diaFechado}
         >
           <IonIcon aria-hidden="true" icon={people} />
-          <IonLabel>Clientes</IonLabel>
+          <IonLabel>{t('tabs.clients')}</IonLabel>
         </IonTabButton>
         <IonTabButton tab="fechamento" href="/route/fechamento">
           <IonIcon aria-hidden="true" icon={statsChart} />
