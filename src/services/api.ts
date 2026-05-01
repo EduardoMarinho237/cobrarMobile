@@ -93,11 +93,9 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
       // Verificar se é erro de app desatualizado (needToUpdate: true)
       if (errorData && errorData.needToUpdate === true) {
         console.log('App desatualizado detectado:', errorData);
-        console.log('appUpdateCallback existe?', !!appUpdateCallback);
-        if (appUpdateCallback && errorData.message && errorData.data) {
-          console.log('Chamando appUpdateCallback com link:', errorData.data);
-          appUpdateCallback(errorData.message, errorData.data);
-          console.log('appUpdateCallback chamado com sucesso');
+        const downloadUrl = errorData.data?.startsWith('http') ? errorData.data : `${API_BASE_URL}${errorData.data}`;
+        if (appUpdateCallback && errorData.message && downloadUrl) {
+          appUpdateCallback(errorData.message, downloadUrl);
         }
         return errorData;
       }
@@ -149,6 +147,16 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
         if (events) {
           events.emit(false); // false = dia aberto
         }
+      }
+      
+      // Verificar se resposta de sucesso tem needToUpdate
+      if (parsed && parsed.needToUpdate === true) {
+        console.log('App desatualizado detectado (sucesso):', parsed);
+        const downloadUrl = parsed.data?.startsWith('http') ? parsed.data : `${API_BASE_URL}${parsed.data}`;
+        if (appUpdateCallback && parsed.message && downloadUrl) {
+          appUpdateCallback(parsed.message, downloadUrl);
+        }
+        return parsed;
       }
       
       return parsed;

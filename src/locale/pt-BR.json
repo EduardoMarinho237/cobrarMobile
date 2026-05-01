@@ -345,7 +345,8 @@
       "thisClient": "este cliente",
       "confirmPayment": "Confirmar Pagamento",
       "confirmPaymentMessage": "Deseja confirmar o pagamento de {value} de {clientName}?",
-      "confirm": "Confirmar"
+      "confirm": "Confirmar",
+      "valueMustBeGreaterThanZero": "O valor deve ser maior que zero"
     },
     "collected": {
       "title": "Cobrados",
@@ -477,13 +478,18 @@
       "confirmDeleteMessage": "Tem certeza que deseja excluir o cliente \"{clientName}\"?",
       "confirm": "Confirmar",
       "addCredit": "Adicionar Crédito",
+      "client": "Cliente",
       "clientRequired": "Cliente é obrigatório",
+      "initialValue": "Valor Inicial",
+      "quantityDays": "Quantidade de Dias",
       "initialValueRequired": "Valor inicial é obrigatório",
       "quantityDaysRequired": "Quantidade de dias é obrigatória",
       "creditCreatedSuccess": "Crédito criado com sucesso",
       "errorCreatingCredit": "Erro ao criar crédito",
       "errorLoadingClientCredits": "Erro ao carregar créditos do cliente",
       "noCreditsFound": "Nenhum crédito encontrado",
+      "credit": "Crédito",
+      "totalDebt": "Dívida total",
       "creditDetails": "Detalhes do Crédito",
       "paymentProgress": "Progresso de Pagamento",
       "debtStartDate": "Início da Dívida",

@@ -147,7 +147,10 @@ export const createCredit = async (credit: CreateCreditRequest): Promise<ApiResp
   try {
     const response = await apiRequest('/api/credits', {
       method: 'POST',
-      body: JSON.stringify(credit),
+      body: JSON.stringify({
+        ...credit,
+        overdue: credit.overdue || 'EXTEND_TERM'
+      }),
     });
 
     // Se for modo mock, cria um novo crédito mockado
@@ -201,7 +204,10 @@ export const updateCredit = async (id: number, credit: UpdateCreditRequest): Pro
   try {
     const response = await apiRequest(`/api/credits/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(credit),
+      body: JSON.stringify({
+        ...credit,
+        overdue: credit.overdue || 'EXTEND_TERM'
+      }),
     });
 
     // Se for modo mock, atualiza o crédito mockado

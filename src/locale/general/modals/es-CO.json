@@ -1,0 +1,10 @@
+{
+  "login": {
+    "fillAllFields": "Por favor llene todos los campos",
+    "loginError": "Error de inicio de sesión",
+    "incompleteData": "Datos incompletos recibidos del servidor",
+    "userTypeNotRecognized": "Tipo de usuario no reconocido"
+  },
+  "error": "Error",
+  "ok": "OK"
+}

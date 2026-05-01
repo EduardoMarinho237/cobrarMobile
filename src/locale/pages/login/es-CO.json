@@ -1,0 +1,9 @@
+{
+  "title": "Cobrar Mobile",
+  "username": "Usuario",
+  "usernamePlaceholder": "Digite el usuario",
+  "password": "Contraseña",
+  "passwordPlaceholder": "Digite la contraseña",
+  "loginButton": "Ingresar",
+  "testUsers": "Usuarios de prueba:"
+}
