@@ -48,8 +48,7 @@ const Cobrancas: React.FC = () => {
   const [showPaymentAlert, setShowPaymentAlert] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(null);
-  const [editingPaymentId, setEditingPaymentId] = useState<number | null>(null);
-  const [editedValue, setEditedValue] = useState<number>(0);
+  const [editedValues, setEditedValues] = useState<{ [key: number]: number }>({});
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
 
   useEffect(() => {
@@ -97,21 +96,24 @@ const Cobrancas: React.FC = () => {
   };
 
   const handlePayment = (payment: PendingPayment) => {
+    const currentValue = editedValues[payment.creditId] ?? payment.installmentValue;
+    
+    if (currentValue <= 0) {
+      showToast(t('pages.collections.valueMustBeGreaterThanZero'), 'danger');
+      return;
+    }
+    
     setSelectedPayment(payment);
-    setEditedValue(payment.installmentValue);
+    setEditedValues(prev => ({ ...prev, [payment.creditId]: currentValue }));
     setShowPaymentAlert(true);
   };
 
-  const handleEditPayment = (payment: PendingPayment) => {
-    setEditingPaymentId(payment.creditId);
-    setEditedValue(payment.installmentValue);
-  };
 
   const confirmPayment = async () => {
     if (!selectedPayment) return;
 
     const debitRequest: CreateDebitRequest = {
-      value: editedValue,
+      value: editedValues[selectedPayment.creditId] || selectedPayment.installmentValue,
       creditId: selectedPayment.creditId,
       changeAllDays: false
     };
@@ -122,7 +124,7 @@ const Cobrancas: React.FC = () => {
         showToast(t('pages.collections.paymentRegisteredSuccess'), 'success');
         setShowPaymentAlert(false);
         setSelectedPayment(null);
-        setEditingPaymentId(null);
+        setEditedValues({});
         loadData(); // Recarregar agenda
       } else {
         showToast(response.message || t('pages.collections.errorRegisteringPayment'), 'danger');
@@ -291,37 +293,19 @@ const Cobrancas: React.FC = () => {
                           width: '120px'
                         }}>
                           <div style={{ flex: 1 }}>
-                            {editingPaymentId === payment.creditId ? (
-                              <IonInput
-                                type="number"
-                                value={editedValue}
-                                onIonInput={(e: any) => setEditedValue(Number(e.detail.value))}
-                                onIonBlur={() => setEditingPaymentId(null)}
-                                style={{ 
-                                  textAlign: 'center', 
-                                  fontSize: '13px',
-                                  height: '36px'
-                                }}
-                              />
-                            ) : (
-                              <div
-                                onClick={() => handleEditPayment(payment)}
-                                style={{ 
-                                  textAlign: 'center', 
-                                  fontSize: '13px',
-                                  height: '36px',
-                                  background: '#ffffff',
-                                  borderRadius: '8px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  cursor: 'pointer',
-                                  border: '1px solid #e0e0e0'
-                                }}
-                              >
-                                {payment.installmentValue.toFixed(2)}
-                              </div>
-                            )}
+                            <IonInput
+                              type="number"
+                              value={editedValues[payment.creditId] !== undefined ? editedValues[payment.creditId] : payment.installmentValue}
+                              onIonInput={(e: any) => {
+                                const value = e.detail.value === '' ? 0 : Number(e.detail.value);
+                                setEditedValues(prev => ({ ...prev, [payment.creditId]: value }));
+                              }}
+                              style={{ 
+                                textAlign: 'center', 
+                                fontSize: '13px',
+                                height: '36px'
+                              }}
+                            />
                           </div>
                           <IonButton
                             color="success"
@@ -413,7 +397,7 @@ const Cobrancas: React.FC = () => {
           isOpen={showPaymentAlert}
           onDidDismiss={() => setShowPaymentAlert(false)}
           header={t('pages.collections.confirmPayment')}
-          message={t('pages.collections.confirmPaymentMessage').replace('{value}', formatCurrencyWithSymbol(editedValue)).replace('{clientName}', selectedPayment?.clientName || t('pages.collections.thisClient'))}
+          message={t('pages.collections.confirmPaymentMessage').replace('{value}', formatCurrencyWithSymbol(editedValues[selectedPayment?.creditId || 0] || selectedPayment?.installmentValue || 0)).replace('{clientName}', selectedPayment?.clientName || t('pages.collections.thisClient'))}
           buttons={[
             {
               text: t('common.cancel'),

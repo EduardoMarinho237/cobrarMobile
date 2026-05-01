@@ -288,7 +288,8 @@
       "thisClient": "este cliente",
       "confirmPayment": "Confirmar Pago",
       "confirmPaymentMessage": "¿Desea confirmar el pago de {value} de {clientName}?",
-      "confirm": "Confirmar"
+      "confirm": "Confirmar",
+      "valueMustBeGreaterThanZero": "El valor debe ser mayor que cero"
     },
     "credits": {
       "title": "Créditos",
@@ -511,13 +512,18 @@
       "confirmDeleteMessage": "¿Está seguro que desea eliminar el cliente \"{clientName}\"?",
       "confirm": "Confirmar",
       "addCredit": "Agregar Crédito",
+      "client": "Cliente",
       "clientRequired": "Cliente es requerido",
+      "initialValue": "Valor Inicial",
+      "quantityDays": "Cantidad de Días",
       "initialValueRequired": "El valor inicial es requerido",
       "quantityDaysRequired": "La cantidad de días es requerida",
       "creditCreatedSuccess": "Crédito creado exitosamente",
       "errorCreatingCredit": "Error al crear crédito",
       "errorLoadingClientCredits": "Error al cargar créditos del cliente",
       "noCreditsFound": "No se encontraron créditos",
+      "credit": "Crédito",
+      "totalDebt": "Deuda total",
       "creditDetails": "Detalles del Crédito",
       "paymentProgress": "Progreso de Pago",
       "debtStartDate": "Inicio de la Deuda",
