@@ -5,7 +5,8 @@ const config: CapacitorConfig = {
   appName: 'Cobrar Mobile',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'http',
+    allowNavigation: ['187.127.30.189']
   }
 };
 
