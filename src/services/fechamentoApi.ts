@@ -25,6 +25,7 @@ export interface DailyScheduleResponse {
     dailyExpectation: number;
     collectedToday: number;
     remainingToCollect: number;
+    clientsPaid: number;
   };
 }
 
@@ -87,25 +88,9 @@ export const getFechamentoData = async (): Promise<FechamentoData> => {
     const totalGastosDia = todayExpenses.reduce((total, expense) => total + expense.value, 0);
     console.log('Gastos do dia:', totalGastosDia);
     
-    // 4. Calcular clientes cobrados
-    // NOTA: Como não temos endpoint específico para clientes cobrados hoje,
-    // usamos uma estimativa baseada no valor arrecadado / valor médio por cliente
-    // Idealmente, deveria haver um endpoint como GET /api/payments/collected-today
-    const valorMedioPorCliente = 100; // Valor estimado, pode ser ajustado
-    const clientesCobrados = Math.floor((scheduleResponse?.data?.collectedToday || 0) / valorMedioPorCliente) || 0;
-    console.log('Clientes cobrados (estimativa):', clientesCobrados);
-    
-    // Tentativa de obter dados mais precisos (se disponível)
-    try {
-      const clientesPrecisos = await getClientesCobradosHoje();
-      if (clientesPrecisos > 0) {
-        console.log('Usando dados precisos de clientes cobrados:', clientesPrecisos);
-        // Se conseguirmos dados precisos, usamos eles
-        // Por enquanto, mantemos a estimativa pois a função retorna 0
-      }
-    } catch (error) {
-      console.log('Mantendo estimativa para clientes cobrados');
-    }
+    // 4. Obter clientes cobrados (clientes distintos que pagaram hoje)
+    const clientesCobrados = scheduleResponse?.data?.clientsPaid || 0;
+    console.log('Clientes cobrados (API):', clientesCobrados);
 
     const result = {
       expectativaArrecadacao: scheduleResponse?.data?.dailyExpectation || 0,
