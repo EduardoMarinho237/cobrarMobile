@@ -36,6 +36,7 @@ import {
   CreateDebitRequest 
 } from '../../services/debitApi';
 import { getClientById, Client } from '../../services/clientApi';
+import { getCreditsByClient, Credit } from '../../services/creditApi';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
 
@@ -48,6 +49,7 @@ const Cobrancas: React.FC = () => {
   const [showPaymentAlert, setShowPaymentAlert] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(null);
+  const [clientCredits, setClientCredits] = useState<Credit[]>([]);
   const [editedValues, setEditedValues] = useState<{ [key: number]: number }>({});
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
 
@@ -140,10 +142,33 @@ const Cobrancas: React.FC = () => {
     return clients[clientId];
   };
 
+  const calculateClientSummary = (credits: Credit[]) => {
+    const totalInitialValue = credits.reduce((sum, credit) => sum + credit.initialValue, 0);
+    const totalDebt = credits.reduce((sum, credit) => sum + credit.totalDebt, 0);
+    const totalRemainingDebt = credits.reduce((sum, credit) => sum + credit.totalDebt, 0);
+    const totalInstallments = credits.reduce((sum, credit) => sum + credit.quantityDays, 0);
+    const paidInstallments = credits.reduce((sum, credit) => sum + (credit.quantityDays - Math.ceil(credit.totalDebt / credit.dayValue)), 0);
+    const remainingInstallments = totalInstallments - paidInstallments;
+
+    return {
+      totalInitialValue,
+      totalDebt,
+      totalRemainingDebt,
+      remainingInstallments
+    };
+  };
+
   const openClientModal = async (clientId: number) => {
     const client = await getClientById(clientId);
     if (client) {
       setSelectedClient(client);
+      try {
+        const credits = await getCreditsByClient(clientId);
+        setClientCredits(credits);
+      } catch (error) {
+        console.error('Erro ao carregar créditos do cliente:', error);
+        setClientCredits([]);
+      }
       setShowClientModal(true);
     }
   };
@@ -386,6 +411,49 @@ const Cobrancas: React.FC = () => {
                     <p>{selectedClient.cpf || t('pages.collections.notInformed')}</p>
                   </IonLabel>
                 </IonItem>
+                
+                {/* Informações de Resumo da Dívida */}
+                {clientCredits.length > 0 && (() => {
+                  const summary = calculateClientSummary(clientCredits);
+                  return (
+                    <>
+                      <div style={{ 
+                        marginTop: '20px', 
+                        padding: '16px', 
+                        backgroundColor: 'var(--ion-color-light)', 
+                        borderRadius: '8px' 
+                      }}>
+                        <h4 style={{ margin: '0 0 12px 0', color: 'var(--ion-color-dark)' }}>
+                          {t('pages.collections.debtSummary')}
+                        </h4>
+                        <IonItem style={{ marginBottom: '8px' }}>
+                          <IonLabel>
+                            <h3>{t('pages.collections.remainingInstallments')}</h3>
+                            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--ion-color-primary)' }}>
+                              {summary.remainingInstallments} {t('pages.collections.installments')}
+                            </p>
+                          </IonLabel>
+                        </IonItem>
+                        <IonItem style={{ marginBottom: '8px' }}>
+                          <IonLabel>
+                            <h3>{t('pages.collections.remainingDebt')}</h3>
+                            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--ion-color-warning)' }}>
+                              {formatCurrencyWithSymbol(summary.totalRemainingDebt)}
+                            </p>
+                          </IonLabel>
+                        </IonItem>
+                        <IonItem>
+                          <IonLabel>
+                            <h3>{t('pages.collections.totalDebtWithInterest')}</h3>
+                            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--ion-color-danger)' }}>
+                              {formatCurrencyWithSymbol(summary.totalDebt)}
+                            </p>
+                          </IonLabel>
+                        </IonItem>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
           </IonContent>

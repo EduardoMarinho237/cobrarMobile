@@ -220,13 +220,6 @@ export const useClients = () => {
       return;
     }
 
-    // Validar se a data de início não é anterior ao dia atual
-    const today = new Date().toISOString().split('T')[0];
-    if (newCredit.startDate < today) {
-      showToast(t('pages.clients.startDateCannotBePast'), 'danger');
-      return;
-    }
-
     try {
       const response = await createCredit(newCredit);
       if (response.success) {
@@ -264,11 +257,13 @@ export const useClients = () => {
     setShowCreditViewModal(true);
   }, []);
 
-  const formatCurrency = useCallback((value: number) =>
-    new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value), []);
+  const formatCurrency = useCallback((value: number) => {
+    const formattedValue = new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+    return `$ ${formattedValue}`;
+  }, []);
 
   const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString);

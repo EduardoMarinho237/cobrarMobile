@@ -289,7 +289,12 @@
       "confirmPayment": "Confirmar Pago",
       "confirmPaymentMessage": "¿Desea confirmar el pago de {value} de {clientName}?",
       "confirm": "Confirmar",
-      "valueMustBeGreaterThanZero": "El valor debe ser mayor que cero"
+      "valueMustBeGreaterThanZero": "El valor debe ser mayor que cero",
+      "debtSummary": "Resumen de la Deuda",
+      "remainingInstallments": "Cuotas Restantes",
+      "installments": "cuotas",
+      "remainingDebt": "Valor Restante de la Deuda",
+      "totalDebtWithInterest": "Valor Total de la Deuda (con intereses)"
     },
     "credits": {
       "title": "Créditos",
