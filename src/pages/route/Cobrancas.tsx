@@ -58,6 +58,7 @@ const Cobrancas: React.FC = () => {
     loadData();
   }, []);
 
+  
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -65,7 +66,7 @@ const Cobrancas: React.FC = () => {
       setDailySchedule(scheduleData);
 
       // Carregar informações dos clientes
-      const clientPromises = scheduleData.pendingPayments.map(async (payment) => {
+      const clientPromises = scheduleData.pendingPayments.map(async (payment: PendingPayment) => {
         const client = await getClientById(payment.clientId);
         return { clientId: payment.clientId, client };
       });
@@ -73,7 +74,7 @@ const Cobrancas: React.FC = () => {
       const clientResults = await Promise.all(clientPromises);
       const clientMap: { [key: number]: Client } = {};
       
-      clientResults.forEach(({ clientId, client }) => {
+      clientResults.forEach(({ clientId, client }: { clientId: number, client: Client | null }) => {
         if (client) {
           clientMap[clientId] = client;
         }
