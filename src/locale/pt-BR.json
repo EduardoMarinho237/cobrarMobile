@@ -499,6 +499,7 @@
       "interestRate": "Taxa de Juros",
       "dailyValue": "Valor Diário",
       "startDate": "Data Início",
+      "startDateCannotBePast": "A data de início não pode ser anterior ao dia atual",
       "endDate": "Data Término",
       "days": "Dias",
       "currentSystemTax": "Taxa atual do sistema",

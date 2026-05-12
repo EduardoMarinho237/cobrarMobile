@@ -532,6 +532,7 @@
       "interestRate": "Tasa de Interés",
       "dailyValue": "Valor Diario",
       "startDate": "Fecha de Inicio",
+      "startDateCannotBePast": "La fecha de inicio no puede ser anterior al día actual",
       "endDate": "Fecha de Fin",
       "days": "Días",
       "currentSystemTax": "Tasa actual del sistema",
