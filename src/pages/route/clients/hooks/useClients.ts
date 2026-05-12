@@ -220,6 +220,13 @@ export const useClients = () => {
       return;
     }
 
+    // Validar se a data de início não é anterior ao dia atual
+    const today = new Date().toISOString().split('T')[0];
+    if (newCredit.startDate < today) {
+      showToast(t('pages.clients.startDateCannotBePast'), 'danger');
+      return;
+    }
+
     try {
       const response = await createCredit(newCredit);
       if (response.success) {

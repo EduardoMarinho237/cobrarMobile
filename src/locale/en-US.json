@@ -288,6 +288,7 @@
       "interestRate": "Interest Rate",
       "dailyValue": "Daily Value",
       "startDate": "Start Date",
+      "startDateCannotBePast": "Start date cannot be before today",
       "endDate": "End Date",
       "days": "Days",
       "currentSystemTax": "Current system tax",
