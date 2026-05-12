@@ -294,7 +294,15 @@
       "remainingInstallments": "Cuotas Restantes",
       "installments": "cuotas",
       "remainingDebt": "Valor Restante de la Deuda",
-      "totalDebtWithInterest": "Valor Total de la Deuda (con intereses)"
+      "totalDebtWithInterest": "Valor Total de la Deuda (con intereses)",
+      "debtDetails": "Detalles de la Deuda",
+      "debtStartDate": "Fecha de Inicio",
+      "debtInterestRate": "Tasa de Interés",
+      "debtInstallmentValue": "Valor de la Cuota",
+      "debtOverdueValue": "Valor en Mora",
+      "debtProgress": "Progreso de la Deuda",
+      "debtPaid": "Pagado",
+      "debtRemaining": "Restante"
     },
     "credits": {
       "title": "Créditos",

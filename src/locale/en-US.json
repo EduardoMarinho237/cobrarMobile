@@ -206,7 +206,15 @@
       "remainingInstallments": "Remaining Installments",
       "installments": "installments",
       "remainingDebt": "Remaining Debt Amount",
-      "totalDebtWithInterest": "Total Debt Amount (with interest)"
+      "totalDebtWithInterest": "Total Debt Amount (with interest)",
+      "debtDetails": "Debt Details",
+      "debtStartDate": "Start Date",
+      "debtInterestRate": "Interest Rate",
+      "debtInstallmentValue": "Installment Value",
+      "debtOverdueValue": "Overdue Amount",
+      "debtProgress": "Debt Progress",
+      "debtPaid": "Paid",
+      "debtRemaining": "Remaining"
     },
     "collected": {
       "title": "Collected",
