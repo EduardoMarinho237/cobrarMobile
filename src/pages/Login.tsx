@@ -45,12 +45,23 @@ const Login: React.FC = () => {
         return;
       }
       
+      // Salvar dados usando as mesmas chaves do useAuth.ts
+      localStorage.setItem('auth_token', userData.token || '');
+      localStorage.setItem('auth_user', JSON.stringify(userData));
+      localStorage.setItem('auth_role', userData.role || '');
+      localStorage.setItem('auth_user_id', userData.id?.toString() || '');
+      localStorage.setItem('auth_login_time', Date.now().toString());
+      
+      // Manter compatibilidade com código existente
       localStorage.setItem('user', JSON.stringify(userData));
+      
       console.log('Dados salvos no localStorage');
       
       // Verifica se foi salvo corretamente
       const savedUser = localStorage.getItem('user');
-      console.log('Verificando localStorage:', savedUser);
+      const savedToken = localStorage.getItem('auth_token');
+      console.log('Verificando localStorage (user):', savedUser);
+      console.log('Verificando localStorage (token):', savedToken);
       
       // Pequeno delay para garantir que o localStorage foi atualizado
       setTimeout(() => {

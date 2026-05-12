@@ -123,6 +123,7 @@ export const useAuth = () => {
       
       if (userData && userData.name && userData.login && userData.type) {
         // Atualizar localStorage com dados frescos
+        localStorage.setItem(STORAGE_KEYS.TOKEN, userData.token || '');
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
         localStorage.setItem(STORAGE_KEYS.ROLE, userData.type);
         localStorage.setItem(STORAGE_KEYS.USER_ID, userData.id.toString());

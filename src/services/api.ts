@@ -39,14 +39,22 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     return null; // Mock mode
   }
 
+  // Priorizar token da chave auth_token (padrão useAuth.ts)
+  const token = localStorage.getItem('auth_token');
+  
+  // Fallback para compatibilidade com código existente
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
-  const token = user?.token;
+  const fallbackToken = user?.token;
+  
+  const finalToken = token || fallbackToken;
   const currentLanguage = localStorage.getItem('language') || 'pt-BR';
   const currentTimezone = localStorage.getItem('timezone') || 'America/Sao_Paulo';
 
   console.log('apiRequest - user from localStorage:', user);
-  console.log('apiRequest - token:', token);
+  console.log('apiRequest - token from auth_token:', token);
+  console.log('apiRequest - fallbackToken from user:', fallbackToken);
+  console.log('apiRequest - finalToken being used:', finalToken);
   console.log('apiRequest - endpoint:', endpoint);
   console.log('apiRequest - language:', currentLanguage);
 
@@ -60,7 +68,7 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     'Accept-Language': currentLanguage,
     'X-Timezone': currentTimezone,
     ...(!skipVersionHeader && { 'X-App-Version': APP_VERSION }),
-    ...(token && { Authorization: `Bearer ${token}` }),
+    ...(finalToken && { Authorization: `Bearer ${finalToken}` }),
     ...options?.headers,
   };
 
@@ -269,6 +277,12 @@ export const login = async (login: string, password: string) => {
 };
 
 export const logout = () => {
+  // Limpar todas as chaves de autenticação
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('auth_user');
+  localStorage.removeItem('auth_role');
+  localStorage.removeItem('auth_user_id');
+  localStorage.removeItem('auth_login_time');
   localStorage.removeItem('user');
   window.location.replace('/login');
 };
