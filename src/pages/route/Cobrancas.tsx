@@ -36,7 +36,7 @@ import {
   CreateDebitRequest 
 } from '../../services/debitApi';
 import { getClientById, Client } from '../../services/clientApi';
-import { getCreditsByClient, Credit } from '../../services/creditApi';
+import { getCreditsByClient, getCredit, Credit } from '../../services/creditApi';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
 
@@ -49,6 +49,7 @@ const Cobrancas: React.FC = () => {
   const [showPaymentAlert, setShowPaymentAlert] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(null);
+  const [selectedCredit, setSelectedCredit] = useState<Credit | null>(null);
   const [clientCredits, setClientCredits] = useState<Credit[]>([]);
   const [editedValues, setEditedValues] = useState<{ [key: number]: number }>({});
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
@@ -158,16 +159,26 @@ const Cobrancas: React.FC = () => {
     };
   };
 
-  const openClientModal = async (clientId: number) => {
+  const openClientModal = async (clientId: number, creditId?: number) => {
     const client = await getClientById(clientId);
     if (client) {
       setSelectedClient(client);
       try {
-        const credits = await getCreditsByClient(clientId);
-        setClientCredits(credits);
+        // Se um creditId for fornecido, busca apenas esse crédito específico
+        if (creditId) {
+          const credit = await getCredit(creditId);
+          setSelectedCredit(credit);
+          setClientCredits(credit ? [credit] : []);
+        } else {
+          // Se não, busca todos os créditos do cliente (comportamento anterior)
+          const credits = await getCreditsByClient(clientId);
+          setClientCredits(credits);
+          setSelectedCredit(null);
+        }
       } catch (error) {
         console.error('Erro ao carregar créditos do cliente:', error);
         setClientCredits([]);
+        setSelectedCredit(null);
       }
       setShowClientModal(true);
     }
@@ -264,7 +275,7 @@ const Cobrancas: React.FC = () => {
                               marginBottom: '8px',
                               cursor: 'pointer'
                             }}
-                            onClick={() => openClientModal(payment.clientId)}
+                            onClick={() => openClientModal(payment.clientId, payment.creditId)}
                           >
                             <IonIcon 
                               icon={locationOutline} 
@@ -429,7 +440,7 @@ const Cobrancas: React.FC = () => {
                         <IonItem style={{ marginBottom: '8px' }}>
                           <IonLabel>
                             <h3>{t('pages.collections.remainingInstallments')}</h3>
-                            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--ion-color-primary)' }}>
+                            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--ion-color-dark)' }}>
                               {summary.remainingInstallments} {t('pages.collections.installments')}
                             </p>
                           </IonLabel>
@@ -437,19 +448,124 @@ const Cobrancas: React.FC = () => {
                         <IonItem style={{ marginBottom: '8px' }}>
                           <IonLabel>
                             <h3>{t('pages.collections.remainingDebt')}</h3>
-                            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--ion-color-warning)' }}>
+                            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--ion-color-dark)' }}>
                               {formatCurrencyWithSymbol(summary.totalRemainingDebt)}
                             </p>
                           </IonLabel>
                         </IonItem>
-                        <IonItem>
+                        <IonItem style={{ marginBottom: '8px' }}>
                           <IonLabel>
                             <h3>{t('pages.collections.totalDebtWithInterest')}</h3>
-                            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--ion-color-danger)' }}>
+                            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--ion-color-dark)' }}>
                               {formatCurrencyWithSymbol(summary.totalDebt)}
                             </p>
                           </IonLabel>
                         </IonItem>
+                      </div>
+
+                      {/* Detalhes da Dívida */}
+                      <div style={{ 
+                        marginTop: '16px', 
+                        padding: '16px', 
+                        backgroundColor: 'var(--ion-color-light)', 
+                        borderRadius: '8px' 
+                      }}>
+                        <h4 style={{ margin: '0 0 12px 0', color: 'var(--ion-color-dark)' }}>
+                          {t('pages.collections.debtDetails')}
+                        </h4>
+                        {clientCredits.map((credit, index) => {
+                          const paidAmount = (credit.initialValue + (credit.initialValue * credit.tax / 100)) - credit.totalDebt;
+                          const progressPercentage = ((credit.initialValue + (credit.initialValue * credit.tax / 100)) > 0) 
+                            ? (paidAmount / (credit.initialValue + (credit.initialValue * credit.tax / 100))) * 100 
+                            : 0;
+                          
+                          return (
+                            <div key={credit.id} style={{ marginBottom: index < clientCredits.length - 1 ? '16px' : '0' }}>
+                              <div style={{ marginBottom: '8px' }}>
+                                <IonItem>
+                                  <IonLabel>
+                                    <h3>
+                                      {t('pages.collections.debtStartDate')}
+                                    </h3>
+                                    <p>
+                                      {new Date(credit.startDate).toLocaleDateString('pt-BR')}
+                                    </p>
+                                  </IonLabel>
+                                </IonItem>
+                                <IonItem>
+                                  <IonLabel>
+                                    <h3>
+                                      {t('pages.collections.debtInterestRate')}
+                                    </h3>
+                                    <p>
+                                      {credit.tax}%
+                                    </p>
+                                  </IonLabel>
+                                </IonItem>
+                                <IonItem>
+                                  <IonLabel>
+                                    <h3>
+                                      {t('pages.collections.debtInstallmentValue')}
+                                    </h3>
+                                    <p>
+                                      {formatCurrencyWithSymbol(credit.dayValue)}
+                                    </p>
+                                  </IonLabel>
+                                </IonItem>
+                                {credit.totalDebt > 0 && (
+                                  <IonItem>
+                                    <IonLabel>
+                                      <h3>
+                                        {t('pages.collections.debtOverdueValue')}
+                                      </h3>
+                                      <p>
+                                        {formatCurrencyWithSymbol(credit.totalDebt)}
+                                      </p>
+                                    </IonLabel>
+                                  </IonItem>
+                                )}
+                              </div>
+
+                              {/* Barra de Progresso */}
+                              <div style={{ marginTop: '12px' }}>
+                                <div style={{ 
+                                  display: 'flex', 
+                                  justifyContent: 'space-between', 
+                                  marginBottom: '4px',
+                                  fontSize: '12px',
+                                  color: 'var(--ion-color-dark)'
+                                }}>
+                                  <span>{t('pages.collections.debtProgress')}</span>
+                                  <span>{Math.round(progressPercentage)}%</span>
+                                </div>
+                                <div style={{ 
+                                  width: '100%', 
+                                  height: '8px', 
+                                  backgroundColor: '#e9ecef', 
+                                  borderRadius: '4px',
+                                  overflow: 'hidden'
+                                }}>
+                                  <div style={{ 
+                                    width: `${progressPercentage}%`, 
+                                    height: '100%', 
+                                    backgroundColor: '#007bff',
+                                    transition: 'width 0.3s ease'
+                                  }} />
+                                </div>
+                                <div style={{ 
+                                  display: 'flex', 
+                                  justifyContent: 'space-between', 
+                                  marginTop: '4px',
+                                  fontSize: '11px',
+                                  color: 'var(--ion-color-dark)'
+                                }}>
+                                  <span>{t('pages.collections.debtPaid')}: {formatCurrencyWithSymbol(paidAmount)}</span>
+                                  <span>{t('pages.collections.debtRemaining')}: {formatCurrencyWithSymbol(credit.totalDebt)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </>
                   );
