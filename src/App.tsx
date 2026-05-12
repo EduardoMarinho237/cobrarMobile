@@ -8,7 +8,7 @@ import ManagerTabs from './pages/ManagerTabs';
 import RouteTabs from './pages/RouteTabs';
 import EditarCategoria from './pages/manager/EditarCategoria';
 import DetalhesGastos from './pages/manager/DetalhesGastos';
-import { getCurrentUser, setAppUpdateCallback } from './services/api';
+import { getCurrentUser, setAppUpdateCallback, resetUpdateModalFlag } from './services/api';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -64,6 +64,7 @@ const App: React.FC = () => {
       window.open(downloadUrl, '_blank');
     }
     setShowUpdateAlert(false);
+    resetUpdateModalFlag();
   };
 
   const checkAuth = () => {
@@ -174,7 +175,10 @@ const App: React.FC = () => {
       {/* Alert de Atualização do App */}
       <IonAlert
         isOpen={showUpdateAlert}
-        onDidDismiss={() => setShowUpdateAlert(false)}
+        onDidDismiss={() => {
+          setShowUpdateAlert(false);
+          resetUpdateModalFlag();
+        }}
         header={updateMessage}
         buttons={[
           {

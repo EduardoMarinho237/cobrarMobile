@@ -6,8 +6,15 @@ export const isDev = () => API_BASE_URL === 'DEV';
 // Event emitter para app desatualizado
 let appUpdateCallback: ((message: string, downloadUrl: string) => void) | null = null;
 
+// Flag global para controlar se o modal já foi aberto
+let updateModalOpened = false;
+
 export const setAppUpdateCallback = (callback: (message: string, downloadUrl: string) => void) => {
   appUpdateCallback = callback;
+};
+
+export const resetUpdateModalFlag = () => {
+  updateModalOpened = false;
 };
 
 // Importar o event emitter (importação dinâmica para evitar circular dependency)
@@ -101,9 +108,12 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
       // Verificar se é erro de app desatualizado (needToUpdate: true)
       if (errorData && errorData.needToUpdate === true) {
         console.log('App desatualizado detectado:', errorData);
-        const downloadUrl = errorData.data?.startsWith('http') ? errorData.data : `${API_BASE_URL}${errorData.data}`;
-        if (appUpdateCallback && errorData.message && downloadUrl) {
-          appUpdateCallback(errorData.message, downloadUrl);
+        if (!updateModalOpened) {
+          const downloadUrl = errorData.data?.startsWith('http') ? errorData.data : `${API_BASE_URL}${errorData.data}`;
+          if (appUpdateCallback && errorData.message && downloadUrl) {
+            updateModalOpened = true;
+            appUpdateCallback(errorData.message, downloadUrl);
+          }
         }
         return errorData;
       }
@@ -160,9 +170,12 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
       // Verificar se resposta de sucesso tem needToUpdate
       if (parsed && parsed.needToUpdate === true) {
         console.log('App desatualizado detectado (sucesso):', parsed);
-        const downloadUrl = parsed.data?.startsWith('http') ? parsed.data : `${API_BASE_URL}${parsed.data}`;
-        if (appUpdateCallback && parsed.message && downloadUrl) {
-          appUpdateCallback(parsed.message, downloadUrl);
+        if (!updateModalOpened) {
+          const downloadUrl = parsed.data?.startsWith('http') ? parsed.data : `${API_BASE_URL}${parsed.data}`;
+          if (appUpdateCallback && parsed.message && downloadUrl) {
+            updateModalOpened = true;
+            appUpdateCallback(parsed.message, downloadUrl);
+          }
         }
         return parsed;
       }
