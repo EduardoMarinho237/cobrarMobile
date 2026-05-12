@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IonCard,
   IonCardHeader,
@@ -14,6 +14,7 @@ import {
 } from '@ionic/react';
 import { add, create, trash, card, eye, eyeOff } from 'ionicons/icons';
 import { Client } from '../../../../services/clientApi';
+import { getCreditsByClient } from '../../../../services/creditApi';
 import { useTranslation } from 'react-i18next';
 
 interface ClientCardProps {
@@ -35,8 +36,23 @@ const ClientCard: React.FC<ClientCardProps> = ({
 }) => {
   const { t } = useTranslation();
   const [showDetails, setShowDetails] = useState(false);
+  const [credits, setCredits] = useState<any[]>([]);
 
-  const totalDebt = client.totalCreditsValue - client.totalDebitsValue;
+  useEffect(() => {
+    const loadCredits = async () => {
+      try {
+        const clientCredits = await getCreditsByClient(client.id);
+        setCredits(clientCredits);
+      } catch (error) {
+        console.error('Erro ao carregar créditos do cliente:', error);
+        setCredits([]);
+      }
+    };
+    loadCredits();
+  }, [client.id]);
+
+  const totalDebtWithInterest = credits.reduce((sum, credit) => sum + credit.totalDebt, 0);
+  const totalDebt = totalDebtWithInterest - client.totalDebitsValue;
 
   return (
     <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>

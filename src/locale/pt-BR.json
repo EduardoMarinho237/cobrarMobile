@@ -346,7 +346,12 @@
       "confirmPayment": "Confirmar Pagamento",
       "confirmPaymentMessage": "Deseja confirmar o pagamento de {value} de {clientName}?",
       "confirm": "Confirmar",
-      "valueMustBeGreaterThanZero": "O valor deve ser maior que zero"
+      "valueMustBeGreaterThanZero": "O valor deve ser maior que zero",
+      "debtSummary": "Resumo da Dívida",
+      "remainingInstallments": "Parcelas Restantes",
+      "installments": "parcelas",
+      "remainingDebt": "Valor Restante da Dívida",
+      "totalDebtWithInterest": "Valor Total da Dívida (com juros)"
     },
     "collected": {
       "title": "Cobrados",

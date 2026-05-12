@@ -201,7 +201,12 @@
       "confirmPayment": "Confirm Payment",
       "confirmPaymentMessage": "Do you want to confirm the payment of {value} from {clientName}?",
       "confirm": "Confirm",
-      "valueMustBeGreaterThanZero": "Value must be greater than zero"
+      "valueMustBeGreaterThanZero": "Value must be greater than zero",
+      "debtSummary": "Debt Summary",
+      "remainingInstallments": "Remaining Installments",
+      "installments": "installments",
+      "remainingDebt": "Remaining Debt Amount",
+      "totalDebtWithInterest": "Total Debt Amount (with interest)"
     },
     "collected": {
       "title": "Collected",
