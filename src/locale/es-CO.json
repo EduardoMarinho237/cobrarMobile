@@ -10,6 +10,8 @@
     "delete": "Eliminar",
     "add": "Agregar",
     "search": "Buscar",
+    "searchPlaceholder": "Buscar por nombre, dirección, teléfono...",
+    "noSearchResults": "No se encontraron resultados",
     "loading": "Cargando...",
     "error": "Error",
     "success": "Éxito",
@@ -40,7 +42,8 @@
     "loginError": "Error de inicio de sesión",
     "incompleteData": "Datos incompletos recibidos del servidor",
     "userTypeNotRecognized": "Tipo de usuario no reconocido",
-    "loggingIn": "Iniciando sesión..."
+    "loggingIn": "Iniciando sesión...",
+    "rememberMe": "Mantenerme conectado"
   },
   "tabs": {
     "managers": "Gerentes",
@@ -302,7 +305,27 @@
       "debtOverdueValue": "Valor en Mora",
       "debtProgress": "Progreso de la Deuda",
       "debtPaid": "Pagado",
-      "debtRemaining": "Restante"
+      "debtRemaining": "Restante",
+      "paymentHistory": "Historial de Pagos",
+      "loadingHistory": "Cargando historial...",
+      "noPaymentHistory": "No hay pagos registrados",
+      "historyPayment": "Pago",
+      "historyPaymentUndone": "Pago deshecho",
+      "historyCreditCreated": "Crédito creado",
+      "historyCreditUpdated": "Crédito actualizado",
+      "historyPaymentDeleted": "Pago eliminado",
+      "historyRemainingDebt": "Saldo después del evento",
+      "historyActive": "Activo",
+      "historyUndone": "Deshecho",
+      "errorLoadingHistory": "Error al cargar historial",
+      "confirmPaymentModalTitle": "Confirmar cobranza",
+      "confirmPaymentModalMessage": "¿Desea registrar el pago de {value} de {clientName}?",
+      "confirmAndShare": "Confirmar y compartir",
+      "whatsappShareClientName": "Nombre del cliente",
+      "whatsappShareAmountPaid": "Valor pagado",
+      "whatsappShareInitialDebt": "Deuda inicial",
+      "whatsappShareRemaining": "Cuánto falta",
+      "whatsappShareTransactionId": "ID de la transacción"
     },
     "credits": {
       "title": "Créditos",

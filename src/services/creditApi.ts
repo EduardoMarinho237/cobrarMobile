@@ -39,6 +39,28 @@ export interface ApiResponse<T> {
   data: T | null;
 }
 
+export type CreditHistoryEventType =
+  | 'CREDIT_CREATED'
+  | 'CREDIT_UPDATED'
+  | 'DEBIT_APPLIED'
+  | 'DEBIT_UNDONE'
+  | 'DEBIT_DELETED';
+
+export interface CreditHistoryEntry {
+  id: number;
+  eventType: CreditHistoryEventType;
+  occurredAt: string;
+  debitId: number | null;
+  debitValue: number | null;
+  debitActive: boolean | null;
+  totalDebt: number | null;
+  quantityDays: number | null;
+  dayValue: number | null;
+  lastInstallment: number | null;
+  finalDate: string | null;
+  performedByLogin: string | null;
+}
+
 // Mock data para desenvolvimento
 const mockCredits: Credit[] = [
   {
@@ -122,6 +144,23 @@ export const getCredit = async (id: number): Promise<Credit | null> => {
   } catch (error) {
     console.error('Erro ao buscar crédito:', error);
     return mockCredits.find(credit => credit.id === id) || null; // Fallback para mock
+  }
+};
+
+export const getCreditHistory = async (creditId: number): Promise<CreditHistoryEntry[]> => {
+  try {
+    const response = await apiRequest(`/api/credits/${creditId}/history`, {
+      method: 'GET',
+    });
+
+    if (response.mock) {
+      return [];
+    }
+
+    return response.data || [];
+  } catch (error) {
+    console.error('Erro ao buscar histórico do crédito:', error);
+    throw error;
   }
 };
 

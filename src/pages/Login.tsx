@@ -6,10 +6,10 @@ import {
   IonButton,
   IonItem,
   IonAlert,
-  IonLoading
+  IonLoading,
+  IonCheckbox
 } from '@ionic/react';
-import { getCurrentUser, login, logout, isDev } from '../services/api';
-import { useHistory } from 'react-router-dom';
+import { login, isDev } from '../services/api';
 import { useTranslation } from 'react-i18next';
 // NOTE: Language selector temporarily disabled - only Spanish (es-CO) is available now
 // import LanguageSelector from '../components/LanguageSelector';
@@ -21,7 +21,7 @@ const Login: React.FC = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const history = useHistory();
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -34,7 +34,7 @@ const Login: React.FC = () => {
     
     try {
       console.log('Tentando login com:', username);
-      const userData = await login(username, password);
+      const userData = await login(username, password, rememberMe);
       console.log('Login successful:', userData);
       console.log('userData.role:', userData.role);
       
@@ -163,6 +163,16 @@ const Login: React.FC = () => {
               />
             </IonItem>
             
+            <IonItem style={{ marginBottom: '20px', '--background': 'transparent' }}>
+              <IonCheckbox
+                checked={rememberMe}
+                onIonChange={(e) => setRememberMe(e.detail.checked)}
+                labelPlacement="end"
+              >
+                {t('login.rememberMe')}
+              </IonCheckbox>
+            </IonItem>
+
             <IonButton
               expand="block"
               style={{ 

@@ -65,7 +65,6 @@ const Config: React.FC = () => {
   const confirmLogout = async () => {
     try {
       await logout();
-      history.replace('/login');
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     }

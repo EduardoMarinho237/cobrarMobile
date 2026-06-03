@@ -92,6 +92,18 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     });
     console.log('Resposta fetch recebida - status:', response.status);
 
+    if (response.status === 401) {
+      console.log('Token expirado (401) - limpando sessão e redirecionando');
+      clearSessionData();
+      (window as any).globalToast?.('Sesión vencida');
+
+      setTimeout(() => {
+        window.location.replace('/login');
+      }, 800);
+
+      return null;
+    }
+
     if (!response.ok) {
       // Tenta obter o corpo da resposta de erro
       let errorData = null;
@@ -199,7 +211,7 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
   }
 };
 
-export const login = async (login: string, password: string) => {
+export const login = async (login: string, password: string, rememberMe = false) => {
   console.log('=== INÍCIO DO LOGIN ===');
   console.log('Login para:', login);
   console.log('isDev():', isDev());
@@ -235,7 +247,7 @@ export const login = async (login: string, password: string) => {
   try {
     const response = await apiRequest('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ login, password }),
+      body: JSON.stringify({ login, password, rememberMe }),
     });
 
     console.log('Resposta da API recebida:', response);
@@ -289,15 +301,51 @@ export const login = async (login: string, password: string) => {
   }
 };
 
-export const logout = () => {
-  // Limpar todas as chaves de autenticação
+export const clearSessionData = () => {
   localStorage.removeItem('auth_token');
   localStorage.removeItem('auth_user');
   localStorage.removeItem('auth_role');
   localStorage.removeItem('auth_user_id');
   localStorage.removeItem('auth_login_time');
   localStorage.removeItem('user');
-  window.location.replace('/login');
+  localStorage.removeItem('closedDay');
+};
+
+export const checkToken = async (): Promise<boolean> => {
+  if (isDev()) {
+    return !!localStorage.getItem('auth_token');
+  }
+
+  const token = localStorage.getItem('auth_token');
+  if (!token) {
+    return false;
+  }
+
+  try {
+    const response = await apiRequest('/api/auth/checkToken', {
+      method: 'GET',
+    });
+
+    return response?.success === true && response?.data?.valid === true;
+  } catch (error) {
+    console.error('Erro ao validar token:', error);
+    return false;
+  }
+};
+
+export const logout = async () => {
+  try {
+    if (!isDev()) {
+      await apiRequest('/api/auth/logout', {
+        method: 'POST',
+      });
+    }
+  } catch (error) {
+    console.error('Erro ao encerrar sessão no servidor:', error);
+  } finally {
+    clearSessionData();
+    window.location.replace('/login');
+  }
 };
 
 export const getCurrentUser = () => {

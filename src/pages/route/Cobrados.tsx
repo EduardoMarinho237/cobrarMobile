@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   IonContent,
   IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
   IonCard,
   IonCardHeader,
   IonCardTitle,
@@ -30,7 +27,8 @@ import {
   Debit 
 } from '../../services/debitApi';
 import Toast from '../../components/Toast';
-
+import ListSearchHeader from '../../components/ListSearchHeader';
+import { matchesSearchQuery, collectSearchableValues } from '../../utils/listSearch';
 import { useTranslation } from 'react-i18next';
 
 const Cobrados: React.FC = () => {
@@ -40,6 +38,7 @@ const Cobrados: React.FC = () => {
   const [showUndoAlert, setShowUndoAlert] = useState(false);
   const [selectedDebit, setSelectedDebit] = useState<Debit | null>(null);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadData();
@@ -100,13 +99,22 @@ const Cobrados: React.FC = () => {
     });
   };
 
+  const filteredDebits = useMemo(() => {
+    return debits.filter((debit) =>
+      matchesSearchQuery(
+        searchQuery,
+        ...collectSearchableValues(debit, { formattedDate: formatDate(debit.createdAt) })
+      )
+    );
+  }, [debits, searchQuery]);
+
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>{t('pages.collected.title')}</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <ListSearchHeader
+        title={t('pages.collected.title')}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+      />
       <IonContent fullscreen>
         <IonRefresher slot="fixed" id="cobrados-refresher" onIonRefresh={loadData}>
           <IonRefresherContent></IonRefresherContent>
@@ -122,8 +130,12 @@ const Cobrados: React.FC = () => {
             <div style={{ textAlign: 'center', padding: '20px' }}>
               <p>{t('pages.collected.noCollectionsMade')}</p>
             </div>
+          ) : filteredDebits.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <p>{t('common.noSearchResults')}</p>
+            </div>
           ) : (
-            debits.map((debit) => (
+            filteredDebits.map((debit) => (
               <IonCard 
                 key={debit.id} 
                 style={{ 
