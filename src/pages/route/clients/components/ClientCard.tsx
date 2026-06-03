@@ -51,8 +51,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
     loadCredits();
   }, [client.id]);
 
-  const totalDebtWithInterest = credits.reduce((sum, credit) => sum + credit.totalDebt, 0);
-  const totalDebt = totalDebtWithInterest - client.totalDebitsValue;
+  const totalDebt = credits.reduce((sum, credit) => sum + credit.totalDebt, 0);
 
   return (
     <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>

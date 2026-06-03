@@ -10,6 +10,8 @@
     "delete": "Delete",
     "add": "Add",
     "search": "Search",
+    "searchPlaceholder": "Search by name, address, phone...",
+    "noSearchResults": "No results found",
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
@@ -39,7 +41,8 @@
     "loginError": "Login error",
     "incompleteData": "Incomplete data received from server",
     "userTypeNotRecognized": "User type not recognized",
-    "loggingIn": "Signing in..."
+    "loggingIn": "Signing in...",
+    "rememberMe": "Keep me signed in"
   },
   "tabs": {
     "managers": "Managers",
@@ -214,7 +217,19 @@
       "debtOverdueValue": "Overdue Amount",
       "debtProgress": "Debt Progress",
       "debtPaid": "Paid",
-      "debtRemaining": "Remaining"
+      "debtRemaining": "Remaining",
+      "paymentHistory": "Payment History",
+      "loadingHistory": "Loading history...",
+      "noPaymentHistory": "No payments recorded",
+      "historyPayment": "Payment",
+      "historyPaymentUndone": "Payment undone",
+      "historyCreditCreated": "Credit created",
+      "historyCreditUpdated": "Credit updated",
+      "historyPaymentDeleted": "Payment deleted",
+      "historyRemainingDebt": "Balance after event",
+      "historyActive": "Active",
+      "historyUndone": "Undone",
+      "errorLoadingHistory": "Error loading history"
     },
     "collected": {
       "title": "Collected",

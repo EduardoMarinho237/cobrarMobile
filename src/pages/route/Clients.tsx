@@ -1,10 +1,7 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   IonContent,
   IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
   IonButton,
   IonIcon,
   IonAlert,
@@ -14,6 +11,8 @@ import {
 } from '@ionic/react';
 import { add } from 'ionicons/icons';
 import Toast from '../../components/Toast';
+import ListSearchHeader from '../../components/ListSearchHeader';
+import { matchesSearchQuery, collectSearchableValues } from '../../utils/listSearch';
 import { useTranslation } from 'react-i18next';
 
 import { useClients } from './clients/hooks/useClients';
@@ -26,6 +25,7 @@ import CreditViewModal from './clients/components/CreditViewModal';
 
 const Clients: React.FC = () => {
   const { t } = useTranslation();
+  const [searchQuery, setSearchQuery] = useState('');
   const {
     clients,
     isLoading,
@@ -68,13 +68,19 @@ const Clients: React.FC = () => {
     calculateProgress
   } = useClients();
 
+  const filteredClients = useMemo(() => {
+    return clients.filter((client) =>
+      matchesSearchQuery(searchQuery, ...collectSearchableValues(client))
+    );
+  }, [clients, searchQuery]);
+
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>{t('pages.clients.title')}</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <ListSearchHeader
+        title={t('pages.clients.title')}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+      />
 
       <IonContent fullscreen>
         <IonRefresher slot="fixed" onIonRefresh={loadClients}>
@@ -103,8 +109,12 @@ const Clients: React.FC = () => {
             <div style={{ textAlign: 'center', padding: '20px' }}>
               <p>{t('pages.clients.noClientsRegistered')}</p>
             </div>
+          ) : filteredClients.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <p>{t('common.noSearchResults')}</p>
+            </div>
           ) : (
-            clients.map((client) => (
+            filteredClients.map((client) => (
               <ClientCard
                 key={client.id}
                 client={client}

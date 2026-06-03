@@ -10,6 +10,8 @@
     "delete": "Excluir",
     "add": "Adicionar",
     "search": "Buscar",
+    "searchPlaceholder": "Buscar por nome, endereço, telefone...",
+    "noSearchResults": "Nenhum resultado encontrado",
     "loading": "Carregando...",
     "error": "Erro",
     "success": "Sucesso",
@@ -40,7 +42,8 @@
     "loginError": "Erro de login",
     "incompleteData": "Dados incompletos recebidos do servidor",
     "userTypeNotRecognized": "Tipo de usuário não reconhecido",
-    "loggingIn": "Fazendo login..."
+    "loggingIn": "Fazendo login...",
+    "rememberMe": "Manter-me conectado"
   },
   "tabs": {
     "managers": "Gerentes",
@@ -359,7 +362,19 @@
       "debtOverdueValue": "Valor em Atraso",
       "debtProgress": "Progresso da Dívida",
       "debtPaid": "Pago",
-      "debtRemaining": "Restante"
+      "debtRemaining": "Restante",
+      "paymentHistory": "Histórico de Pagamentos",
+      "loadingHistory": "Carregando histórico...",
+      "noPaymentHistory": "Nenhum pagamento registrado",
+      "historyPayment": "Pagamento",
+      "historyPaymentUndone": "Pagamento desfeito",
+      "historyCreditCreated": "Crédito criado",
+      "historyCreditUpdated": "Crédito atualizado",
+      "historyPaymentDeleted": "Pagamento excluído",
+      "historyRemainingDebt": "Saldo após evento",
+      "historyActive": "Ativo",
+      "historyUndone": "Desfeito",
+      "errorLoadingHistory": "Erro ao carregar histórico"
     },
     "collected": {
       "title": "Cobrados",

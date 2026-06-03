@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   IonContent,
   IonPage,
@@ -15,7 +15,6 @@ import {
   IonModal,
   IonButtons,
   IonIcon,
-  IonAlert,
   IonRefresher,
   IonRefresherContent,
   IonGrid,
@@ -26,7 +25,7 @@ import {
   IonCheckbox,
   IonText
 } from '@ionic/react';
-import { create, refresh, cashOutline, personOutline, locationOutline, callOutline } from 'ionicons/icons';
+import { create, refresh, cashOutline, personOutline, locationOutline, callOutline, timeOutline } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { 
   getDailySchedule, 
@@ -36,8 +35,10 @@ import {
   CreateDebitRequest 
 } from '../../services/debitApi';
 import { getClientById, Client } from '../../services/clientApi';
-import { getCreditsByClient, getCredit, Credit } from '../../services/creditApi';
+import { getCreditsByClient, getCredit, Credit, getCreditHistory, CreditHistoryEntry } from '../../services/creditApi';
 import Toast from '../../components/Toast';
+import ListSearchHeader from '../../components/ListSearchHeader';
+import { matchesSearchQuery, collectSearchableValues } from '../../utils/listSearch';
 import { useTranslation } from 'react-i18next';
 
 const Cobrancas: React.FC = () => {
@@ -46,13 +47,20 @@ const Cobrancas: React.FC = () => {
   const [clients, setClients] = useState<{ [key: number]: Client }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showClientModal, setShowClientModal] = useState(false);
-  const [showPaymentAlert, setShowPaymentAlert] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentCredit, setPaymentCredit] = useState<Credit | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(null);
   const [selectedCredit, setSelectedCredit] = useState<Credit | null>(null);
   const [clientCredits, setClientCredits] = useState<Credit[]>([]);
   const [editedValues, setEditedValues] = useState<{ [key: number]: number }>({});
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCreditId, setActiveCreditId] = useState<number | null>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [creditHistory, setCreditHistory] = useState<CreditHistoryEntry[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -99,42 +107,113 @@ const Cobrancas: React.FC = () => {
     setToast({ isOpen: true, message, color });
   };
 
-  const handlePayment = (payment: PendingPayment) => {
+  const handlePayment = async (payment: PendingPayment) => {
     const currentValue = editedValues[payment.creditId] ?? payment.installmentValue;
-    
+
     if (currentValue <= 0) {
       showToast(t('pages.collections.valueMustBeGreaterThanZero'), 'danger');
       return;
     }
-    
-    setSelectedPayment(payment);
-    setEditedValues(prev => ({ ...prev, [payment.creditId]: currentValue }));
-    setShowPaymentAlert(true);
+
+    try {
+      const credit = await getCredit(payment.creditId);
+      if (!credit) {
+        showToast(t('pages.collections.errorRegisteringPayment'), 'danger');
+        return;
+      }
+
+      setSelectedPayment(payment);
+      setPaymentCredit(credit);
+      setEditedValues(prev => ({ ...prev, [payment.creditId]: currentValue }));
+      setShowPaymentModal(true);
+    } catch (error) {
+      showToast(t('pages.collections.errorRegisteringPayment'), 'danger');
+    }
   };
 
+  const getPaymentValue = () => {
+    if (!selectedPayment) return 0;
+    return editedValues[selectedPayment.creditId] ?? selectedPayment.installmentValue;
+  };
 
-  const confirmPayment = async () => {
-    if (!selectedPayment) return;
+  const calculateInitialDebt = (credit: Credit) => {
+    return credit.initialValue + (credit.initialValue * credit.tax / 100);
+  };
 
+  const buildWhatsAppMessage = (
+    clientName: string,
+    amountPaid: number,
+    initialDebt: number,
+    remainingDebt: number,
+    transactionId: number
+  ) => {
+    return [
+      `${t('pages.collections.whatsappShareClientName')}: ${clientName}`,
+      `${t('pages.collections.whatsappShareAmountPaid')}: ${formatCurrencyWithSymbol(amountPaid)}`,
+      `${t('pages.collections.whatsappShareInitialDebt')}: ${formatCurrencyWithSymbol(initialDebt)}`,
+      `${t('pages.collections.whatsappShareRemaining')}: ${formatCurrencyWithSymbol(remainingDebt)}`,
+      `${t('pages.collections.whatsappShareTransactionId')}: ${transactionId}`
+    ].join('\n');
+  };
+
+  const openWhatsAppShare = (message: string) => {
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const closePaymentModal = () => {
+    setShowPaymentModal(false);
+    setSelectedPayment(null);
+    setPaymentCredit(null);
+  };
+
+  const confirmPayment = async (shareOnWhatsApp: boolean) => {
+    if (!selectedPayment || !paymentCredit || isProcessingPayment) return;
+
+    const paidValue = getPaymentValue();
     const debitRequest: CreateDebitRequest = {
-      value: editedValues[selectedPayment.creditId] || selectedPayment.installmentValue,
+      value: paidValue,
       creditId: selectedPayment.creditId,
       changeAllDays: false
     };
 
+    setIsProcessingPayment(true);
     try {
       const response = await createDebit(debitRequest);
-      if (response.success) {
+      if (response.success && response.data) {
+        let remainingDebt = Math.max(paymentCredit.totalDebt - paidValue, 0);
+
+        try {
+          const updatedCredit = await getCredit(selectedPayment.creditId);
+          if (updatedCredit) {
+            remainingDebt = updatedCredit.totalDebt;
+          }
+        } catch (error) {
+          console.error('Erro ao buscar saldo atualizado do crédito:', error);
+        }
+
+        if (shareOnWhatsApp && response.data.id) {
+          const message = buildWhatsAppMessage(
+            selectedPayment.clientName,
+            paidValue,
+            calculateInitialDebt(paymentCredit),
+            remainingDebt,
+            response.data.id
+          );
+          openWhatsAppShare(message);
+        }
+
         showToast(t('pages.collections.paymentRegisteredSuccess'), 'success');
-        setShowPaymentAlert(false);
-        setSelectedPayment(null);
+        closePaymentModal();
         setEditedValues({});
-        loadData(); // Recarregar agenda
+        loadData();
       } else {
         showToast(response.message || t('pages.collections.errorRegisteringPayment'), 'danger');
       }
     } catch (error) {
       showToast(t('pages.collections.errorRegisteringPayment'), 'danger');
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
@@ -160,10 +239,25 @@ const Cobrancas: React.FC = () => {
     };
   };
 
+  const filteredPayments = useMemo(() => {
+    if (!dailySchedule) {
+      return [];
+    }
+
+    return dailySchedule.pendingPayments.filter((payment) => {
+      const clientInfo = clients[payment.clientId];
+      return matchesSearchQuery(
+        searchQuery,
+        ...collectSearchableValues(payment, clientInfo ?? {})
+      );
+    });
+  }, [dailySchedule, clients, searchQuery]);
+
   const openClientModal = async (clientId: number, creditId?: number) => {
     const client = await getClientById(clientId);
     if (client) {
       setSelectedClient(client);
+      setActiveCreditId(creditId ?? null);
       try {
         // Se um creditId for fornecido, busca apenas esse crédito específico
         if (creditId) {
@@ -185,13 +279,62 @@ const Cobrancas: React.FC = () => {
     }
   };
 
+  const getHistoryEventLabel = (eventType: CreditHistoryEntry['eventType']) => {
+    switch (eventType) {
+      case 'DEBIT_APPLIED':
+        return t('pages.collections.historyPayment');
+      case 'DEBIT_UNDONE':
+        return t('pages.collections.historyPaymentUndone');
+      case 'DEBIT_DELETED':
+        return t('pages.collections.historyPaymentDeleted');
+      case 'CREDIT_CREATED':
+        return t('pages.collections.historyCreditCreated');
+      case 'CREDIT_UPDATED':
+        return t('pages.collections.historyCreditUpdated');
+      default:
+        return eventType;
+    }
+  };
+
+  const formatHistoryDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const openPaymentHistory = async () => {
+    const creditId = activeCreditId ?? selectedCredit?.id;
+    if (!creditId) {
+      return;
+    }
+
+    setIsHistoryLoading(true);
+    setShowHistoryModal(true);
+    try {
+      const history = await getCreditHistory(creditId);
+      const paymentEvents = history.filter((entry) =>
+        ['DEBIT_APPLIED', 'DEBIT_UNDONE', 'DEBIT_DELETED'].includes(entry.eventType)
+      );
+      setCreditHistory(paymentEvents.length > 0 ? paymentEvents : history);
+    } catch (error) {
+      showToast(t('pages.collections.errorLoadingHistory'), 'danger');
+      setCreditHistory([]);
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  };
+
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>{t('pages.collections.title')}</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <ListSearchHeader
+        title={t('pages.collections.title')}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+      />
       <IonContent fullscreen>
         <IonRefresher slot="fixed" id="cobrancas-refresher" onIonRefresh={loadData}>
           <IonRefresherContent></IonRefresherContent>
@@ -248,8 +391,12 @@ const Cobrancas: React.FC = () => {
             <div style={{ textAlign: 'center', padding: '20px' }}>
               <p>{t('pages.collections.noCollectionsToday')}</p>
             </div>
+          ) : filteredPayments.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <p>{t('common.noSearchResults')}</p>
+            </div>
           ) : (
-            dailySchedule.pendingPayments.map((payment) => {
+            filteredPayments.map((payment) => {
               const clientInfo = getClientInfo(payment.clientId);
               return (
                 <IonCard 
@@ -383,6 +530,12 @@ const Cobrancas: React.FC = () => {
             <IonToolbar>
               <IonTitle>{t('pages.collections.clientInfo')}</IonTitle>
               <IonButtons slot="end">
+                {(activeCreditId || selectedCredit?.id) && (
+                  <IonButton onClick={openPaymentHistory}>
+                    <IonIcon slot="start" icon={timeOutline} />
+                    {t('pages.collections.paymentHistory')}
+                  </IonButton>
+                )}
                 <IonButton onClick={() => setShowClientModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
@@ -576,24 +729,115 @@ const Cobrancas: React.FC = () => {
           </IonContent>
         </IonModal>
 
+        <IonModal isOpen={showHistoryModal} onDidDismiss={() => setShowHistoryModal(false)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>{t('pages.collections.paymentHistory')}</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setShowHistoryModal(false)}>{t('common.close')}</IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent>
+            <div style={{ padding: '16px' }}>
+              {isHistoryLoading ? (
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                  <IonSpinner name="dots" />
+                  <p style={{ color: '#666', marginTop: '16px' }}>{t('pages.collections.loadingHistory')}</p>
+                </div>
+              ) : creditHistory.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <p>{t('pages.collections.noPaymentHistory')}</p>
+                </div>
+              ) : (
+                creditHistory.map((entry) => (
+                  <IonCard key={`${entry.eventType}-${entry.id}-${entry.occurredAt}`} style={{ marginBottom: '12px', borderRadius: '12px' }}>
+                    <IonCardContent>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                        <div>
+                          <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>
+                            {getHistoryEventLabel(entry.eventType)}
+                          </h3>
+                          <p style={{ margin: 0, color: '#666', fontSize: '13px' }}>
+                            {formatHistoryDate(entry.occurredAt)}
+                          </p>
+                          {entry.debitValue != null && (
+                            <p style={{ margin: '8px 0 0 0', fontWeight: 'bold', color: entry.eventType === 'DEBIT_APPLIED' ? '#28a745' : '#dc3545' }}>
+                              {formatCurrencyWithSymbol(entry.debitValue)}
+                            </p>
+                          )}
+                          {entry.totalDebt != null && (
+                            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#666' }}>
+                              {t('pages.collections.historyRemainingDebt')}: {formatCurrencyWithSymbol(entry.totalDebt)}
+                            </p>
+                          )}
+                        </div>
+                        {entry.debitActive != null && (
+                          <IonText color={entry.debitActive ? 'success' : 'medium'}>
+                            <span style={{ fontSize: '12px', fontWeight: 'bold' }}>
+                              {entry.debitActive ? t('pages.collections.historyActive') : t('pages.collections.historyUndone')}
+                            </span>
+                          </IonText>
+                        )}
+                      </div>
+                    </IonCardContent>
+                  </IonCard>
+                ))
+              )}
+            </div>
+          </IonContent>
+        </IonModal>
+
         
-        {/* Alert de Confirmação de Pagamento */}
-        <IonAlert
-          isOpen={showPaymentAlert}
-          onDidDismiss={() => setShowPaymentAlert(false)}
-          header={t('pages.collections.confirmPayment')}
-          message={t('pages.collections.confirmPaymentMessage').replace('{value}', formatCurrencyWithSymbol(editedValues[selectedPayment?.creditId || 0] || selectedPayment?.installmentValue || 0)).replace('{clientName}', selectedPayment?.clientName || t('pages.collections.thisClient'))}
-          buttons={[
-            {
-              text: t('common.cancel'),
-              role: 'cancel'
-            },
-            {
-              text: t('pages.collections.confirm'),
-              handler: confirmPayment
-            }
-          ]}
-        />
+        {/* Modal de Confirmação de Pagamento */}
+        <IonModal isOpen={showPaymentModal} onDidDismiss={closePaymentModal}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>{t('pages.collections.confirmPaymentModalTitle')}</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={closePaymentModal} disabled={isProcessingPayment}>
+                  {t('common.close')}
+                </IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent>
+            <div style={{ padding: '16px' }}>
+              <p style={{ margin: '0 0 24px 0', color: '#444', lineHeight: 1.5 }}>
+                {t('pages.collections.confirmPaymentModalMessage')
+                  .replace('{value}', formatCurrencyWithSymbol(getPaymentValue()))
+                  .replace('{clientName}', selectedPayment?.clientName || t('pages.collections.thisClient'))}
+              </p>
+
+              <IonButton
+                expand="block"
+                shape="round"
+                color="success"
+                style={{ marginBottom: '12px' }}
+                disabled={isProcessingPayment}
+                onClick={() => confirmPayment(true)}
+              >
+                {t('pages.collections.confirmAndShare')}
+              </IonButton>
+
+              <IonButton
+                expand="block"
+                shape="round"
+                fill="outline"
+                disabled={isProcessingPayment}
+                onClick={() => confirmPayment(false)}
+              >
+                {t('pages.collections.confirm')}
+              </IonButton>
+
+              {isProcessingPayment && (
+                <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                  <IonSpinner name="dots" />
+                </div>
+              )}
+            </div>
+          </IonContent>
+        </IonModal>
 
         {/* Toast */}
         <Toast

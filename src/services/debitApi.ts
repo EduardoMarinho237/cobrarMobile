@@ -55,12 +55,20 @@ export const getDailySchedule = async (): Promise<DailySchedule> => {
   }
 };
 
-export const createDebit = async (debit: CreateDebitRequest): Promise<ApiResponse<any>> => {
+export const createDebit = async (debit: CreateDebitRequest): Promise<ApiResponse<Debit | null>> => {
   try {
     const response = await apiRequest('/api/debits', {
       method: 'POST',
       body: JSON.stringify(debit),
     });
+
+    if (!response || response.success === false) {
+      return {
+        success: false,
+        message: response?.message || 'Erro ao criar débito',
+        data: null
+      };
+    }
 
     return {
       success: true,
@@ -95,6 +103,14 @@ export const undoDebit = async (debitId: number): Promise<ApiResponse<Debit | nu
     const response = await apiRequest(`/api/debits/${debitId}/undo`, {
       method: 'POST',
     });
+
+    if (!response || response.success === false) {
+      return {
+        success: false,
+        message: response?.message || 'Erro ao desfazer débito',
+        data: null
+      };
+    }
 
     return {
       success: true,

@@ -1,5 +1,5 @@
 import { Redirect, Route } from 'react-router-dom';
-import { IonApp, setupIonicReact, IonAlert } from '@ionic/react';
+import { IonApp, setupIonicReact, IonAlert, IonToast } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { useState, useEffect } from 'react';
 import Login from './pages/Login';
@@ -8,7 +8,7 @@ import ManagerTabs from './pages/ManagerTabs';
 import RouteTabs from './pages/RouteTabs';
 import EditarCategoria from './pages/manager/EditarCategoria';
 import DetalhesGastos from './pages/manager/DetalhesGastos';
-import { getCurrentUser, setAppUpdateCallback, resetUpdateModalFlag } from './services/api';
+import { getCurrentUser, setAppUpdateCallback, resetUpdateModalFlag, checkToken, clearSessionData } from './services/api';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -26,18 +26,6 @@ import '@ionic/react/css/text-transformation.css';
 import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
-/**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
- */
-
-/* import '@ionic/react/css/palettes/dark.always.css'; */
-/* import '@ionic/react/css/palettes/dark.class.css'; */
-/* import '@ionic/react/css/palettes/dark.system.css'; */
-
-/* Theme variables */
 import './theme/variables.css';
 
 setupIonicReact();
@@ -46,17 +34,52 @@ const App: React.FC = () => {
   const [showUpdateAlert, setShowUpdateAlert] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
+  const [sessionChecked, setSessionChecked] = useState(false);
+
+  // 🔵 TOAST GLOBAL STATE (ADICIONADO)
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
-    // Registrar callback para quando o app estiver desatualizado
+    const validateSession = async () => {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        setSessionChecked(true);
+        return;
+      }
+
+      const isValid = await checkToken();
+      if (!isValid) {
+        clearSessionData();
+        if (window.location.pathname !== '/login') {
+          window.location.replace('/login');
+        }
+      }
+      setSessionChecked(true);
+    };
+
+    validateSession();
+  }, []);
+
+  useEffect(() => {
     console.log('App - Registrando callback de atualização');
     setAppUpdateCallback((message: string, url: string) => {
       console.log('App - Callback de atualização chamado:', { message, url });
       setUpdateMessage(message);
       setDownloadUrl(url);
       setShowUpdateAlert(true);
-      console.log('App - Estado atualizado, showUpdateAlert deve ser true');
     });
+  }, []);
+
+  // 🔵 CALLBACK GLOBAL DO TOAST (ADICIONADO)
+  useEffect(() => {
+    console.log('App - Registrando callback de toast global');
+
+    (window as any).globalToast = (message: string) => {
+      console.log('App - Toast global chamado:', message);
+      setToastMessage(message);
+      setShowToast(true);
+    };
   }, []);
 
   const handleDownload = () => {
@@ -69,14 +92,13 @@ const App: React.FC = () => {
 
   const checkAuth = () => {
     const user = getCurrentUser();
-    console.log('checkAuth - user from localStorage:', user);
     return user !== null;
   };
 
   const getRedirectPath = () => {
     const user = getCurrentUser();
     if (!user) return '/login';
-    
+
     switch (user.role) {
       case 'ADMIN':
         return '/admin/managers';
@@ -89,23 +111,20 @@ const App: React.FC = () => {
     }
   };
 
-  const ProtectedRoute: React.FC<{ children: React.ReactNode; path?: string; exact?: boolean }> = ({ children, ...rest }) => {
-    const isAuth = checkAuth();
-    console.log('ProtectedRoute checkAuth:', isAuth, 'path:', rest.path);
-    console.log('ProtectedRoute - user completo:', getCurrentUser());
-    
-    if (!isAuth) {
-      console.log('ProtectedRoute - não autenticado, redirecionando para /login');
-      return <Redirect to="/login" />;
-    }
-    
-    console.log('ProtectedRoute - autenticado, renderizando children');
-    return (
-      <Route {...rest}>
-        {children}
-      </Route>
-    );
-  };
+  const ProtectedRoute: React.FC<{ children: React.ReactNode; path?: string; exact?: boolean }> =
+    ({ children, ...rest }) => {
+      if (!sessionChecked) {
+        return null;
+      }
+
+      const isAuth = checkAuth();
+
+      if (!isAuth) {
+        return <Redirect to="/login" />;
+      }
+
+      return <Route {...rest}>{children}</Route>;
+    };
 
   return (
     <IonApp>
@@ -113,66 +132,88 @@ const App: React.FC = () => {
         <Route exact path="/login">
           <Login />
         </Route>
+
         <ProtectedRoute exact path="/admin">
           <AdminTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/admin/managers">
           <AdminTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/admin/config">
           <AdminTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/manager">
           <ManagerTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/manager/dashboard">
           <ManagerTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/manager/gastos">
           <ManagerTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/manager/routes">
           <ManagerTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/manager/config">
           <ManagerTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/route">
           <RouteTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/route/cobrancas">
           <RouteTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/route/cobrados">
           <RouteTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/route/gastos">
           <RouteTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/route/credits">
           <RouteTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/route/clients">
           <RouteTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/route/fechamento">
           <RouteTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/route/config">
           <RouteTabs />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/manager/gastos/:categoriaId/editar">
           <EditarCategoria />
         </ProtectedRoute>
+
         <ProtectedRoute exact path="/manager/gastos/:categoriaId/detalhes">
           <DetalhesGastos />
         </ProtectedRoute>
+
         <Route exact path="/">
-          {checkAuth() ? <Redirect to={getRedirectPath()} /> : <Redirect to="/login" />}
+          {checkAuth()
+            ? <Redirect to={getRedirectPath()} />
+            : <Redirect to="/login" />
+          }
         </Route>
       </IonReactRouter>
 
-      {/* Alert de Atualização do App */}
+      {/* ALERT DE UPDATE */}
       <IonAlert
         isOpen={showUpdateAlert}
         onDidDismiss={() => {
@@ -187,6 +228,16 @@ const App: React.FC = () => {
           },
         ]}
         backdropDismiss={false}
+      />
+
+      {/* 🔵 TOAST GLOBAL (ADICIONADO) */}
+      <IonToast
+        isOpen={showToast}
+        message={toastMessage}
+        duration={2500}
+        position="top"
+        color="danger"
+        onDidDismiss={() => setShowToast(false)}
       />
     </IonApp>
   );

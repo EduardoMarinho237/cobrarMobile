@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
-import { getCurrentUser } from '../services/api';
+import { getCurrentUser, checkToken, clearSessionData, logout as apiLogout } from '../services/api';
 import { useFechamentoControl } from './useFechamentoControl';
 
 interface AuthState {
@@ -54,15 +54,6 @@ export const useAuth = () => {
         return false;
       }
 
-      // Verificar se o login foi feito recentemente (máximo 24h)
-      const loginTimestamp = parseInt(loginTime);
-      const now = Date.now();
-      const maxAge = 24 * 60 * 60 * 1000; // 24 horas em ms
-      
-      if (now - loginTimestamp > maxAge) {
-        return false;
-      }
-
       return true;
     } catch (error) {
       console.error('Erro ao validar dados armazenados:', error);
@@ -72,9 +63,7 @@ export const useAuth = () => {
 
   // Limpar dados de autenticação
   const clearAuthData = useCallback(() => {
-    Object.values(STORAGE_KEYS).forEach(key => {
-      localStorage.removeItem(key);
-    });
+    clearSessionData();
     setAuthState({
       isAuthenticated: false,
       user: null,
@@ -117,22 +106,25 @@ export const useAuth = () => {
       return;
     }
 
-    // Online: verificar com servidor
+    // Online: validar token com o servidor
     try {
-      const userData = await getCurrentUser();
+      const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+      if (!token || !validateStoredData()) {
+        throw new Error('Sessão inválida');
+      }
+
+      const isValid = await checkToken();
+      if (!isValid) {
+        throw new Error('Token inválido');
+      }
+
+      const userData = getCurrentUser();
       
-      if (userData && userData.name && userData.login && userData.type) {
-        // Atualizar localStorage com dados frescos
-        localStorage.setItem(STORAGE_KEYS.TOKEN, userData.token || '');
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-        localStorage.setItem(STORAGE_KEYS.ROLE, userData.type);
-        localStorage.setItem(STORAGE_KEYS.USER_ID, userData.id.toString());
-        localStorage.setItem(STORAGE_KEYS.LOGIN_TIME, Date.now().toString());
-        
+      if (userData && userData.name && userData.role) {
         setAuthState({
           isAuthenticated: true,
           user: userData,
-          role: userData.type,
+          role: userData.role,
           loading: false,
           error: null
         });
@@ -141,7 +133,7 @@ export const useAuth = () => {
         const currentPath = window.location.pathname;
         let expectedPath = '';
         
-        switch (userData.type) {
+        switch (userData.role) {
           case 'ADMIN':
             expectedPath = '/admin/managers';
             break;
@@ -157,7 +149,7 @@ export const useAuth = () => {
         
         if (currentPath === '/' || currentPath === '/login') {
           history.replace(expectedPath);
-        } else if (userData.type === 'ROUTE' && diaFechado) {
+        } else if (userData.role === 'ROUTE' && diaFechado) {
           // Se for route e dia fechado, garantir acesso apenas a fechamento/config
           if (!currentPath.includes('/route/fechamento') && !currentPath.includes('/route/config')) {
             history.replace('/route/fechamento');
@@ -201,10 +193,9 @@ export const useAuth = () => {
   }, [isOnline, checkAuth]);
 
   // Logout
-  const logout = useCallback(() => {
-    clearAuthData();
-    history.replace('/login');
-  }, [clearAuthData, history]);
+  const logout = useCallback(async () => {
+    await apiLogout();
+  }, []);
 
   // Verificar mudanças na conexão
   useEffect(() => {
@@ -229,9 +220,14 @@ export const useAuth = () => {
 
   // Verificação inicial
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      checkAuth();
+    } else {
+      setAuthState(prev => ({ ...prev, loading: false }));
+    }
+  }, []);
+  
   // Listener para mudanças na aba (visibilidade)
   useEffect(() => {
     const handleVisibilityChange = () => {
