@@ -18,18 +18,25 @@ import {
   IonCol,
   IonIcon,
   IonRefresher,
-  IonRefresherContent
+  IonRefresherContent,
+  IonSpinner
 } from '@ionic/react';
-import { cashOutline, peopleOutline, walletOutline, lockClosed, refresh } from 'ionicons/icons';
+import { cashOutline, peopleOutline, walletOutline, lockClosed, refresh, downloadOutline } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
+import { translateRole } from '../../utils/roleTranslation';
 import { 
   getFechamentoData, 
   fecharDia, 
   FechamentoData 
 } from '../../services/fechamentoApi';
+import { getDebits, Debit } from '../../services/debitApi';
+import { getExpenses, Expense } from '../../services/expenseApi';
+import { getCurrentUser } from '../../services/api';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
 import { useFechamentoControl } from '../../hooks/useFechamentoControl';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const Fechamento: React.FC = () => {
   const { t } = useTranslation();
@@ -47,6 +54,8 @@ const Fechamento: React.FC = () => {
   const [fechamentoData, setFechamentoData] = useState<FechamentoData | null>(null);
   const [showConfirmAlert, setShowConfirmAlert] = useState(false);
   const [showBloqueadoAlert, setShowBloqueadoAlert] = useState(false);
+  const [showReportTypeAlert, setShowReportTypeAlert] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
 
   useEffect(() => {
@@ -78,8 +87,268 @@ const Fechamento: React.FC = () => {
     }
   };
 
-  // REMOVIDO: Função verificarStatusFechamento não é mais necessária
-  // const verificarStatusFechamento = async () => { ... };
+  const getStartOfTodayInTimezone = (timezone: string): Date => {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const parts = formatter.formatToParts(now);
+    const year = parts.find(p => p.type === 'year')!.value;
+    const month = parts.find(p => p.type === 'month')!.value;
+    const day = parts.find(p => p.type === 'day')!.value;
+    return new Date(`${year}-${month}-${day}T00:00:00`);
+  };
+
+  const formatDateTimeForReport = (date: Date, timezone: string): string => {
+    return date.toLocaleString('pt-BR', {
+      timeZone: timezone,
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
+  const handleDownloadReport = () => {
+    setShowReportTypeAlert(true);
+  };
+
+  const generateReport = async (type: 'collections' | 'expenses' | 'both') => {
+    setIsGeneratingReport(true);
+    setShowReportTypeAlert(false);
+    try {
+      const user = getCurrentUser();
+      if (!user) {
+        showToast(t('pages.closing.reportGenerationError'), 'danger');
+        setIsGeneratingReport(false);
+        return;
+      }
+
+      const timezone = localStorage.getItem('timezone') || 'America/Sao_Paulo';
+      const startOfToday = getStartOfTodayInTimezone(timezone);
+      const now = new Date();
+
+      let todayDebits: Debit[] = [];
+      let todayExpenses: Expense[] = [];
+
+      if (type === 'collections' || type === 'both') {
+        const allDebits = await getDebits();
+        todayDebits = allDebits.filter((d: Debit) => new Date(d.createdAt) >= startOfToday);
+        todayDebits.sort((a: Debit, b: Debit) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      }
+
+      if (type === 'expenses' || type === 'both') {
+        const allExpenses = await getExpenses();
+        todayExpenses = allExpenses.filter((e: Expense) => new Date(e.createdAt) >= startOfToday);
+        todayExpenses.sort((a: Expense, b: Expense) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      }
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      let titleKey = 'reportTitle';
+      if (type === 'expenses') titleKey = 'reportExpensesTitle';
+      if (type === 'both') titleKey = 'reportBalanceTitle';
+
+      doc.setFontSize(16);
+      doc.setTextColor(33, 37, 41);
+      doc.text(t(`pages.closing.${titleKey}`), pageWidth / 2, 20, { align: 'center' });
+
+      doc.setFontSize(8);
+      doc.setTextColor(108, 117, 125);
+      doc.text(`${t('pages.closing.reportGeneratedAt')}: ${formatDateTimeForReport(now, timezone)}`, pageWidth / 2, 27, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.setTextColor(33, 37, 41);
+      doc.text(t('pages.closing.reportUserInfo'), 14, 38);
+
+      doc.setFontSize(9);
+      doc.setTextColor(73, 80, 87);
+      doc.text(`${t('pages.closing.reportName')}: ${user.name || ''}`, 14, 45);
+      doc.text(`${t('pages.closing.reportLogin')}: ${user.login || ''}`, 14, 51);
+      doc.text(`${t('pages.closing.reportType')}: ${translateRole(user.role, t)}`, 14, 57);
+
+      let startY = 65;
+      let lastFinalY = 0;
+
+      if (type === 'collections' || type === 'both') {
+        const collectionsTotal = todayDebits.reduce((sum: number, d: Debit) => sum + d.value, 0);
+
+        if (todayDebits.length === 0) {
+          doc.setFontSize(10);
+          doc.setTextColor(108, 117, 125);
+          doc.text(t('pages.closing.reportNoCollections'), 14, startY + 5);
+          lastFinalY = startY + 10;
+        } else {
+          const tableRows = todayDebits.map((d: Debit) => [
+            d.clientName,
+            formatCurrencyWithSymbol(d.value),
+            new Date(d.createdAt).toLocaleString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          ]);
+
+          autoTable(doc, {
+            startY,
+            head: [[
+              t('pages.closing.reportClient'),
+              t('pages.closing.reportValue'),
+              t('pages.closing.reportDateTime')
+            ]],
+            body: tableRows,
+            foot: [[
+              t('pages.closing.reportTotal'),
+              formatCurrencyWithSymbol(collectionsTotal),
+              ''
+            ]],
+            theme: 'grid',
+            headStyles: {
+              fillColor: [0, 123, 255],
+              textColor: 255,
+              fontStyle: 'bold',
+              fontSize: 9
+            },
+            footStyles: {
+              fillColor: [248, 249, 250],
+              textColor: [33, 37, 41],
+              fontStyle: 'bold',
+              fontSize: 9
+            },
+            bodyStyles: {
+              fontSize: 8
+            },
+            columnStyles: {
+              0: { cellWidth: 'auto' },
+              1: { cellWidth: 40, halign: 'right' },
+              2: { cellWidth: 45, halign: 'center' }
+            },
+            margin: { left: 14, right: 14 }
+          });
+
+          lastFinalY = (doc as any).lastAutoTable?.finalY || startY;
+        }
+      }
+
+      if (type === 'expenses' || type === 'both') {
+        const expensesTotal = todayExpenses.reduce((sum: number, e: Expense) => sum + e.value, 0);
+        startY = lastFinalY > 0 ? lastFinalY + 15 : startY;
+
+        if (todayExpenses.length === 0) {
+          doc.setFontSize(10);
+          doc.setTextColor(108, 117, 125);
+          doc.text(t('pages.closing.reportNoExpenses'), 14, startY + 5);
+          lastFinalY = startY + 10;
+        } else {
+          const tableRows = todayExpenses.map((e: Expense) => [
+            e.expenseTypeName,
+            e.description || '-',
+            formatCurrencyWithSymbol(e.value),
+            new Date(e.createdAt).toLocaleString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          ]);
+
+          autoTable(doc, {
+            startY,
+            head: [[
+              t('pages.closing.reportExpenseType'),
+              t('pages.closing.reportDescription'),
+              t('pages.closing.reportValue'),
+              t('pages.closing.reportDateTime')
+            ]],
+            body: tableRows,
+            foot: [[
+              t('pages.closing.reportTotalExpenses'),
+              '',
+              formatCurrencyWithSymbol(expensesTotal),
+              ''
+            ]],
+            theme: 'grid',
+            headStyles: {
+              fillColor: [220, 53, 69],
+              textColor: 255,
+              fontStyle: 'bold',
+              fontSize: 9
+            },
+            footStyles: {
+              fillColor: [248, 249, 250],
+              textColor: [33, 37, 41],
+              fontStyle: 'bold',
+              fontSize: 9
+            },
+            bodyStyles: {
+              fontSize: 8
+            },
+            columnStyles: {
+              0: { cellWidth: 40 },
+              1: { cellWidth: 'auto' },
+              2: { cellWidth: 35, halign: 'right' },
+              3: { cellWidth: 40, halign: 'center' }
+            },
+            margin: { left: 14, right: 14 }
+          });
+
+          lastFinalY = (doc as any).lastAutoTable?.finalY || startY;
+        }
+
+        if (type === 'both') {
+          const debitsTotal = todayDebits.reduce((sum: number, d: Debit) => sum + d.value, 0);
+          const netBalance = debitsTotal - expensesTotal;
+          const balanceLabel = netBalance >= 0 ? t('pages.closing.reportPositive') : t('pages.closing.reportNegative');
+
+          startY = lastFinalY + 15;
+
+          autoTable(doc, {
+            startY,
+            head: [[
+              t('pages.closing.reportNetBalance'),
+              formatCurrencyWithSymbol(Math.abs(netBalance)),
+              balanceLabel
+            ]],
+            headStyles: {
+              fillColor: netBalance >= 0 ? [40, 167, 69] : [220, 53, 69],
+              textColor: 255,
+              fontStyle: 'bold',
+              fontSize: 10
+            },
+            body: [],
+            theme: 'grid',
+            margin: { left: 14, right: 14 }
+          });
+
+          lastFinalY = (doc as any).lastAutoTable?.finalY || startY;
+        }
+      }
+
+      const footerY = lastFinalY > 0 ? lastFinalY + 15 : 80;
+
+      doc.setFontSize(7);
+      doc.setTextColor(108, 117, 125);
+      doc.text(t('pages.closing.reportFooter'), pageWidth / 2, footerY, { align: 'center' });
+
+      const suffix = type === 'collections' ? 'cobrancas' : type === 'expenses' ? 'gastos' : 'balanco';
+      const fileName = `relatorio-${suffix}-${user.login}-${now.toISOString().slice(0, 10)}.pdf`;
+      doc.save(fileName);
+    } catch (error) {
+      console.error('Erro ao gerar relatório:', error);
+      showToast(t('pages.closing.reportGenerationError'), 'danger');
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
 
   const showToast = (message: string, color: string) => {
     setToast({ isOpen: true, message, color });
@@ -270,13 +539,30 @@ const Fechamento: React.FC = () => {
                 </IonRow>
               </IonGrid>
 
+              {/* Botão Baixar Relatório */}
+              <IonButton
+                expand="block"
+                shape="round"
+                color="primary"
+                onClick={handleDownloadReport}
+                disabled={isGeneratingReport}
+                style={{ marginTop: '24px' }}
+              >
+                {isGeneratingReport ? (
+                  <IonSpinner name="dots" slot="start" />
+                ) : (
+                  <IonIcon icon={downloadOutline} slot="start" />
+                )}
+                {isGeneratingReport ? t('pages.closing.generatingReport') : t('pages.closing.downloadReport')}
+              </IonButton>
+
               {/* Botão Fechar Dia */}
               <IonButton
                 expand="block"
                 shape="round"
                 color="danger"
                 onClick={handleFecharDia}
-                style={{ marginTop: '24px' }}
+                style={{ marginTop: '12px' }}
               >
                 <IonIcon icon={lockClosed} slot="start" />
                 {t('pages.closing.closeDay')}
@@ -284,6 +570,31 @@ const Fechamento: React.FC = () => {
             </>
           )}
         </div>
+
+        {/* Alert de Seleção de Tipo de Relatório */}
+        <IonAlert
+          isOpen={showReportTypeAlert}
+          onDidDismiss={() => setShowReportTypeAlert(false)}
+          header={t('pages.closing.reportTypeTitle')}
+          buttons={[
+            {
+              text: t('common.cancel'),
+              role: 'cancel'
+            },
+            {
+              text: t('pages.closing.reportTypeCollections'),
+              handler: () => generateReport('collections')
+            },
+            {
+              text: t('pages.closing.reportTypeExpenses'),
+              handler: () => generateReport('expenses')
+            },
+            {
+              text: t('pages.closing.reportTypeBoth'),
+              handler: () => generateReport('both')
+            }
+          ]}
+        />
 
         {/* Alert de Confirmação */}
         <IonAlert
