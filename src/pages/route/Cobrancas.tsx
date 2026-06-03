@@ -66,7 +66,24 @@ const Cobrancas: React.FC = () => {
     loadData();
   }, []);
 
-  
+  const getDebtColor = (payment: PendingPayment): string => {
+    const daysLate = payment.overdueInstallmentsCount ?? 0;
+
+    if (!payment.hasOverdueInstallments || daysLate === 0) {
+      return '#3963db'; // azul
+    }
+
+    if (daysLate <= 3) {
+      return '#fac002'; // amarelo
+    }
+
+    if (daysLate <= 7) {
+      return '#ff7300'; // laranja
+    }
+
+    return '#da0d28'; // vermelho
+  };  
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -491,18 +508,19 @@ const Cobrancas: React.FC = () => {
                               }}
                             />
                           </div>
-                          <IonButton
-                            color="success"
-                            size="small"
-                            onClick={() => handlePayment(payment)}
-                            style={{ 
-                              margin: 0,
-                              width: '36px',
-                              height: '36px',
-                              '--padding-start': '0',
-                              '--padding-end': '0'
-                            }}
-                          >
+                            <IonButton
+                              size="small"
+                              onClick={() => handlePayment(payment)}
+                              style={{
+                                margin: 0,
+                                width: '36px',
+                                height: '36px',
+                                '--padding-start': '0',
+                                '--padding-end': '0',
+                                '--background': getDebtColor(payment),
+                                '--color': '#fff'
+                              } as any}
+                            >
                             <IonIcon icon={cashOutline} style={{ fontSize: '16px' }} />
                           </IonButton>
                         </div>
