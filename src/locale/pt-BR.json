@@ -54,7 +54,8 @@
     "collected": "Cobrados",
     "credits": "Créditos",
     "clients": "Clientes",
-    "closing": "Fechamento"
+    "closing": "Fechamento",
+    "apiKeys": "Chaves de API"
   },
   "config": {
     "title": "Configurações",
@@ -566,7 +567,11 @@
       "phonePlaceholder": "Digite o telefone",
       "addressPlaceholder": "Digite o endereço",
       "shopPlaceholder": "Digite o nome da loja",
-      "overdueType": "Tipo de Vencimento"
+      "overdueType": "Tipo de Vencimento",
+      "today": "Hoje",
+      "tomorrow": "Amanhã",
+      "todayOrTomorrow": "Datas disponíveis: hoje ou amanhã (domingos são ignorados)",
+      "nextBusinessDay": "Próximo dia útil disponível (domingos são ignorados)"
     },
     "blocked": {
       "title": "Usuário Bloqueado",
@@ -574,6 +579,44 @@
       "blockedMessage": "Sua conta foi bloqueada. Entre em contato com o administrador do sistema.",
       "onlyLogoutAvailable": "Você só pode fazer logout. Não poderá acessar nenhuma funcionalidade do sistema.",
       "logout": "Sair"
+    },
+    "apiKeys": {
+      "title": "Chaves de API",
+      "description": "Gerencie chaves de API para acesso externo ao sistema.",
+      "generateKey": "Gerar Nova Chave",
+      "keyDescription": "Descrição",
+      "keyDescriptionPlaceholder": "Ex: Integração Sistema X",
+      "keyGenerated": "Chave de API gerada! Copie-a agora, ela não será mostrada novamente.",
+      "keyValue": "Chave",
+      "copyKey": "Copiar Chave",
+      "copied": "Copiado!",
+      "noKeys": "Nenhuma chave de API gerada ainda",
+      "activeKeys": "Chaves Ativas",
+      "revokedKeys": "Chaves Revogadas",
+      "createdAt": "Criada em",
+      "expiresAt": "Expira em",
+      "revokedAt": "Revogada em",
+      "revoke": "Revogar",
+      "confirmRevoke": "Confirmar Revogação",
+      "confirmRevokeMessage": "Tem certeza que deseja revogar esta chave de API? Isso não pode ser desfeito.",
+      "revokeSuccess": "Chave de API revogada com sucesso",
+      "generateSuccess": "Chave de API gerada com sucesso",
+      "errorLoadingKeys": "Erro ao carregar chaves de API",
+      "errorGeneratingKey": "Erro ao gerar chave de API",
+      "errorRevokingKey": "Erro ao revogar chave de API",
+      "generate": "Gerar",
+      "cancel": "Cancelar",
+      "active": "Ativa",
+      "revoked": "Revogada",
+      "maskedKey": "Chave mascarada"
+    },
+    "sundayBlocked": {
+      "title": "Sistema em Manutenção",
+      "maintenance": "Manutenção Dominical",
+      "maintenanceMessage": "O sistema passa por manutenção aos domingos. Tente novamente após as 00:00 de segunda-feira ou utilize uma chave de API válida para acessar o sistema.",
+      "onlyAvailable": "Você só pode verificar a disponibilidade ou sair do sistema.",
+      "checkAvailability": "Verificar Disponibilidade",
+      "logout": "Sair do Sistema"
     },
     "offline": {
       "title": "Sem Conexão",

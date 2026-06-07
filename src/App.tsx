@@ -8,6 +8,7 @@ import ManagerTabs from './pages/ManagerTabs';
 import RouteTabs from './pages/RouteTabs';
 import EditarCategoria from './pages/manager/EditarCategoria';
 import DetalhesGastos from './pages/manager/DetalhesGastos';
+import SundayBlocked from './pages/route/SundayBlocked';
 import { getCurrentUser, setAppUpdateCallback, resetUpdateModalFlag, checkToken, clearSessionData } from './services/api';
 
 /* Core CSS required for Ionic components to work properly */
@@ -133,6 +134,10 @@ const App: React.FC = () => {
           <Login />
         </Route>
 
+        <Route exact path="/sunday-blocked">
+          <SundayBlocked />
+        </Route>
+
         <ProtectedRoute exact path="/admin">
           <AdminTabs />
         </ProtectedRoute>
@@ -142,6 +147,10 @@ const App: React.FC = () => {
         </ProtectedRoute>
 
         <ProtectedRoute exact path="/admin/config">
+          <AdminTabs />
+        </ProtectedRoute>
+
+        <ProtectedRoute exact path="/admin/api-keys">
           <AdminTabs />
         </ProtectedRoute>
 

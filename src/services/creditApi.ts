@@ -76,7 +76,7 @@ const mockCredits: Credit[] = [
     clientId: 1,
     clientName: 'João Silva',
     visible: true,
-    overdue: 'CAPITALIZE_DEBT'
+    overdue: 'EXTEND_TERM'
   },
   {
     id: 2,
@@ -106,7 +106,7 @@ const mockCredits: Credit[] = [
     clientId: 1,
     clientName: 'João Silva',
     visible: true,
-    overdue: 'CAPITALIZE_DEBT'
+    overdue: 'EXTEND_TERM'
   }
 ];
 

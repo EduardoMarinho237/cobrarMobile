@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { CreateCreditRequest } from '../../../../services/creditApi';
 import { Client } from '../../../../services/clientApi';
+import { todayFormatted, nextBusinessDayFormatted, isSunday } from '../../../../utils/sundayUtil';
 
 interface CreditModalProps {
   isOpen: boolean;
@@ -71,15 +72,30 @@ const CreditModal: React.FC<CreditModalProps> = ({
               onIonInput={(e: any) => setNewCredit({ ...newCredit, initialValue: Number(e.detail.value) })}
             />
           </IonItem>
-          <IonItem>
-            <IonInput
-              label={t('pages.clients.startDate')}
-              labelPlacement="floating"
-              type="date"
-              value={newCredit.startDate}
-              onIonInput={(e: any) => setNewCredit({ ...newCredit, startDate: e.detail.value })}
-            />
+          <IonItem lines="none">
+            <IonLabel>{t('pages.clients.startDate')}</IonLabel>
           </IonItem>
+          <div style={{ display: 'flex', gap: '8px', padding: '0 16px 16px' }}>
+            <IonButton
+              expand="block"
+              fill={newCredit.startDate === todayFormatted() ? 'solid' : 'outline'}
+              shape="round"
+              disabled={isSunday(new Date())}
+              onClick={() => setNewCredit({ ...newCredit, startDate: todayFormatted() })}
+              style={{ flex: 1 }}
+            >
+              {t('pages.clients.today')}
+            </IonButton>
+            <IonButton
+              expand="block"
+              fill={newCredit.startDate === nextBusinessDayFormatted() ? 'solid' : 'outline'}
+              shape="round"
+              onClick={() => setNewCredit({ ...newCredit, startDate: nextBusinessDayFormatted() })}
+              style={{ flex: 1 }}
+            >
+              {t('pages.clients.tomorrow')}
+            </IonButton>
+          </div>
           <IonItem>
             <IonInput
               label={t('pages.clients.quantityDays')}

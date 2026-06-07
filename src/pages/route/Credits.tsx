@@ -27,8 +27,9 @@ import {
   IonSpinner,
   IonProgressBar
 } from '@ionic/react';
-import { add, trash, create, eye, wallet, refresh } from 'ionicons/icons';
+import { add, trash, create } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
+import { todayFormatted, nextBusinessDayFormatted, isSunday } from '../../utils/sundayUtil';
 import { 
   Credit, 
   CreateCreditRequest, 
@@ -52,16 +53,19 @@ const Credits: React.FC = () => {
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
 
   // Form states
+  const defaultStartDate = isSunday(new Date()) ? nextBusinessDayFormatted() : todayFormatted();
+
   const [newCredit, setNewCredit] = useState<CreateCreditRequest>({ 
     initialValue: 0,
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: defaultStartDate,
     quantityDays: 1,
     clientId: 0,
-    overdue: 'CAPITALIZE_DEBT'
+    overdue: 'EXTEND_TERM'
   });
-  const [editCredit, setEditCredit] = useState<UpdateCreditRequest>({ 
+
+  const [editCredit, setEditCredit] = useState<UpdateCreditRequest>({
     initialValue: 0,
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: defaultStartDate,
     quantityDays: 1,
     clientId: 0
   });
@@ -116,10 +120,10 @@ const Credits: React.FC = () => {
         setShowCreateModal(false);
         setNewCredit({ 
           initialValue: 0,
-          startDate: new Date().toISOString().split('T')[0],
+          startDate: isSunday(new Date()) ? nextBusinessDayFormatted() : todayFormatted(),
           quantityDays: 1,
           clientId: 0,
-          overdue: 'CAPITALIZE_DEBT'
+          overdue: 'EXTEND_TERM'
         });
         loadData();
       } else {
@@ -155,7 +159,7 @@ const Credits: React.FC = () => {
         setShowEditModal(false);
         setEditCredit({ 
           initialValue: 0,
-          startDate: new Date().toISOString().split('T')[0],
+          startDate: isSunday(new Date()) ? nextBusinessDayFormatted() : todayFormatted(),
           quantityDays: 1,
           clientId: 0
         });
@@ -424,15 +428,30 @@ const Credits: React.FC = () => {
                   onIonInput={(e: any) => setNewCredit({ ...newCredit, initialValue: Number(e.detail.value) })}
                 />
               </IonItem>
-              <IonItem>
-                <IonInput
-                  label="Data Início *"
-                  labelPlacement="floating"
-                  type="date"
-                  value={newCredit.startDate}
-                  onIonInput={(e: any) => setNewCredit({ ...newCredit, startDate: e.detail.value })}
-                />
+              <IonItem lines="none">
+                <IonLabel>Data Início *</IonLabel>
               </IonItem>
+              <div style={{ display: 'flex', gap: '8px', padding: '0 16px 16px' }}>
+                <IonButton
+                  expand="block"
+                  fill={newCredit.startDate === todayFormatted() ? 'solid' : 'outline'}
+                  shape="round"
+                  disabled={isSunday(new Date())}
+                  onClick={() => setNewCredit({ ...newCredit, startDate: todayFormatted() })}
+                  style={{ flex: 1 }}
+                >
+                  Hoje
+                </IonButton>
+                <IonButton
+                  expand="block"
+                  fill={newCredit.startDate === nextBusinessDayFormatted() ? 'solid' : 'outline'}
+                  shape="round"
+                  onClick={() => setNewCredit({ ...newCredit, startDate: nextBusinessDayFormatted() })}
+                  style={{ flex: 1 }}
+                >
+                  Amanhã
+                </IonButton>
+              </div>
               <IonItem>
                 <IonInput
                   label="Quantidade de Dias *"
