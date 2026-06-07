@@ -70,12 +70,20 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
   const isPublicEndpoint = endpoint.startsWith('/api/public');
   const skipVersionHeader = isAuthEndpoint || isPublicEndpoint;
 
+  // API key para bypass de bloqueio dominical
+  const apiKey = localStorage.getItem('api_key');
+
+  // Modo desenvolvimento para bypass de regras de domingo
+  const isDevMode = import.meta.env.VITE_DEV_MODE === 'TRUE';
+
   const headers = {
     'Content-Type': 'application/json',
     'Accept-Language': currentLanguage,
     'X-Timezone': currentTimezone,
     ...(!skipVersionHeader && { 'X-App-Version': APP_VERSION }),
     ...(finalToken && { Authorization: `Bearer ${finalToken}` }),
+    ...(apiKey && { 'X-API-Key': apiKey }),
+    ...(isDevMode && { 'X-Dev-Mode': 'true' }),
     ...options?.headers,
   };
 
@@ -130,9 +138,17 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
         return errorData;
       }
 
-      // Verificar se é erro de dia fechado ou usuário bloqueado
-      if (errorData && (errorData.data === "closed-day" || errorData.data === "blocked")) {
-        console.log('Dia fechado ou usuário bloqueado detectado na resposta da API:', errorData.data);
+      // Verificar se é erro de dia fechado, usuário bloqueado ou manutenção dominical
+      if (errorData && (errorData.data === "closed-day" || errorData.data === "blocked" || errorData.data === "sunday-maintenance")) {
+        console.log('Estado especial detectado na resposta da API:', errorData.data);
+        
+        if (errorData.data === "sunday-maintenance") {
+          console.log('Manutenção dominical, redirecionando para página de bloqueio dominical');
+          if (window.location.pathname !== '/sunday-blocked') {
+            window.location.replace('/sunday-blocked');
+          }
+          return;
+        }
         
         // Emitir evento para o hook
         const events = getFechamentoEvents();

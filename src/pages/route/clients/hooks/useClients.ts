@@ -16,6 +16,7 @@ import {
   createCredit
 } from '../../../../services/creditApi';
 import { getCurrentUser, apiRequest } from '../../../../services/api';
+import { todayFormatted, nextBusinessDayFormatted, isSunday } from '../../../../utils/sundayUtil';
 
 interface ToastState {
   isOpen: boolean;
@@ -59,11 +60,14 @@ export const useClients = () => {
     shop: ''
   });
 
+  const defaultStartDate = isSunday(new Date()) ? nextBusinessDayFormatted() : todayFormatted();
+
   const [newCredit, setNewCredit] = useState<CreateCreditRequest>({
     initialValue: 0,
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: defaultStartDate,
     quantityDays: 1,
-    clientId: 0
+    clientId: 0,
+    overdue: 'EXTEND_TERM'
   });
 
   const [clientCredits, setClientCredits] = useState<Credit[]>([]);
@@ -196,9 +200,10 @@ export const useClients = () => {
     setSelectedClient(client);
     setNewCredit({
       initialValue: 0,
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: isSunday(new Date()) ? nextBusinessDayFormatted() : todayFormatted(),
       quantityDays: 1,
-      clientId: client.id
+      clientId: client.id,
+      overdue: 'EXTEND_TERM'
     });
     await loadCurrentTax();
     setShowCreditModal(true);
@@ -227,9 +232,10 @@ export const useClients = () => {
         setShowCreditModal(false);
         setNewCredit({
           initialValue: 0,
-          startDate: new Date().toISOString().split('T')[0],
+          startDate: isSunday(new Date()) ? nextBusinessDayFormatted() : todayFormatted(),
           quantityDays: 1,
-          clientId: 0
+          clientId: 0,
+          overdue: 'EXTEND_TERM'
         });
         loadClients();
       } else {

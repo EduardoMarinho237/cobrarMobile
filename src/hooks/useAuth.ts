@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
-import { getCurrentUser, checkToken, clearSessionData, logout as apiLogout } from '../services/api';
+import { getCurrentUser, checkToken, clearSessionData, logout as apiLogout, apiRequest } from '../services/api';
 import { useFechamentoControl } from './useFechamentoControl';
 
 interface AuthState {
@@ -121,6 +121,19 @@ export const useAuth = () => {
       const userData = getCurrentUser();
       
       if (userData && userData.name && userData.role) {
+        // Verificar manutenção dominical para usuários não-ADMIN
+        if (userData.role !== 'ADMIN') {
+          try {
+            await apiRequest('/api/users/me', { method: 'GET' });
+          } catch (error: any) {
+            // Se for manutenção dominical, o api.ts já redirecionará para /sunday-blocked
+            if (error?.data === 'sunday-maintenance') {
+              return;
+            }
+            // Outros erros não impedem o login
+          }
+        }
+
         setAuthState({
           isAuthenticated: true,
           user: userData,

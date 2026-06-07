@@ -54,7 +54,8 @@
     "collected": "Cobrados",
     "credits": "Créditos",
     "clients": "Clientes",
-    "closing": "Cierre"
+    "closing": "Cierre",
+    "apiKeys": "Claves de API"
   },
   "config": {
     "title": "Configuración",
@@ -607,7 +608,49 @@
       "phonePlaceholder": "Digite el teléfono",
       "addressPlaceholder": "Digite la dirección",
       "shopPlaceholder": "Digite el nombre de la tienda",
-      "totalCredit": "Total del Crédito"
+      "totalCredit": "Total del Crédito",
+      "today": "Hoy",
+      "tomorrow": "Mañana",
+      "todayOrTomorrow": "Fechas disponibles: hoy o mañana (los domingos se ignoran)",
+      "nextBusinessDay": "Próximo día hábil disponible (los domingos se ignoran)"
+    },
+    "apiKeys": {
+      "title": "Claves de API",
+      "description": "Administre las claves de API para acceso externo al sistema.",
+      "generateKey": "Generar Nueva Clave",
+      "keyDescription": "Descripción",
+      "keyDescriptionPlaceholder": "Ej: Integración Sistema X",
+      "keyGenerated": "¡Clave de API generada! Cópiela ahora, no se mostrará nuevamente.",
+      "keyValue": "Clave",
+      "copyKey": "Copiar Clave",
+      "copied": "¡Copiado!",
+      "noKeys": "No se han generado claves de API aún",
+      "activeKeys": "Claves Activas",
+      "revokedKeys": "Claves Revocadas",
+      "createdAt": "Creada en",
+      "expiresAt": "Expira en",
+      "revokedAt": "Revocada en",
+      "revoke": "Revocar",
+      "confirmRevoke": "Confirmar Revocación",
+      "confirmRevokeMessage": "¿Está seguro que desea revocar esta clave de API? Esta acción no se puede deshacer.",
+      "revokeSuccess": "Clave de API revocada exitosamente",
+      "generateSuccess": "Clave de API generada exitosamente",
+      "errorLoadingKeys": "Error al cargar claves de API",
+      "errorGeneratingKey": "Error al generar clave de API",
+      "errorRevokingKey": "Error al revocar clave de API",
+      "generate": "Generar",
+      "cancel": "Cancelar",
+      "active": "Activa",
+      "revoked": "Revocada",
+      "maskedKey": "Clave enmascarada"
+    },
+    "sundayBlocked": {
+      "title": "Sistema en Mantenimiento",
+      "maintenance": "Mantenimiento",
+      "maintenanceMessage": "El sistema está en mantenimiento los domingos. Intente nuevamente después de las 00:00 del lunes.",
+      "onlyAvailable": "Solo puede verificar la disponibilidad o cerrar sesión.",
+      "checkAvailability": "Verificar Disponibilidad",
+      "logout": "Cerrar Sesión"
     }
   },
   "alerts": {

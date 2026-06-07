@@ -8,9 +8,10 @@ import {
   IonTabButton,
   IonTabs
 } from '@ionic/react';
-import { people, settings } from 'ionicons/icons';
+import { people, settings, key } from 'ionicons/icons';
 import Managers from './admin/Managers';
 import Config from './Config';
+import ApiKeys from './admin/ApiKeys';
 import { useTranslation } from 'react-i18next';
 
 const AdminTabs: React.FC = () => {
@@ -25,6 +26,9 @@ const AdminTabs: React.FC = () => {
         <Route exact path="/admin/config">
           <Config />
         </Route>
+        <Route exact path="/admin/api-keys">
+          <ApiKeys />
+        </Route>
         <Route exact path="/admin">
           <Redirect to="/admin/managers" />
         </Route>
@@ -33,6 +37,10 @@ const AdminTabs: React.FC = () => {
         <IonTabButton tab="managers" href="/admin/managers">
           <IonIcon aria-hidden="true" icon={people} />
           <IonLabel>{t('tabs.managers')}</IonLabel>
+        </IonTabButton>
+        <IonTabButton tab="api-keys" href="/admin/api-keys">
+          <IonIcon aria-hidden="true" icon={key} />
+          <IonLabel>{t('tabs.apiKeys')}</IonLabel>
         </IonTabButton>
         <IonTabButton tab="config" href="/admin/config">
           <IonIcon aria-hidden="true" icon={settings} />
