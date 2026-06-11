@@ -24,10 +24,12 @@ import {
   IonRefresherContent,
   IonSpinner
 } from '@ionic/react';
-import { add, eye, eyeOff, trash, key, create, refresh, lockClosed, lockOpen } from 'ionicons/icons';
+import { add, eye, eyeOff, trash, key, create, refresh, lockClosed, lockOpen, arrowUpCircle, arrowDownCircle } from 'ionicons/icons';
 import { getRoutes, createRoute, updateRoute, deleteRoute } from '../../services/routeApi';
 import { toggleRouteAudit, changeManagerPassword } from '../../services/api';
 import { fecharDiaRoute, abrirDiaRoute } from '../../services/fechamentoApi';
+import { deposit, withdrawal } from '../../services/cashBoxApi';
+import { formatCurrencyWithSymbol } from '../../utils/currency';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
 import { translateRole } from '../../utils/roleTranslation';
@@ -42,6 +44,7 @@ interface Route {
   restricted?: boolean;
   dayClosed?: boolean;
   tax?: number;
+  cashBalance?: number;
 }
 
 const Routes: React.FC = () => {
@@ -50,17 +53,20 @@ const Routes: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
   const [showRestrictAlert, setShowRestrictAlert] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [showDayCloseAlert, setShowDayCloseAlert] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
-  
+
   // Form states
-  const [newRoute, setNewRoute] = useState({ name: '', login: '', password: '', confirmPassword: '', tax: '' });
+  const [newRoute, setNewRoute] = useState({ name: '', login: '', password: '', confirmPassword: '', tax: '', initialDeposit: '' });
   const [editRoute, setEditRoute] = useState({ name: '', login: '', tax: '' });
   const [newPassword, setNewPassword] = useState({ password: '', confirmPassword: '' });
+  const [cashAmount, setCashAmount] = useState({ amount: '', description: '' });
 
   useEffect(() => {
     loadRoutes();
@@ -166,19 +172,60 @@ const Routes: React.FC = () => {
     }
 
     try {
-      const response = await createRoute(newRoute.name, newRoute.login, newRoute.password, parseInt(newRoute.tax));
+      const initialDeposit = newRoute.initialDeposit ? parseInt(newRoute.initialDeposit) : undefined;
+      const response = await createRoute(newRoute.name, newRoute.login, newRoute.password, parseInt(newRoute.tax), initialDeposit);
       
       // Usa a mensagem da API
       showToast(response.message || t('pages.routes.routeCreatedSuccess'), response.success ? 'success' : 'danger');
       
       if (response.success) {
         setShowCreateModal(false);
-        setNewRoute({ name: '', login: '', password: '', confirmPassword: '', tax: '' });
+        setNewRoute({ name: '', login: '', password: '', confirmPassword: '', tax: '', initialDeposit: '' });
         loadRoutes();
       }
     } catch (error) {
       console.error('Erro ao criar route:', error);
       showToast(t('pages.routes.connectionError'), 'danger');
+    }
+  };
+
+  const handleDeposit = async () => {
+    if (!selectedRoute) return;
+    const amount = parseInt(cashAmount.amount);
+    if (isNaN(amount) || amount <= 0) {
+      showToast(t('pages.routes.invalidValue'), 'danger');
+      return;
+    }
+    try {
+      const response = await deposit({ routeId: selectedRoute.id, amount, description: cashAmount.description });
+      showToast(response.message || t('pages.routes.depositSuccess'), response.success ? 'success' : 'danger');
+      if (response.success) {
+        setShowDepositModal(false);
+        setCashAmount({ amount: '', description: '' });
+        loadRoutes();
+      }
+    } catch (error) {
+      showToast(t('pages.routes.depositError'), 'danger');
+    }
+  };
+
+  const handleWithdrawal = async () => {
+    if (!selectedRoute) return;
+    const amount = parseInt(cashAmount.amount);
+    if (isNaN(amount) || amount <= 0) {
+      showToast(t('pages.routes.invalidValue'), 'danger');
+      return;
+    }
+    try {
+      const response = await withdrawal({ routeId: selectedRoute.id, amount, description: cashAmount.description });
+      showToast(response.message || t('pages.routes.withdrawalSuccess'), response.success ? 'success' : 'danger');
+      if (response.success) {
+        setShowWithdrawalModal(false);
+        setCashAmount({ amount: '', description: '' });
+        loadRoutes();
+      }
+    } catch (error) {
+      showToast(t('pages.routes.withdrawalError'), 'danger');
     }
   };
 
@@ -461,7 +508,9 @@ const Routes: React.FC = () => {
                           <IonCol size="12">
                             <IonItem>
                               <IonLabel>
-                                <h3>{t('pages.routes.cashBalance')}: $ 0,00</h3>
+                                <h3 style={{ color: (route.cashBalance || 0) >= 0 ? '#28a745' : '#dc3545' }}>
+                                  {t('pages.routes.cashBalance')}: {formatCurrencyWithSymbol(route.cashBalance || 0)}
+                                </h3>
                               </IonLabel>
                             </IonItem>
                           </IonCol>
@@ -481,7 +530,31 @@ const Routes: React.FC = () => {
                           </IonCol>
                         </IonRow>
                         <IonRow>
-                          <IonCol size="2.4">
+                          <IonCol size="2">
+                            <IonButton
+                              fill="clear"
+                              color="success"
+                              onClick={() => {
+                                setSelectedRoute(route);
+                                setShowDepositModal(true);
+                              }}
+                            >
+                              <IonIcon icon={arrowUpCircle} />
+                            </IonButton>
+                          </IonCol>
+                          <IonCol size="2">
+                            <IonButton
+                              fill="clear"
+                              color="danger"
+                              onClick={() => {
+                                setSelectedRoute(route);
+                                setShowWithdrawalModal(true);
+                              }}
+                            >
+                              <IonIcon icon={arrowDownCircle} />
+                            </IonButton>
+                          </IonCol>
+                          <IonCol size="2">
                             <IonButton
                               fill="clear"
                               onClick={() => openEditModal(route)}
@@ -489,7 +562,7 @@ const Routes: React.FC = () => {
                               <IonIcon icon={create} />
                             </IonButton>
                           </IonCol>
-                          <IonCol size="2.4">
+                          <IonCol size="2">
                             <IonButton
                               fill="clear"
                               onClick={() => {
@@ -500,7 +573,7 @@ const Routes: React.FC = () => {
                               <IonIcon icon={route.restricted ? eyeOff : eye} />
                             </IonButton>
                           </IonCol>
-                          <IonCol size="2.4">
+                          <IonCol size="2">
                             <IonButton
                               fill="clear"
                               onClick={() => {
@@ -511,7 +584,7 @@ const Routes: React.FC = () => {
                               <IonIcon icon={key} />
                             </IonButton>
                           </IonCol>
-                          <IonCol size="2.4">
+                          <IonCol size="2">
                             <IonButton
                               fill="clear"
                               color={route.dayClosed ? 'success' : 'warning'}
@@ -523,7 +596,7 @@ const Routes: React.FC = () => {
                               <IonIcon icon={route.dayClosed ? lockOpen : lockClosed} />
                             </IonButton>
                           </IonCol>
-                          <IonCol size="2.4">
+                          <IonCol size="2">
                             <IonButton
                               fill="clear"
                               color="danger"
@@ -604,13 +677,117 @@ const Routes: React.FC = () => {
                   onIonInput={(e: any) => setNewRoute({ ...newRoute, tax: e.detail.value! })}
                 />
               </IonItem>
-              <IonButton 
-                expand="block" 
+              <IonItem>
+                <IonInput
+                  label={t('pages.routes.initialDeposit')}
+                  labelPlacement="floating"
+                  placeholder="0"
+                  type="number"
+                  value={newRoute.initialDeposit}
+                  onIonInput={(e: any) => setNewRoute({ ...newRoute, initialDeposit: e.detail.value! })}
+                />
+              </IonItem>
+              <IonButton
+                expand="block"
                 shape="round"
                 onClick={handleCreateRoute}
                 style={{ marginTop: '16px' }}
               >
                 {t('pages.routes.create')}
+              </IonButton>
+            </div>
+          </IonContent>
+        </IonModal>
+
+        {/* Modal Depositar */}
+        <IonModal isOpen={showDepositModal} onDidDismiss={() => setShowDepositModal(false)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>{t('pages.routes.depositTitle', { routeName: selectedRoute?.name })}</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setShowDepositModal(false)}>{t('common.close')}</IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent>
+            <div style={{ padding: '16px' }}>
+              <p style={{ marginBottom: '16px', color: '#666' }}>
+                {t('pages.routes.currentBalance')} <strong style={{ color: '#28a745' }}>{formatCurrencyWithSymbol(selectedRoute?.cashBalance || 0)}</strong>
+              </p>
+              <IonItem>
+                <IonInput
+                  label={t('pages.routes.value')}
+                  labelPlacement="floating"
+                  placeholder="0"
+                  type="number"
+                  value={cashAmount.amount}
+                  onIonInput={(e: any) => setCashAmount({ ...cashAmount, amount: e.detail.value! })}
+                />
+              </IonItem>
+              <IonItem>
+                <IonInput
+                  label={t('pages.routes.description')}
+                  labelPlacement="floating"
+                  placeholder={t('pages.routes.depositReason')}
+                  value={cashAmount.description}
+                  onIonInput={(e: any) => setCashAmount({ ...cashAmount, description: e.detail.value! })}
+                />
+              </IonItem>
+              <IonButton
+                expand="block"
+                shape="round"
+                color="success"
+                onClick={handleDeposit}
+                style={{ marginTop: '16px' }}
+              >
+                {t('pages.routes.deposit')}
+              </IonButton>
+            </div>
+          </IonContent>
+        </IonModal>
+
+        {/* Modal Retirar */}
+        <IonModal isOpen={showWithdrawalModal} onDidDismiss={() => setShowWithdrawalModal(false)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>{t('pages.routes.withdrawalTitle', { routeName: selectedRoute?.name })}</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setShowWithdrawalModal(false)}>{t('common.close')}</IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent>
+            <div style={{ padding: '16px' }}>
+              <p style={{ marginBottom: '16px', color: '#666' }}>
+                {t('pages.routes.currentBalance')} <strong style={{ color: '#28a745' }}>{formatCurrencyWithSymbol(selectedRoute?.cashBalance || 0)}</strong>
+              </p>
+              <IonItem>
+                <IonInput
+                  label={t('pages.routes.value')}
+                  labelPlacement="floating"
+                  placeholder="0"
+                  type="number"
+                  value={cashAmount.amount}
+                  onIonInput={(e: any) => setCashAmount({ ...cashAmount, amount: e.detail.value! })}
+                />
+              </IonItem>
+              <IonItem>
+                <IonInput
+                  label={t('pages.routes.description')}
+                  labelPlacement="floating"
+                  placeholder={t('pages.routes.withdrawalReason')}
+                  value={cashAmount.description}
+                  onIonInput={(e: any) => setCashAmount({ ...cashAmount, description: e.detail.value! })}
+                />
+              </IonItem>
+              <IonButton
+                expand="block"
+                shape="round"
+                color="danger"
+                onClick={handleWithdrawal}
+                style={{ marginTop: '16px' }}
+              >
+                {t('pages.routes.withdrawal')}
               </IonButton>
             </div>
           </IonContent>

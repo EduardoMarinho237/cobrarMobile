@@ -1,10 +1,10 @@
 import { apiRequest, isDev } from './api';
 
-export const createRoute = async (name: string, login: string, password: string, tax: number) => {
+export const createRoute = async (name: string, login: string, password: string, tax: number, initialDeposit?: number) => {
   try {
     const response = await apiRequest('/api/users', {
       method: 'POST',
-      body: JSON.stringify({ name, login, password, tax }),
+      body: JSON.stringify({ name, login, password, tax, initialDeposit }),
     });
     
     // Se a resposta for null (vazia), considera sucesso
