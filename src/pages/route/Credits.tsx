@@ -30,22 +30,26 @@ import {
 import { add, trash, create } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { todayFormatted, nextBusinessDayFormatted, isSunday } from '../../utils/sundayUtil';
-import { 
-  Credit, 
-  CreateCreditRequest, 
+import {
+  Credit,
+  CreateCreditRequest,
   UpdateCreditRequest,
-  getCredits, 
-  createCredit, 
-  updateCredit, 
-  deleteCredit 
+  getCredits,
+  createCredit,
+  updateCredit,
+  deleteCredit
 } from '../../services/creditApi';
 import { getClients, Client } from '../../services/clientApi';
+import { getMyBalance } from '../../services/cashBoxApi';
 import Toast from '../../components/Toast';
+import { useTranslation } from 'react-i18next';
 
 const Credits: React.FC = () => {
+  const { t } = useTranslation();
   const [credits, setCredits] = useState<Credit[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [cashBalance, setCashBalance] = useState<number>(0);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
@@ -77,17 +81,19 @@ const Credits: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [creditsData, clientsData] = await Promise.all([
+      const [creditsData, clientsData, balance] = await Promise.all([
         getCredits(),
-        getClients()
+        getClients(),
+        getMyBalance()
       ]);
       setCredits(creditsData);
-      
+      setCashBalance(balance);
+
       // Ordenar clientes por nome
       const sortedClients = clientsData.sort((a: Client, b: Client) => a.name.localeCompare(b.name));
       setClients(sortedClients);
     } catch (error) {
-      showToast('Erro ao carregar dados', 'danger');
+      showToast(t('pages.credits.errorLoadingData'), 'danger');
     } finally {
       setIsLoading(false);
     }
@@ -99,26 +105,26 @@ const Credits: React.FC = () => {
 
   const handleCreateCredit = async () => {
     if (!newCredit.clientId) {
-      showToast('O cliente é obrigatório', 'danger');
+      showToast(t('pages.credits.clientRequiredError'), 'danger');
       return;
     }
 
     if (newCredit.initialValue < 1) {
-      showToast('O valor inicial deve ser maior que 0', 'danger');
+      showToast(t('pages.credits.initialValueGreaterThanZero'), 'danger');
       return;
     }
 
     if (newCredit.quantityDays < 1) {
-      showToast('A quantidade de dias deve ser maior que 0', 'danger');
+      showToast(t('pages.credits.quantityDaysGreaterThanZero'), 'danger');
       return;
     }
 
     try {
       const response = await createCredit(newCredit);
       if (response.success) {
-        showToast('Crédito criado com sucesso', 'success');
+        showToast(t('pages.credits.creditCreatedSuccess'), 'success');
         setShowCreateModal(false);
-        setNewCredit({ 
+        setNewCredit({
           initialValue: 0,
           startDate: isSunday(new Date()) ? nextBusinessDayFormatted() : todayFormatted(),
           quantityDays: 1,
@@ -127,26 +133,26 @@ const Credits: React.FC = () => {
         });
         loadData();
       } else {
-        showToast(response.message || 'Erro ao criar crédito', 'danger');
+        showToast(response.message || t('pages.credits.errorCreatingCredit'), 'danger');
       }
     } catch (error) {
-      showToast('Erro ao criar crédito', 'danger');
+      showToast(t('pages.credits.errorCreatingCredit'), 'danger');
     }
   };
 
   const handleEditCredit = async () => {
     if (!editCredit.clientId) {
-      showToast('O cliente é obrigatório', 'danger');
+      showToast(t('pages.credits.clientRequiredError'), 'danger');
       return;
     }
 
     if (editCredit.initialValue < 1) {
-      showToast('O valor inicial deve ser maior que 0', 'danger');
+      showToast(t('pages.credits.initialValueGreaterThanZero'), 'danger');
       return;
     }
 
     if (editCredit.quantityDays < 1) {
-      showToast('A quantidade de dias deve ser maior que 0', 'danger');
+      showToast(t('pages.credits.quantityDaysGreaterThanZero'), 'danger');
       return;
     }
 
@@ -155,9 +161,9 @@ const Credits: React.FC = () => {
     try {
       const response = await updateCredit(selectedCredit.id, editCredit);
       if (response.success) {
-        showToast('Crédito atualizado com sucesso', 'success');
+        showToast(t('pages.credits.creditUpdatedSuccess'), 'success');
         setShowEditModal(false);
-        setEditCredit({ 
+        setEditCredit({
           initialValue: 0,
           startDate: isSunday(new Date()) ? nextBusinessDayFormatted() : todayFormatted(),
           quantityDays: 1,
@@ -166,10 +172,10 @@ const Credits: React.FC = () => {
         setSelectedCredit(null);
         loadData();
       } else {
-        showToast(response.message || 'Erro ao atualizar crédito', 'danger');
+        showToast(response.message || t('pages.credits.errorUpdatingCredit'), 'danger');
       }
     } catch (error) {
-      showToast('Erro ao atualizar crédito', 'danger');
+      showToast(t('pages.credits.errorUpdatingCredit'), 'danger');
     }
   };
 
@@ -178,8 +184,8 @@ const Credits: React.FC = () => {
 
     deleteCredit(selectedCredit.id)
       .then(response => {
-        showToast(response.message || 'Crédito excluído com sucesso', response.success ? 'success' : 'danger');
-        
+        showToast(response.message || t('pages.credits.creditDeletedSuccess'), response.success ? 'success' : 'danger');
+
         if (response.success) {
           setShowDeleteAlert(false);
           setSelectedCredit(null);
@@ -187,8 +193,8 @@ const Credits: React.FC = () => {
         }
       })
       .catch((error) => {
-        console.error('Erro ao excluir crédito:', error);
-        showToast('Erro de conexão, tente novamente', 'danger');
+        console.error(t('pages.credits.errorUpdatingCredit'), error);
+        showToast(t('pages.credits.errorConnection'), 'danger');
       });
   };
 
@@ -210,7 +216,7 @@ const Credits: React.FC = () => {
 
   const getClientName = (clientId: number) => {
     const client = clients.find(c => c.id === clientId);
-    return client ? client.name : 'Cliente não encontrado';
+    return client ? client.name : t('pages.credits.client');
   };
 
   const calculateProgress = (credit: Credit) => {
@@ -234,7 +240,7 @@ const Credits: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Créditos</IonTitle>
+          <IonTitle>{t('pages.credits.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -250,17 +256,17 @@ const Credits: React.FC = () => {
             style={{ marginBottom: '16px' }}
           >
             <IonIcon slot="start" icon={add} />
-            Adicionar Crédito
+            {t('pages.credits.addCredit')}
           </IonButton>
 
           {isLoading ? (
             <div style={{ textAlign: 'center', padding: '40px' }}>
               <IonSpinner name="dots" />
-              <p style={{ color: '#666', marginTop: '16px' }}>Carregando créditos...</p>
+              <p style={{ color: '#666', marginTop: '16px' }}>{t('pages.credits.loadingCredits')}</p>
             </div>
           ) : credits.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p>Nenhum crédito cadastrado ainda</p>
+              <p>{t('pages.credits.noCreditsRegistered')}</p>
             </div>
           ) : (
             credits.map((credit) => {
@@ -282,56 +288,56 @@ const Credits: React.FC = () => {
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Valor Inicial: {formatCurrencyWithSymbol(credit.initialValue)}</h3>
+                            <h3>{t('pages.credits.initialValue')}: {formatCurrencyWithSymbol(credit.initialValue)}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Valor Total: {formatCurrencyWithSymbol(credit.totalDebt)}</h3>
+                            <h3>{t('pages.credits.totalValue')}: {formatCurrencyWithSymbol(credit.totalDebt)}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Taxa: {credit.tax}%</h3>
+                            <h3>{t('pages.credits.tax')}: {credit.tax}%</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Valor Diário: {formatCurrencyWithSymbol(credit.dayValue)}</h3>
+                            <h3>{t('pages.credits.dayValue')}: {formatCurrencyWithSymbol(credit.dayValue)}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Início: {formatDate(credit.startDate)}</h3>
+                            <h3>{t('pages.credits.start')}: {formatDate(credit.startDate)}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Término: {formatDate(credit.finalDate)}</h3>
+                            <h3>{t('pages.credits.end')}: {formatDate(credit.finalDate)}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Dias: {credit.quantityDays}</h3>
+                            <h3>{t('pages.credits.days')}: {credit.quantityDays}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
                       <IonCol size="12">
                         <IonItem>
                           <IonLabel>
-                            <h3>Vencimento: {credit.overdue === 'CAPITALIZE_DEBT' ? 'Capitalizar Dívida' : 'Estender Prazo'}</h3>
+                            <h3>{t('pages.credits.due')}: {credit.overdue === 'CAPITALIZE_DEBT' ? t('pages.credits.capitalizeDebt') : t('pages.credits.extendTerm')}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>
@@ -341,7 +347,7 @@ const Credits: React.FC = () => {
                       <IonCol size="12">
                         <div style={{ padding: '0 16px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '14px', color: '#666' }}>Progresso de Pagamento</span>
+                            <span style={{ fontSize: '14px', color: '#666' }}>{t('pages.credits.paymentProgress')}</span>
                             <span style={{ fontSize: '14px', fontWeight: 'bold', color: progress.percentage >= 100 ? '#28a745' : '#007bff' }}>
                               {progress.percentage.toFixed(1)}%
                             </span>
@@ -352,10 +358,10 @@ const Credits: React.FC = () => {
                           />
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
                             <span style={{ fontSize: '12px', color: '#666' }}>
-                              Pago: {formatCurrencyWithSymbol(progress.paidValue)}
+                              {t('pages.credits.paid')}: {formatCurrencyWithSymbol(progress.paidValue)}
                             </span>
                             <span style={{ fontSize: '12px', color: '#666' }}>
-                              Total: {formatCurrencyWithSymbol(progress.totalValue)}
+                              {t('pages.credits.total')}: {formatCurrencyWithSymbol(progress.totalValue)}
                             </span>
                           </div>
                         </div>
@@ -395,9 +401,9 @@ const Credits: React.FC = () => {
         <IonModal isOpen={showCreateModal} onDidDismiss={() => setShowCreateModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Adicionar Crédito</IonTitle>
+              <IonTitle>{t('pages.credits.addCreditTitle')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowCreateModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowCreateModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -405,9 +411,9 @@ const Credits: React.FC = () => {
             <div style={{ padding: '16px' }}>
               <IonItem>
                 <IonSelect
-                  label="Cliente *"
+                  label={t('pages.credits.clientRequired')}
                   labelPlacement="floating"
-                  placeholder="Selecione um cliente"
+                  placeholder={t('pages.credits.selectClient')}
                   value={newCredit.clientId}
                   onIonChange={(e) => setNewCredit({ ...newCredit, clientId: e.detail.value as number })}
                 >
@@ -420,7 +426,7 @@ const Credits: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Valor Inicial *"
+                  label={t('pages.credits.initialValueRequired')}
                   labelPlacement="floating"
                   placeholder="0,00"
                   type="number"
@@ -429,7 +435,7 @@ const Credits: React.FC = () => {
                 />
               </IonItem>
               <IonItem lines="none">
-                <IonLabel>Data Início *</IonLabel>
+                <IonLabel>{t('pages.credits.startDateRequired')}</IonLabel>
               </IonItem>
               <div style={{ display: 'flex', gap: '8px', padding: '0 16px 16px' }}>
                 <IonButton
@@ -440,7 +446,7 @@ const Credits: React.FC = () => {
                   onClick={() => setNewCredit({ ...newCredit, startDate: todayFormatted() })}
                   style={{ flex: 1 }}
                 >
-                  Hoje
+                  {t('pages.credits.today')}
                 </IonButton>
                 <IonButton
                   expand="block"
@@ -449,12 +455,12 @@ const Credits: React.FC = () => {
                   onClick={() => setNewCredit({ ...newCredit, startDate: nextBusinessDayFormatted() })}
                   style={{ flex: 1 }}
                 >
-                  Amanhã
+                  {t('pages.credits.tomorrow')}
                 </IonButton>
               </div>
               <IonItem>
                 <IonInput
-                  label="Quantidade de Dias *"
+                  label={t('pages.credits.quantityDaysRequired')}
                   labelPlacement="floating"
                   placeholder="1"
                   type="number"
@@ -464,23 +470,41 @@ const Credits: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonSelect
-                  label="Vencimento *"
+                  label={t('pages.credits.dueTypeRequired')}
                   labelPlacement="floating"
-                  placeholder="Selecione o tipo de vencimento"
+                  placeholder={t('pages.credits.selectDueType')}
                   value={newCredit.overdue}
                   onIonChange={(e) => setNewCredit({ ...newCredit, overdue: e.detail.value as 'CAPITALIZE_DEBT' | 'EXTEND_TERM' })}
                 >
-                  <IonSelectOption value="CAPITALIZE_DEBT">Capitalizar Dívida</IonSelectOption>
-                  <IonSelectOption value="EXTEND_TERM">Estender Prazo</IonSelectOption>
+                  <IonSelectOption value="CAPITALIZE_DEBT">{t('pages.credits.capitalizeDebt')}</IonSelectOption>
+                  <IonSelectOption value="EXTEND_TERM">{t('pages.credits.extendTerm')}</IonSelectOption>
                 </IonSelect>
               </IonItem>
-              <IonButton 
-                expand="block" 
+              <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '14px', color: '#666' }}>{t('pages.credits.currentBalance')}:</span>
+                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#333' }}>{formatCurrencyWithSymbol(cashBalance)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '14px', color: '#666' }}>{t('pages.credits.amountToLend')}:</span>
+                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#dc3545' }}>-{formatCurrencyWithSymbol(newCredit.initialValue)}</span>
+                </div>
+                <div style={{ borderTop: '1px solid #dee2e6', marginTop: '8px', paddingTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '14px', color: '#666' }}>{t('pages.credits.balanceAfter')}:</span>
+                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: (cashBalance - newCredit.initialValue) >= 0 ? '#28a745' : '#dc3545' }}>
+                    {formatCurrencyWithSymbol(cashBalance - newCredit.initialValue)}
+                  </span>
+                </div>
+              </div>
+
+              <IonButton
+                expand="block"
                 shape="round"
                 onClick={handleCreateCredit}
                 style={{ marginTop: '16px' }}
+                color="primary"
               >
-                Criar
+                {t('pages.credits.create')}
               </IonButton>
             </div>
           </IonContent>
@@ -490,9 +514,9 @@ const Credits: React.FC = () => {
         <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Editar Crédito</IonTitle>
+              <IonTitle>{t('pages.credits.editCreditTitle')}</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowEditModal(false)}>Fechar</IonButton>
+                <IonButton onClick={() => setShowEditModal(false)}>{t('common.close')}</IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
@@ -500,9 +524,9 @@ const Credits: React.FC = () => {
             <div style={{ padding: '16px' }}>
               <IonItem>
                 <IonSelect
-                  label="Cliente *"
+                  label={t('pages.credits.clientRequired')}
                   labelPlacement="floating"
-                  placeholder="Selecione um cliente"
+                  placeholder={t('pages.credits.selectClient')}
                   value={editCredit.clientId}
                   onIonChange={(e) => setEditCredit({ ...editCredit, clientId: e.detail.value as number })}
                 >
@@ -515,7 +539,7 @@ const Credits: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Valor Inicial *"
+                  label={t('pages.credits.initialValueRequired')}
                   labelPlacement="floating"
                   placeholder="0,00"
                   type="number"
@@ -525,7 +549,7 @@ const Credits: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Data Início *"
+                  label={t('pages.credits.startDateRequired')}
                   labelPlacement="floating"
                   type="date"
                   value={editCredit.startDate}
@@ -534,7 +558,7 @@ const Credits: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonInput
-                  label="Quantidade de Dias *"
+                  label={t('pages.credits.quantityDaysRequired')}
                   labelPlacement="floating"
                   placeholder="1"
                   type="number"
@@ -548,7 +572,7 @@ const Credits: React.FC = () => {
                 onClick={handleEditCredit}
                 style={{ marginTop: '16px' }}
               >
-                Atualizar
+                {t('pages.credits.update')}
               </IonButton>
             </div>
           </IonContent>
@@ -558,15 +582,15 @@ const Credits: React.FC = () => {
         <IonAlert
           isOpen={showDeleteAlert}
           onDidDismiss={() => setShowDeleteAlert(false)}
-          header="Confirmar"
-          message={`Tem certeza que deseja excluir o crédito de "${getClientName(selectedCredit?.clientId || 0)}"?`}
+          header={t('pages.credits.confirmDelete')}
+          message={t('pages.credits.confirmDeleteMessage', { name: getClientName(selectedCredit?.clientId || 0) })}
           buttons={[
             {
-              text: 'Cancelar',
+              text: t('common.cancel'),
               role: 'cancel'
             },
             {
-              text: 'Confirmar',
+              text: t('pages.credits.confirm'),
               handler: handleDeleteCredit
             }
           ]}

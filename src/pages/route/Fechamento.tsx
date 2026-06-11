@@ -21,17 +21,18 @@ import {
   IonRefresherContent,
   IonSpinner
 } from '@ionic/react';
-import { cashOutline, peopleOutline, walletOutline, lockClosed, refresh, downloadOutline } from 'ionicons/icons';
+import { cashOutline, peopleOutline, walletOutline, lockClosed, refresh, downloadOutline, saveOutline } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { translateRole } from '../../utils/roleTranslation';
-import { 
-  getFechamentoData, 
-  fecharDia, 
-  FechamentoData 
+import {
+  getFechamentoData,
+  fecharDia,
+  FechamentoData
 } from '../../services/fechamentoApi';
 import { getDebits, Debit } from '../../services/debitApi';
 import { getExpenses, Expense } from '../../services/expenseApi';
 import { getCurrentUser } from '../../services/api';
+import { getMyBalance } from '../../services/cashBoxApi';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
 import { useFechamentoControl } from '../../hooks/useFechamentoControl';
@@ -52,6 +53,7 @@ const Fechamento: React.FC = () => {
     }
   }, [diaFechado, verificando]);
   const [fechamentoData, setFechamentoData] = useState<FechamentoData | null>(null);
+  const [cashBalance, setCashBalance] = useState<number>(0);
   const [showConfirmAlert, setShowConfirmAlert] = useState(false);
   const [showBloqueadoAlert, setShowBloqueadoAlert] = useState(false);
   const [showReportTypeAlert, setShowReportTypeAlert] = useState(false);
@@ -60,15 +62,17 @@ const Fechamento: React.FC = () => {
 
   useEffect(() => {
     loadFechamentoData();
+    loadCashBalance();
     // REMOVIDO: Não verifica mais status via API
     // O status agora vem do hook useFechamentoControl baseado no usuário logado
-    
+
     // Configurar o refresher
     const setupRefresher = () => {
       const refresher = document.getElementById('fechamento-refresher') as HTMLIonRefresherElement;
       if (refresher) {
         refresher.addEventListener('ionRefresh', async () => {
           await loadFechamentoData();
+          await loadCashBalance();
           refresher.complete();
         });
       }
@@ -83,7 +87,16 @@ const Fechamento: React.FC = () => {
       const data = await getFechamentoData();
       setFechamentoData(data);
     } catch (error) {
-      showToast('Erro ao carregar dados do fechamento', 'danger');
+      showToast(t('pages.closing.errorLoadingData'), 'danger');
+    }
+  };
+
+  const loadCashBalance = async () => {
+    try {
+      const balance = await getMyBalance();
+      setCashBalance(balance);
+    } catch (error) {
+      console.error('Erro ao carregar saldo:', error);
     }
   };
 
@@ -371,7 +384,7 @@ const Fechamento: React.FC = () => {
         }, 1000);
       }
     } catch (error) {
-      showToast('Erro ao fechar o dia', 'danger');
+      showToast(t('pages.closing.errorClosingDay'), 'danger');
     }
   };
 
@@ -473,6 +486,24 @@ const Fechamento: React.FC = () => {
         <div style={{ padding: '16px' }}>
           {fechamentoData && (
             <>
+              {/* Card de Saldo em Caixa */}
+              <IonCard style={{ marginBottom: '16px', borderRadius: '12px', border: `2px solid ${cashBalance >= 0 ? '#28a745' : '#dc3545'}` }}>
+                <IonCardHeader>
+                  <IonCardTitle>
+                    <IonIcon icon={saveOutline} style={{ marginRight: '8px' }} />
+                    {t('pages.closing.cashBoxTitle')}
+                  </IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  <h2 style={{ textAlign: 'center', color: cashBalance >= 0 ? '#28a745' : '#dc3545', margin: '0', fontSize: '28px', fontWeight: 'bold' }}>
+                    {formatCurrencyWithSymbol(cashBalance)}
+                  </h2>
+                  <p style={{ textAlign: 'center', color: '#666', marginTop: '8px', fontSize: '14px' }}>
+                    {cashBalance >= 0 ? t('pages.closing.cashBoxPositive') : t('pages.closing.cashBoxNegative')}
+                  </p>
+                </IonCardContent>
+              </IonCard>
+
               {/* Card de Expectativa */}
               <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
                 <IonCardHeader>
