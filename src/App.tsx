@@ -9,7 +9,8 @@ import RouteTabs from './pages/RouteTabs';
 import EditarCategoria from './pages/manager/EditarCategoria';
 import DetalhesGastos from './pages/manager/DetalhesGastos';
 import SundayBlocked from './pages/route/SundayBlocked';
-import { getCurrentUser, setAppUpdateCallback, resetUpdateModalFlag, checkToken, clearSessionData } from './services/api';
+import { getCurrentUser, setAppUpdateCallback, resetUpdateModalFlag, checkToken, clearSessionData, setAppUpdateBlocked } from './services/api';
+import AppUpdateScreen from './components/AppUpdateScreen';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -68,6 +69,7 @@ const App: React.FC = () => {
       console.log('App - Callback de atualização chamado:', { message, url });
       setUpdateMessage(message);
       setDownloadUrl(url);
+      setAppUpdateBlocked(true);
       setShowUpdateAlert(true);
     });
   }, []);
@@ -83,11 +85,9 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const handleDownload = () => {
-    if (downloadUrl) {
-      window.open(downloadUrl, '_blank');
-    }
+  const handleUpdateDismiss = () => {
     setShowUpdateAlert(false);
+    setAppUpdateBlocked(false);
     resetUpdateModalFlag();
   };
 
@@ -222,22 +222,14 @@ const App: React.FC = () => {
         </Route>
       </IonReactRouter>
 
-      {/* ALERT DE UPDATE */}
-      <IonAlert
-        isOpen={showUpdateAlert}
-        onDidDismiss={() => {
-          setShowUpdateAlert(false);
-          resetUpdateModalFlag();
-        }}
-        header={updateMessage}
-        buttons={[
-          {
-            text: 'Download',
-            handler: handleDownload,
-          },
-        ]}
-        backdropDismiss={false}
-      />
+      {/* TELA CHEIA DE UPDATE */}
+      {showUpdateAlert && (
+        <AppUpdateScreen
+          message={updateMessage}
+          downloadUrl={downloadUrl}
+          onDismiss={handleUpdateDismiss}
+        />
+      )}
 
       {/* 🔵 TOAST GLOBAL (ADICIONADO) */}
       <IonToast

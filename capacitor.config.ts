@@ -7,7 +7,12 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'http',
     allowNavigation: ['187.127.30.189']
-  }
+  },
+  plugins: {
+    CapacitorUpdater: {
+      autoUpdate: false,
+    },
+  },
 };
 
 export default config;

@@ -619,6 +619,8 @@
       "overdueType": "Tipo de Vencimento",
       "today": "Hoje",
       "tomorrow": "Amanhã",
+      "todayCredits": "Créditos criados hoje",
+      "noCreditsToday": "Nenhum crédito criado hoje",
       "todayOrTomorrow": "Datas disponíveis: hoje ou amanhã (domingos são ignorados)",
       "nextBusinessDay": "Próximo dia útil disponível (domingos são ignorados)"
     },
@@ -705,6 +707,16 @@
       "chooseTypeToMigrate": "Escolha para qual tipo migrar os gastos de \"{typeName}\"",
       "migrateWarning": "Ao migrar, todos os gastos de '{categoryName}' serão movidos para o tipo selecionado. Esta ação não pode ser desfeita."
     }
+  },
+  "appUpdate": {
+    "title": "Atualização Necessária",
+    "updateButton": "Atualizar Agora",
+    "logoutButton": "Encerrar Sessão",
+    "downloading": "Baixando atualização...",
+    "downloadComplete": "Download concluído. Abrindo instalador...",
+    "downloadError": "Erro ao baixar. Tentando abrir no navegador...",
+    "nativeNote": "O APK será baixado e o instalador do Android será aberto automaticamente.",
+    "webNote": "Clique em Atualizar para recarregar o aplicativo com a versão mais recente."
   },
   "alerts": {
     "error": "Erro",
