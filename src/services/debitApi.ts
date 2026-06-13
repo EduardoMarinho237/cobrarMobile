@@ -119,6 +119,24 @@ export const getDebitsPaginated = async (page: number, size: number): Promise<{ 
   }
 };
 
+export const getTodayDebitsPaginated = async (page: number, size: number): Promise<{ content: Debit[]; last: boolean; totalElements: number }> => {
+  try {
+    const response = await apiRequest(`/api/debits/paged/today?page=${page}&size=${size}`, {
+      method: 'GET',
+    });
+
+    const pageData = response.data;
+    return {
+      content: pageData.content || [],
+      last: pageData.last || false,
+      totalElements: pageData.totalElements || 0,
+    };
+  } catch (error) {
+    console.error('Erro ao buscar débitos de hoje paginados:', error);
+    return { content: [], last: true, totalElements: 0 };
+  }
+};
+
 export const getPendingCollectionsPaginated = async (page: number, size: number): Promise<{ content: PendingPayment[]; last: boolean; totalElements: number }> => {
   try {
     const response = await apiRequest(`/api/debits/schedule/pending?page=${page}&size=${size}`, {
