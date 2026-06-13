@@ -256,6 +256,32 @@ export const getExpenses = async (): Promise<Expense[]> => {
   }
 };
 
+export const getExpensesPaginated = async (page: number, size: number): Promise<{ content: Expense[]; last: boolean; totalElements: number }> => {
+  try {
+    const response = await apiRequest(`/api/expenses/paged?page=${page}&size=${size}`, {
+      method: 'GET',
+    });
+
+    if (response.mock) {
+      return {
+        content: mockExpenses,
+        last: true,
+        totalElements: mockExpenses.length,
+      };
+    }
+
+    const pageData = response.data;
+    return {
+      content: pageData.content || [],
+      last: pageData.last || false,
+      totalElements: pageData.totalElements || 0,
+    };
+  } catch (error) {
+    console.error('Erro ao buscar despesas paginadas:', error);
+    return { content: mockExpenses, last: true, totalElements: mockExpenses.length };
+  }
+};
+
 export const getExpense = async (id: number): Promise<Expense | null> => {
   try {
     const response = await apiRequest(`/api/expenses/${id}`, {

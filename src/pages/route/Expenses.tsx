@@ -32,7 +32,7 @@ import {
   Expense, 
   CreateExpenseRequest, 
   UpdateExpenseRequest,
-  getExpenses, 
+  getExpensesPaginated, 
   createExpense, 
   updateExpense, 
   deleteExpense 
@@ -40,18 +40,45 @@ import {
 import { getExpenseCategories, getExpenseTypes, ExpenseCategory, ExpenseType } from '../../services/expenseApi';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
+import { useInView } from 'react-intersection-observer';
 
 const Expenses: React.FC = () => {
   const { t } = useTranslation();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [types, setTypes] = useState<ExpenseType[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
+
+  const {
+    items: expenses,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    loadMore,
+    refresh,
+  } = useInfiniteScroll<Expense>({
+    fetchPage: async (page, size) => {
+      const response = await getExpensesPaginated(page, size);
+      return {
+        content: response.content,
+        last: response.last,
+        totalElements: response.totalElements,
+      };
+    },
+    pageSize: 30,
+  });
+
+  const { ref: sentinelRef, inView } = useInView({ threshold: 0 });
+
+  useEffect(() => {
+    if (inView && hasMore && !isLoading && !isLoadingMore) {
+      loadMore();
+    }
+  }, [inView, hasMore, isLoading, isLoadingMore, loadMore]);
 
   // Form states
   const [newExpense, setNewExpense] = useState<CreateExpenseRequest>({ 
@@ -74,13 +101,10 @@ const Expenses: React.FC = () => {
   }, []);
 
   const loadData = async () => {
-    setIsLoading(true);
     try {
-      const [expensesData, categoriesResponse] = await Promise.all([
-        getExpenses(),
+      const [categoriesResponse] = await Promise.all([
         getExpenseCategories()
       ]);
-      setExpenses(expensesData);
       
       // Extrair categorias do response.data
       const categoriesData = Array.isArray(categoriesResponse) ? categoriesResponse : categoriesResponse.data || [];
@@ -90,9 +114,8 @@ const Expenses: React.FC = () => {
       setCategories(sortedCategories);
     } catch (error) {
       showToast(t('pages.expenses.errorLoadingData'), 'danger');
-    } finally {
-      setIsLoading(false);
     }
+    await refresh();
   };
 
   const loadTypesByCategory = async (categoryId: number) => {
@@ -287,75 +310,81 @@ const Expenses: React.FC = () => {
               <p>{t('pages.expenses.noExpensesRegistered')}</p>
             </div>
           ) : (
-            expenses.map((expense) => (
-              <IonCard 
-                key={expense.id} 
-                style={{ 
-                  marginBottom: '16px',
-                  borderRadius: '12px'
-                }}
-              >
-                <IonCardHeader>
-                  {expense.expenseTypeName}
-                </IonCardHeader>
-                <IonCardContent>
-                  <IonGrid>
-                    <IonRow>
-                      <IonCol size="12">
-                        <IonItem>
-                          <IonLabel>
-                            <h3>{t('pages.expenses.value')}: {formatCurrencyWithSymbol(expense.value)}</h3>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                      <IonCol size="12">
-                        <IonItem>
-                          <IonLabel>
-                            <h3>{t('pages.expenses.type')}: {expense.expenseTypeName}</h3>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                      <IonCol size="12">
-                        <IonItem>
-                          <IonLabel>
-                            <h3>{t('pages.expenses.description')}: {expense.description || t('pages.expenses.noDescription')}</h3>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                      <IonCol size="12">
-                        <IonItem>
-                          <IonLabel>
-                            <h3>{t('pages.expenses.date')}: {formatDateTime(expense.createdAt)}</h3>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                    </IonRow>
-                    <IonRow>
-                      <IonCol size="6">
-                        <IonButton
-                          fill="clear"
-                          onClick={() => openEditModal(expense)}
-                        >
-                          <IonIcon icon={create} />
-                        </IonButton>
-                      </IonCol>
-                      <IonCol size="6">
-                        <IonButton
-                          fill="clear"
-                          color="danger"
-                          onClick={() => {
-                            setSelectedExpense(expense);
-                            setShowDeleteAlert(true);
-                          }}
-                        >
-                          <IonIcon icon={trash} />
-                        </IonButton>
-                      </IonCol>
-                    </IonRow>
-                  </IonGrid>
-                </IonCardContent>
-              </IonCard>
-            ))
+            <>
+              {expenses.map((expense) => (
+                <IonCard 
+                  key={expense.id} 
+                  style={{ 
+                    marginBottom: '16px',
+                    borderRadius: '12px'
+                  }}
+                >
+                  <IonCardHeader>
+                    {expense.expenseTypeName}
+                  </IonCardHeader>
+                  <IonCardContent>
+                    <IonGrid>
+                      <IonRow>
+                        <IonCol size="12">
+                          <IonItem>
+                            <IonLabel>
+                              <h3>{t('pages.expenses.value')}: {formatCurrencyWithSymbol(expense.value)}</h3>
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                        <IonCol size="12">
+                          <IonItem>
+                            <IonLabel>
+                              <h3>{t('pages.expenses.type')}: {expense.expenseTypeName}</h3>
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                        <IonCol size="12">
+                          <IonItem>
+                            <IonLabel>
+                              <h3>{t('pages.expenses.description')}: {expense.description || t('pages.expenses.noDescription')}</h3>
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                        <IonCol size="12">
+                          <IonItem>
+                            <IonLabel>
+                              <h3>{t('pages.expenses.date')}: {formatDateTime(expense.createdAt)}</h3>
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                      </IonRow>
+                      <IonRow>
+                        <IonCol size="6">
+                          <IonButton
+                            fill="clear"
+                            onClick={() => openEditModal(expense)}
+                          >
+                            <IonIcon icon={create} />
+                          </IonButton>
+                        </IonCol>
+                        <IonCol size="6">
+                          <IonButton
+                            fill="clear"
+                            color="danger"
+                            onClick={() => {
+                              setSelectedExpense(expense);
+                              setShowDeleteAlert(true);
+                            }}
+                          >
+                            <IonIcon icon={trash} />
+                          </IonButton>
+                        </IonCol>
+                      </IonRow>
+                    </IonGrid>
+                  </IonCardContent>
+                </IonCard>
+              ))}
+              {/* Sentinel para infinite scroll */}
+              <div ref={sentinelRef} style={{ height: '40px', textAlign: 'center', padding: '10px' }}>
+                {isLoadingMore && <IonSpinner name="dots" />}
+              </div>
+            </>
           )}
         </div>
 
