@@ -22,7 +22,7 @@ import {
 import { refresh, timeOutline, personOutline, cashOutline } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { 
-  getDebitsPaginated, 
+  getTodayDebitsPaginated, 
   undoDebit, 
   Debit 
 } from '../../services/debitApi';
@@ -49,7 +49,7 @@ const Cobrados: React.FC = () => {
     refresh,
   } = useInfiniteScroll<Debit>({
     fetchPage: async (page, size) => {
-      const response = await getDebitsPaginated(page, size);
+      const response = await getTodayDebitsPaginated(page, size);
       return {
         content: response.content.sort((a, b) => 
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
