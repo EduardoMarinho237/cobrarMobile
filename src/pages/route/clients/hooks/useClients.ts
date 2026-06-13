@@ -4,7 +4,7 @@ import {
   Client,
   CreateClientRequest,
   UpdateClientRequest,
-  getClients,
+  getClientsPaginated,
   createClient,
   updateClient,
   deleteClient
@@ -18,6 +18,8 @@ import {
 } from '../../../../services/creditApi';
 import { getCurrentUser, apiRequest } from '../../../../services/api';
 import { todayFormatted, nextBusinessDayFormatted, isSunday } from '../../../../utils/sundayUtil';
+import { useInfiniteScroll } from '../../../../hooks/useInfiniteScroll';
+import { useInView } from 'react-intersection-observer';
 
 interface ToastState {
   isOpen: boolean;
@@ -34,8 +36,6 @@ interface ProgressResult {
 export const useClients = () => {
   const { t } = useTranslation();
 
-  const [clients, setClients] = useState<Client[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
@@ -44,6 +44,33 @@ export const useClients = () => {
   const [showCreditViewModal, setShowCreditViewModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [toast, setToast] = useState<ToastState>({ isOpen: false, message: '', color: '' });
+
+  const {
+    items: clients,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    loadMore,
+    refresh,
+  } = useInfiniteScroll<Client>({
+    fetchPage: async (page, size) => {
+      const response = await getClientsPaginated(page, size);
+      return {
+        content: response.content,
+        last: response.last,
+        totalElements: response.totalElements,
+      };
+    },
+    pageSize: 20,
+  });
+
+  const { ref: sentinelRef, inView } = useInView({ threshold: 0 });
+
+  useEffect(() => {
+    if (inView && hasMore && !isLoading && !isLoadingMore) {
+      loadMore();
+    }
+  }, [inView, hasMore, isLoading, isLoadingMore, loadMore]);
 
   const [newClient, setNewClient] = useState<CreateClientRequest>({
     name: '',
@@ -78,7 +105,6 @@ export const useClients = () => {
   const [todayTotal, setTodayTotal] = useState<number>(0);
 
   useEffect(() => {
-    loadClients();
     loadCurrentUser();
     loadCurrentTax();
     loadTodayTotal();
@@ -119,17 +145,9 @@ export const useClients = () => {
   }, [currentUser]);
 
   const loadClients = useCallback(async (event?: CustomEvent) => {
-    setIsLoading(true);
-    try {
-      const data = await getClients();
-      setClients(data);
-    } catch {
-      showToast(t('pages.clients.errorLoadingClients'), 'danger');
-    } finally {
-      setIsLoading(false);
-      if (event) event.detail.complete();
-    }
-  }, [t, showToast]);
+    await refresh();
+    if (event) event.detail.complete();
+  }, [refresh]);
 
   const handleCreateClient = useCallback(async () => {
     if (!newClient.name.trim()) {
@@ -304,6 +322,9 @@ export const useClients = () => {
   return {
     clients,
     isLoading,
+    isLoadingMore,
+    hasMore,
+    sentinelRef,
     showCreateModal,
     setShowCreateModal,
     showEditModal,

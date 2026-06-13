@@ -38,6 +38,8 @@ const Clients: React.FC = () => {
   const {
     clients,
     isLoading,
+    isLoadingMore,
+    sentinelRef,
     showCreateModal,
     setShowCreateModal,
     showEditModal,
@@ -142,20 +144,26 @@ const Clients: React.FC = () => {
               <p>{t('common.noSearchResults')}</p>
             </div>
           ) : (
-            filteredClients.map((client) => (
-              <ClientCard
-                key={client.id}
-                client={client}
-                onAddCredit={openCreditModal}
-                onViewCredits={openClientCreditsModal}
-                onEdit={openEditModal}
-                onDelete={(client) => {
-                  setSelectedClient(client);
-                  setShowDeleteAlert(true);
-                }}
-                formatCurrency={formatCurrency}
-              />
-            ))
+            <>
+              {filteredClients.map((client) => (
+                <ClientCard
+                  key={client.id}
+                  client={client}
+                  onAddCredit={openCreditModal}
+                  onViewCredits={openClientCreditsModal}
+                  onEdit={openEditModal}
+                  onDelete={(client) => {
+                    setSelectedClient(client);
+                    setShowDeleteAlert(true);
+                  }}
+                  formatCurrency={formatCurrency}
+                />
+              ))}
+              {/* Sentinel para infinite scroll */}
+              <div ref={sentinelRef} style={{ height: '40px', textAlign: 'center', padding: '10px' }}>
+                {isLoadingMore && <IonSpinner name="dots" />}
+              </div>
+            </>
           )}
         </div>
 

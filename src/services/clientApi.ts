@@ -38,45 +38,69 @@ export interface ClientResponse {
   data: Client | Client[] | null;
 }
 
+const mockClients: Client[] = [
+  {
+    id: 1,
+    name: "João Silva",
+    cpf: "123.456.789-00",
+    phone: "11999999999",
+    address: "Rua A, 123, Bairro Centro, São Paulo - SP",
+    shop: "Loja A",
+    visible: true,
+    userId: 123,
+    creditsCount: 2,
+    paidCreditsCount: 1,
+    totalCreditsValue: 1000,
+    debitsCount: 1,
+    totalDebitsValue: 500
+  },
+  {
+    id: 2,
+    name: "Maria Santos",
+    cpf: "987.654.321-00",
+    phone: "11888888888",
+    address: "Rua B, 456, Bairro Sul, São Paulo - SP",
+    shop: "Loja B",
+    visible: true,
+    userId: 123,
+    creditsCount: 1,
+    paidCreditsCount: 0,
+    totalCreditsValue: 500,
+    debitsCount: 0,
+    totalDebitsValue: 0
+  }
+];
+
 export const getClients = async (): Promise<Client[]> => {
   if (isDev()) {
-    // Mock response
-    return [
-      {
-        id: 1,
-        name: "João Silva",
-        cpf: "123.456.789-00",
-        phone: "11999999999",
-        address: "Rua A, 123, Bairro Centro, São Paulo - SP",
-        shop: "Loja A",
-        visible: true,
-        userId: 123,
-        creditsCount: 2,
-        paidCreditsCount: 1,
-        totalCreditsValue: 1000,
-        debitsCount: 1,
-        totalDebitsValue: 500
-      },
-      {
-        id: 2,
-        name: "Maria Santos",
-        cpf: "987.654.321-00",
-        phone: "11888888888",
-        address: "Rua B, 456, Bairro Sul, São Paulo - SP",
-        shop: "Loja B",
-        visible: true,
-        userId: 123,
-        creditsCount: 1,
-        paidCreditsCount: 0,
-        totalCreditsValue: 500,
-        debitsCount: 0,
-        totalDebitsValue: 0
-      }
-    ];
+    return mockClients;
   }
 
   const response: ClientResponse = await apiRequest('/api/clients');
   return Array.isArray(response?.data) ? response.data : [];
+};
+
+export const getClientsPaginated = async (page: number, size: number): Promise<{ content: Client[]; last: boolean; totalElements: number }> => {
+  if (isDev()) {
+    return {
+      content: mockClients,
+      last: true,
+      totalElements: mockClients.length,
+    };
+  }
+
+  try {
+    const response = await apiRequest(`/api/clients/paged?page=${page}&size=${size}`);
+    const pageData = response.data;
+    return {
+      content: pageData.content || [],
+      last: pageData.last || false,
+      totalElements: pageData.totalElements || 0,
+    };
+  } catch (error) {
+    console.error('Erro ao buscar clientes paginados:', error);
+    return { content: mockClients, last: true, totalElements: mockClients.length };
+  }
 };
 
 export const getClientById = async (id: number): Promise<Client | null> => {

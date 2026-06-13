@@ -10,6 +10,9 @@ export interface PendingPayment {
   hasOverdueInstallments: boolean;
   overdueInstallmentsCount: number;
   accumulatedOverdueValue: number;
+  phone?: string;
+  address?: string;
+  shop?: string;
 }
 
 export interface DailySchedule {
@@ -95,6 +98,42 @@ export const getDebits = async (): Promise<Debit[]> => {
   } catch (error) {
     console.error('Erro ao buscar débitos:', error);
     throw error;
+  }
+};
+
+export const getDebitsPaginated = async (page: number, size: number): Promise<{ content: Debit[]; last: boolean; totalElements: number }> => {
+  try {
+    const response = await apiRequest(`/api/debits/paged?page=${page}&size=${size}`, {
+      method: 'GET',
+    });
+
+    const pageData = response.data;
+    return {
+      content: pageData.content || [],
+      last: pageData.last || false,
+      totalElements: pageData.totalElements || 0,
+    };
+  } catch (error) {
+    console.error('Erro ao buscar débitos paginados:', error);
+    return { content: [], last: true, totalElements: 0 };
+  }
+};
+
+export const getPendingCollectionsPaginated = async (page: number, size: number): Promise<{ content: PendingPayment[]; last: boolean; totalElements: number }> => {
+  try {
+    const response = await apiRequest(`/api/debits/schedule/pending?page=${page}&size=${size}`, {
+      method: 'GET',
+    });
+
+    const pageData = response.data;
+    return {
+      content: pageData.content || [],
+      last: pageData.last || false,
+      totalElements: pageData.totalElements || 0,
+    };
+  } catch (error) {
+    console.error('Erro ao buscar cobranças pendentes:', error);
+    return { content: [], last: true, totalElements: 0 };
   }
 };
 
