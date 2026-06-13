@@ -24,10 +24,13 @@
   },
   "dependencies": {
     "@capacitor/android": "8.0.0",
+    "@capacitor/app-launcher": "^8.0.1",
     "@capacitor/core": "8.0.1",
+    "@capacitor/filesystem": "^8.1.2",
     "@capacitor/haptics": "8.0.0",
     "@capacitor/keyboard": "8.0.0",
     "@capacitor/status-bar": "8.0.0",
+    "@capgo/capacitor-updater": "^8.49.1",
     "@ionic/react": "^8.5.0",
     "@ionic/react-router": "^8.5.0",
     "@types/react-router": "^5.1.20",

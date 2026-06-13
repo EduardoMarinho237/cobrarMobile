@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   IonContent,
   IonPage,
@@ -7,7 +7,14 @@ import {
   IonAlert,
   IonRefresher,
   IonRefresherContent,
-  IonSpinner
+  IonSpinner,
+  IonModal,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonButtons,
+  IonItem,
+  IonLabel
 } from '@ionic/react';
 import { add } from 'ionicons/icons';
 import Toast from '../../components/Toast';
@@ -15,6 +22,8 @@ import ListSearchHeader from '../../components/ListSearchHeader';
 import { matchesSearchQuery, collectSearchableValues } from '../../utils/listSearch';
 import { useTranslation } from 'react-i18next';
 
+import { getTodayCredits, TodayCredit } from '../../services/creditApi';
+import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { useClients } from './clients/hooks/useClients';
 import ClientCard from './clients/components/ClientCard';
 import CreateClientModal from './clients/components/CreateClientModal';
@@ -55,6 +64,8 @@ const Clients: React.FC = () => {
     clientCredits,
     currentTax,
     loadClients,
+    loadTodayTotal,
+    todayTotal,
     handleCreateClient,
     handleEditClient,
     handleDeleteClient,
@@ -67,6 +78,23 @@ const Clients: React.FC = () => {
     formatDate,
     calculateProgress
   } = useClients();
+
+  const [todayCredits, setTodayCredits] = useState<TodayCredit[]>([]);
+  const [showTodayCreditsModal, setShowTodayCreditsModal] = useState(false);
+
+  const loadTodayCredits = async () => {
+    try {
+      const credits = await getTodayCredits();
+      setTodayCredits(credits);
+    } catch (error) {
+      console.error('Erro ao carregar créditos de hoje:', error);
+    }
+  };
+
+  const openTodayCreditsModal = async () => {
+    await loadTodayCredits();
+    setShowTodayCreditsModal(true);
+  };
 
   const filteredClients = useMemo(() => {
     return clients.filter((client) =>
@@ -82,12 +110,12 @@ const Clients: React.FC = () => {
         onSearchQueryChange={setSearchQuery}
       />
 
-      <IonContent fullscreen>
-        <IonRefresher slot="fixed" onIonRefresh={loadClients}>
+      <IonContent fullscreen style={{ '--padding-bottom': '60px' } as any}>
+        <IonRefresher slot="fixed" onIonRefresh={async (e) => { await loadClients(); await loadTodayTotal(); e.detail.complete(); }}>
           <IonRefresherContent />
         </IonRefresher>
 
-        <div style={{ padding: '16px' }}>
+        <div style={{ padding: '16px', paddingBottom: '80px' }}>
           <IonButton
             expand="block"
             shape="round"
@@ -129,6 +157,33 @@ const Clients: React.FC = () => {
               />
             ))
           )}
+        </div>
+
+        {/* Rodapé - Total de Créditos Criados Hoje */}
+        <div
+          onClick={openTodayCreditsModal}
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            width: '100%',
+            backgroundColor: '#f8f9fa',
+            borderTop: '1px solid #dee2e6',
+            padding: '12px 16px',
+            zIndex: 100,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxSizing: 'border-box',
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>
+            {t('pages.clients.todayCredits')}
+          </span>
+          <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#007bff' }}>
+            {formatCurrencyWithSymbol(todayTotal)}
+          </span>
         </div>
       </IonContent>
 
@@ -190,6 +245,41 @@ const Clients: React.FC = () => {
         formatCurrency={formatCurrency}
         formatDate={formatDate}
       />
+
+      {/* Modal de Créditos de Hoje */}
+      <IonModal isOpen={showTodayCreditsModal} onDidDismiss={() => setShowTodayCreditsModal(false)}>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>{t('pages.clients.todayCredits')}</IonTitle>
+            <IonButtons slot="end">
+              <IonButton onClick={() => setShowTodayCreditsModal(false)}>{t('common.close')}</IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent>
+          <div style={{ padding: '16px' }}>
+            {todayCredits.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <p style={{ color: '#666' }}>{t('pages.clients.noCreditsToday')}</p>
+              </div>
+            ) : (
+              todayCredits.map((credit) => (
+                <IonItem key={credit.id} lines="full">
+                  <IonLabel>
+                    <h3 style={{ fontWeight: 'bold', color: '#333' }}>{credit.clientName}</h3>
+                    <p style={{ color: '#666', marginTop: '4px' }}>
+                      {t('pages.clients.loanAmount')}: <strong style={{ color: '#007bff' }}>{formatCurrencyWithSymbol(credit.initialValue)}</strong>
+                    </p>
+                    <p style={{ color: '#666' }}>
+                      {t('pages.clients.totalAmount')}: <strong>{formatCurrencyWithSymbol(credit.totalDebt)}</strong>
+                    </p>
+                  </IonLabel>
+                </IonItem>
+              ))
+            )}
+          </div>
+        </IonContent>
+      </IonModal>
 
       <Toast
         isOpen={toast.isOpen}

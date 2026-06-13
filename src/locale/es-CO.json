@@ -660,6 +660,8 @@
       "totalCredit": "Total del Crédito",
       "today": "Hoy",
       "tomorrow": "Mañana",
+      "todayCredits": "Créditos creados hoy",
+      "noCreditsToday": "Ningún crédito creado hoy",
       "todayOrTomorrow": "Fechas disponibles: hoy o mañana (los domingos se ignoran)",
       "nextBusinessDay": "Próximo día hábil disponible (los domingos se ignoran)"
     },
@@ -701,6 +703,16 @@
       "checkAvailability": "Verificar Disponibilidad",
       "logout": "Cerrar Sesión"
     }
+  },
+  "appUpdate": {
+    "title": "Actualización Necesaria",
+    "updateButton": "Actualizar Ahora",
+    "logoutButton": "Cerrar Sesión",
+    "downloading": "Descargando actualización...",
+    "downloadComplete": "Descarga completada. Abriendo instalador...",
+    "downloadError": "Error al descargar. Intentando abrir en el navegador...",
+    "nativeNote": "El APK se descargará y el instalador de Android se abrirá automáticamente.",
+    "webNote": "Haga clic en Actualizar para recargar la aplicación con la versión más reciente."
   },
   "alerts": {
     "error": "Error",

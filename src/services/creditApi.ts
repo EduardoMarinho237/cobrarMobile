@@ -164,6 +164,47 @@ export const getCreditHistory = async (creditId: number): Promise<CreditHistoryE
   }
 };
 
+export interface TodayCredit {
+  id: number;
+  clientName: string;
+  initialValue: number;
+  totalDebt: number;
+}
+
+export const getTodayTotalInitialValue = async (): Promise<number> => {
+  try {
+    const response = await apiRequest('/api/credits/today-total', {
+      method: 'GET',
+    });
+
+    if (response.mock) {
+      return 0;
+    }
+
+    return response.data || 0;
+  } catch (error) {
+    console.error('Erro ao buscar total de créditos de hoje:', error);
+    return 0;
+  }
+};
+
+export const getTodayCredits = async (): Promise<TodayCredit[]> => {
+  try {
+    const response = await apiRequest('/api/credits/today', {
+      method: 'GET',
+    });
+
+    if (response.mock) {
+      return [];
+    }
+
+    return response.data || [];
+  } catch (error) {
+    console.error('Erro ao buscar créditos de hoje:', error);
+    return [];
+  }
+};
+
 export const getCreditsByClient = async (clientId: number): Promise<Credit[]> => {
   try {
     const response = await apiRequest(`/api/credits/client/${clientId}`, {

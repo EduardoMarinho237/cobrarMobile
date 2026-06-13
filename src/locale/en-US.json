@@ -431,6 +431,8 @@
       "currentSystemTax": "Current system tax",
       "today": "Today",
       "tomorrow": "Tomorrow",
+      "todayCredits": "Credits created today",
+      "noCreditsToday": "No credits created today",
       "todayOrTomorrow": "Available dates: today or tomorrow (Sundays are skipped)",
       "nextBusinessDay": "Next business day available (Sundays are skipped)",
       "name": "Name",
@@ -478,6 +480,16 @@
       "checkAvailability": "Check Availability",
       "logout": "Logout"
     }
+  },
+  "appUpdate": {
+    "title": "Update Required",
+    "updateButton": "Update Now",
+    "logoutButton": "End Session",
+    "downloading": "Downloading update...",
+    "downloadComplete": "Download complete. Opening installer...",
+    "downloadError": "Download error. Trying to open in browser...",
+    "nativeNote": "The APK will be downloaded and the Android installer will open automatically.",
+    "webNote": "Click Update to reload the application with the latest version."
   },
   "alerts": {
     "error": "Error",

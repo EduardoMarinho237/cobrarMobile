@@ -13,7 +13,8 @@ import {
   Credit,
   CreateCreditRequest,
   getCredits,
-  createCredit
+  createCredit,
+  getTodayTotalInitialValue
 } from '../../../../services/creditApi';
 import { getCurrentUser, apiRequest } from '../../../../services/api';
 import { todayFormatted, nextBusinessDayFormatted, isSunday } from '../../../../utils/sundayUtil';
@@ -74,11 +75,22 @@ export const useClients = () => {
   const [selectedCredit, setSelectedCredit] = useState<Credit | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentTax, setCurrentTax] = useState<number>(0);
+  const [todayTotal, setTodayTotal] = useState<number>(0);
 
   useEffect(() => {
     loadClients();
     loadCurrentUser();
     loadCurrentTax();
+    loadTodayTotal();
+  }, []);
+
+  const loadTodayTotal = useCallback(async () => {
+    try {
+      const total = await getTodayTotalInitialValue();
+      setTodayTotal(total);
+    } catch (error) {
+      console.error('Erro ao carregar total de créditos de hoje:', error);
+    }
   }, []);
 
   const showToast = useCallback((message: string, color: string) => {
@@ -238,13 +250,14 @@ export const useClients = () => {
           overdue: 'EXTEND_TERM'
         });
         loadClients();
+        loadTodayTotal();
       } else {
         showToast(response.message || t('pages.clients.errorCreatingCredit'), 'danger');
       }
     } catch {
       showToast(t('pages.clients.errorCreatingCredit'), 'danger');
     }
-  }, [newCredit, t, showToast, loadClients]);
+  }, [newCredit, t, showToast, loadClients, loadTodayTotal]);
 
   const openClientCreditsModal = useCallback(async (client: Client) => {
     setSelectedClient(client);
@@ -317,7 +330,9 @@ export const useClients = () => {
     setNewCredit,
     clientCredits,
     currentTax,
+    todayTotal,
     loadClients,
+    loadTodayTotal,
     handleCreateClient,
     handleEditClient,
     handleDeleteClient,

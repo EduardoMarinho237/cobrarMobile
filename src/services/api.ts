@@ -9,6 +9,9 @@ let appUpdateCallback: ((message: string, downloadUrl: string) => void) | null =
 // Flag global para controlar se o modal já foi aberto
 let updateModalOpened = false;
 
+// Flag global para bloquear requisições durante tela de atualização
+let appUpdateBlocked = false;
+
 export const setAppUpdateCallback = (callback: (message: string, downloadUrl: string) => void) => {
   appUpdateCallback = callback;
 };
@@ -16,6 +19,13 @@ export const setAppUpdateCallback = (callback: (message: string, downloadUrl: st
 export const resetUpdateModalFlag = () => {
   updateModalOpened = false;
 };
+
+export const setAppUpdateBlocked = (blocked: boolean) => {
+  appUpdateBlocked = blocked;
+  console.log('[api.ts] appUpdateBlocked =', blocked);
+};
+
+export const isAppUpdateBlocked = () => appUpdateBlocked;
 
 // Importar o event emitter (importação dinâmica para evitar circular dependency)
 let fechamentoEvents: any = null;
@@ -44,6 +54,18 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
   if (isDev()) {
     console.log('Retornando null (modo mock)');
     return null; // Mock mode
+  }
+
+  // Bloquear requisições durante tela de atualização (exceto logout)
+  const isLogoutEndpoint = endpoint === '/api/auth/logout';
+  const isPublicDownload = !endpoint.startsWith('/api');
+  if (appUpdateBlocked && !isLogoutEndpoint && !isPublicDownload) {
+    console.log('[apiRequest] Bloqueado - app em tela de atualização:', endpoint);
+    return {
+      success: false,
+      message: 'App desatualizado - atualização necessária',
+      blockedByUpdate: true,
+    };
   }
 
   // Priorizar token da chave auth_token (padrão useAuth.ts)
