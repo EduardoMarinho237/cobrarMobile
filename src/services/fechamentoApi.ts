@@ -1,10 +1,17 @@
 import { apiRequest, isDev } from './api';
+import { getMyInitialBalance, getMyManagerTransactions } from './cashBoxApi';
 
 export interface FechamentoData {
   expectativaArrecadacao: number;
   arrecadacaoDia: number;
   clientesCobrados: number;
   gastosDia: number;
+  caixaInicial: number;
+  totalEmprestado: number;
+  emprestimosHoje: Array<{ clientName: string; initialValue: number; totalDebt: number }>;
+  depositosRetiradas: Array<{ type: string; amount: number; description: string | null; createdAt: string }>;
+  totalDepositos: number;
+  totalRetiradas: number;
 }
 
 export interface DailyScheduleResponse {
@@ -64,7 +71,18 @@ export const getFechamentoData = async (): Promise<FechamentoData> => {
       expectativaArrecadacao: 500,
       arrecadacaoDia: 300,
       clientesCobrados: 3,
-      gastosDia: 80
+      gastosDia: 80,
+      caixaInicial: 10000,
+      totalEmprestado: 200,
+      emprestimosHoje: [
+        { clientName: 'Cliente 1', initialValue: 100, totalDebt: 120 },
+        { clientName: 'Cliente 2', initialValue: 100, totalDebt: 120 }
+      ],
+      depositosRetiradas: [
+        { type: 'MANAGER_DEPOSIT', amount: 5000, description: 'Deposito do manager', createdAt: '2024-01-01T10:00:00' }
+      ],
+      totalDepositos: 5000,
+      totalRetiradas: 0
     };
   }
 
@@ -92,11 +110,46 @@ export const getFechamentoData = async (): Promise<FechamentoData> => {
     const clientesCobrados = scheduleResponse?.data?.clientsPaid || 0;
     console.log('Clientes cobrados (API):', clientesCobrados);
 
+    // 5. Buscar saldo inicial do dia
+    const caixaInicial = await getMyInitialBalance();
+    console.log('Caixa inicial do dia:', caixaInicial);
+
+    // 6. Buscar créditos de hoje
+    const todayCreditsResponse = await apiRequest('/api/credits/today');
+    const emprestimosHoje = todayCreditsResponse?.data || [];
+    const totalEmprestado = emprestimosHoje.reduce((sum: number, c: any) => sum + (c.initialValue || 0), 0);
+    console.log('Empréstimos de hoje:', emprestimosHoje);
+    console.log('Total emprestado:', totalEmprestado);
+
+    // 7. Buscar depósitos/retiradas do manager
+    const managerTransactions = await getMyManagerTransactions();
+    const depositosRetiradas = managerTransactions.map((t: any) => ({
+      type: t.type,
+      amount: t.amount,
+      description: t.description,
+      createdAt: t.createdAt
+    }));
+    const totalDepositos = depositosRetiradas
+      .filter((t: any) => t.type === 'MANAGER_DEPOSIT')
+      .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+    const totalRetiradas = depositosRetiradas
+      .filter((t: any) => t.type === 'MANAGER_WITHDRAWAL')
+      .reduce((sum: number, t: any) => sum + Math.abs(t.amount || 0), 0);
+    console.log('Depósitos/Retiradas:', depositosRetiradas);
+    console.log('Total depósitos:', totalDepositos);
+    console.log('Total retiradas:', totalRetiradas);
+
     const result = {
       expectativaArrecadacao: scheduleResponse?.data?.dailyExpectation || 0,
       arrecadacaoDia: scheduleResponse?.data?.collectedToday || 0,
       clientesCobrados,
-      gastosDia: totalGastosDia
+      gastosDia: totalGastosDia,
+      caixaInicial,
+      totalEmprestado,
+      emprestimosHoje,
+      depositosRetiradas,
+      totalDepositos,
+      totalRetiradas
     };
     
     console.log('Dados do fechamento:', result);
@@ -108,7 +161,13 @@ export const getFechamentoData = async (): Promise<FechamentoData> => {
       expectativaArrecadacao: 0,
       arrecadacaoDia: 0,
       clientesCobrados: 0,
-      gastosDia: 0
+      gastosDia: 0,
+      caixaInicial: 0,
+      totalEmprestado: 0,
+      emprestimosHoje: [],
+      depositosRetiradas: [],
+      totalDepositos: 0,
+      totalRetiradas: 0
     };
   }
 };

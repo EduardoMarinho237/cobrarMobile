@@ -15,6 +15,7 @@ import {
   IonModal,
   IonButtons,
   IonIcon,
+  IonAlert,
   IonRefresher,
   IonRefresherContent,
   IonGrid,
@@ -27,13 +28,18 @@ import {
 } from '@ionic/react';
 import { create, refresh, cashOutline, personOutline, locationOutline, callOutline, timeOutline } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
+import { formatToBrazilTime } from '../../utils/dateFormat';
 import { 
   getDailySchedule, 
   getPendingCollectionsPaginated,
+  getTodayDebitsTotal,
+  getTodayDebitsPaginated,
+  undoDebit,
   createDebit, 
   PendingPayment, 
   DailySchedule, 
-  CreateDebitRequest 
+  CreateDebitRequest,
+  Debit
 } from '../../services/debitApi';
 import { getClientById, Client } from '../../services/clientApi';
 import { getCreditsByClient, getCredit, Credit, getCreditHistory, CreditHistoryEntry } from '../../services/creditApi';
@@ -62,6 +68,14 @@ const Cobrancas: React.FC = () => {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [creditHistory, setCreditHistory] = useState<CreditHistoryEntry[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+
+  // Estados para o rodapé de débitos de hoje
+  const [todayTotal, setTodayTotal] = useState<number>(0);
+  const [showTodayDebitsModal, setShowTodayDebitsModal] = useState(false);
+  const [todayDebits, setTodayDebits] = useState<Debit[]>([]);
+  const [isLoadingTodayDebits, setIsLoadingTodayDebits] = useState(false);
+  const [showUndoAlertModal, setShowUndoAlertModal] = useState(false);
+  const [selectedDebitModal, setSelectedDebitModal] = useState<Debit | null>(null);
 
   const {
     items: pendingPayments,
@@ -117,6 +131,7 @@ const Cobrancas: React.FC = () => {
       const scheduleData = await getDailySchedule();
       setDailySchedule(scheduleData);
       await refresh();
+      await loadTodayTotal();
     } catch (error: any) {
       console.error('Erro ao carregar agenda diária:', error);
       showToast(error.message || t('pages.collections.errorLoadingSchedule'), 'danger');
@@ -126,6 +141,56 @@ const Cobrancas: React.FC = () => {
         collectedToday: 0,
         remainingToCollect: 0
       });
+    }
+  };
+
+  const loadTodayTotal = async () => {
+    try {
+      const total = await getTodayDebitsTotal();
+      setTodayTotal(total);
+    } catch (error) {
+      console.error('Erro ao carregar total de débitos de hoje:', error);
+    }
+  };
+
+  const loadTodayDebits = async () => {
+    setIsLoadingTodayDebits(true);
+    try {
+      const response = await getTodayDebitsPaginated(0, 1000);
+      setTodayDebits(response.content);
+    } catch (error) {
+      console.error('Erro ao carregar débitos de hoje:', error);
+    } finally {
+      setIsLoadingTodayDebits(false);
+    }
+  };
+
+  const openTodayDebitsModal = async () => {
+    await loadTodayDebits();
+    setShowTodayDebitsModal(true);
+  };
+
+  const handleUndoFromModal = (debit: Debit) => {
+    setSelectedDebitModal(debit);
+    setShowUndoAlertModal(true);
+  };
+
+  const confirmUndoFromModal = async () => {
+    if (!selectedDebitModal) return;
+
+    try {
+      const response = await undoDebit(selectedDebitModal.id);
+      if (response.success) {
+        showToast(t('pages.collected.debitUndoneSuccess'), 'success');
+        setShowUndoAlertModal(false);
+        setSelectedDebitModal(null);
+        await loadTodayDebits();
+        await loadTodayTotal();
+      } else {
+        showToast(response.message || t('pages.collected.errorUndoingDebit'), 'danger');
+      }
+    } catch (error) {
+      showToast(t('pages.collected.errorUndoingDebit'), 'danger');
     }
   };
 
@@ -663,7 +728,7 @@ const Cobrancas: React.FC = () => {
                                       {t('pages.collections.debtStartDate')}
                                     </h3>
                                     <p>
-                                      {new Date(credit.startDate).toLocaleDateString('pt-BR')}
+                                      {formatToBrazilTime(credit.startDate)}
                                     </p>
                                   </IonLabel>
                                 </IonItem>
@@ -860,6 +925,33 @@ const Cobrancas: React.FC = () => {
           </IonContent>
         </IonModal>
 
+        {/* Rodapé - Total de Débitos de Hoje */}
+        <div
+          onClick={openTodayDebitsModal}
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            width: '100%',
+            backgroundColor: '#f8f9fa',
+            borderTop: '1px solid #dee2e6',
+            padding: '12px 16px',
+            zIndex: 100,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxSizing: 'border-box',
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>
+            {t('pages.collections.todayDebits')}
+          </span>
+          <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#28a745' }}>
+            {formatCurrencyWithSymbol(todayTotal)}
+          </span>
+        </div>
+
         {/* Toast */}
         <Toast
           isOpen={toast.isOpen}
@@ -868,6 +960,83 @@ const Cobrancas: React.FC = () => {
           onDidDismiss={() => setToast({ ...toast, isOpen: false })}
         />
       </IonContent>
+
+      {/* Modal de Débitos de Hoje */}
+      <IonModal isOpen={showTodayDebitsModal} onDidDismiss={() => setShowTodayDebitsModal(false)}>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>{t('pages.collections.todayDebits')}</IonTitle>
+            <IonButtons slot="end">
+              <IonButton onClick={() => setShowTodayDebitsModal(false)}>{t('common.close')}</IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent>
+          <div style={{ padding: '16px' }}>
+            {isLoadingTodayDebits ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <IonSpinner name="dots" />
+                <p style={{ color: '#666', marginTop: '16px' }}>{t('pages.collections.loadingTodayDebits')}</p>
+              </div>
+            ) : todayDebits.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <p style={{ color: '#666' }}>{t('pages.collections.noDebitsToday')}</p>
+              </div>
+            ) : (
+              todayDebits.map((debit) => (
+                <IonCard key={debit.id} style={{ marginBottom: '12px', borderRadius: '12px' }}>
+                  <IonCardContent>
+                    <IonGrid>
+                      <IonRow>
+                        <IonCol size="8">
+                          <IonItem lines="none">
+                            <IonLabel>
+                              <h3 style={{ fontWeight: 'bold', color: '#333' }}>{debit.clientName}</h3>
+                              <p style={{ color: '#666', marginTop: '4px' }}>
+                                {formatCurrencyWithSymbol(debit.value)}
+                              </p>
+                              <p style={{ color: '#999', fontSize: '12px' }}>
+                                {formatToBrazilTime(debit.createdAt)}
+                              </p>
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                        <IonCol size="4" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <IonButton
+                            color="danger"
+                            size="small"
+                            onClick={() => handleUndoFromModal(debit)}
+                          >
+                            {t('pages.collected.undo')}
+                          </IonButton>
+                        </IonCol>
+                      </IonRow>
+                    </IonGrid>
+                  </IonCardContent>
+                </IonCard>
+              ))
+            )}
+          </div>
+        </IonContent>
+      </IonModal>
+
+      {/* Alert de Confirmação de Desfazer do Modal */}
+      <IonAlert
+        isOpen={showUndoAlertModal}
+        onDidDismiss={() => setShowUndoAlertModal(false)}
+        header={t('pages.collected.undoCollection')}
+        message={t('pages.collected.undoCollectionMessage').replace('{value}', formatCurrencyWithSymbol(selectedDebitModal?.value || 0)).replace('{clientName}', selectedDebitModal?.clientName || 'este cliente')}
+        buttons={[
+          {
+            text: t('common.cancel'),
+            role: 'cancel'
+          },
+          {
+            text: t('pages.collected.undo'),
+            handler: confirmUndoFromModal
+          }
+        ]}
+      />
     </IonPage>
   );
 };

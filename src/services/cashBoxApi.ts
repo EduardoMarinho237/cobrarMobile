@@ -65,6 +65,19 @@ export const getMyBalance = async (): Promise<number> => {
   }
 };
 
+export const getMyInitialBalance = async (): Promise<number> => {
+  if (isDev()) {
+    return 10000;
+  }
+  try {
+    const response: CashBalanceResponse = await apiRequest('/api/cash-box/my-initial-balance');
+    return response?.data || 0;
+  } catch (error) {
+    console.error('Erro ao buscar saldo inicial:', error);
+    return 0;
+  }
+};
+
 export const getBalance = async (routeId: number): Promise<number> => {
   if (isDev()) {
     return 10000;
@@ -104,6 +117,21 @@ export const getTransactions = async (routeId: number): Promise<CashTransaction[
     return response?.data || [];
   } catch (error) {
     console.error('Erro ao buscar transacoes:', error);
+    return [];
+  }
+};
+
+export const getMyManagerTransactions = async (): Promise<CashTransaction[]> => {
+  if (isDev()) {
+    return [
+      { id: 1, routeId: 1, createdBy: 2, type: 'MANAGER_DEPOSIT', amount: 5000, balanceBefore: 5000, balanceAfter: 10000, referenceId: null, referenceType: null, description: 'Deposito do manager', createdAt: '2024-01-01T10:00:00' }
+    ];
+  }
+  try {
+    const response = await apiRequest('/api/cash-box/my-manager-transactions');
+    return response?.data || [];
+  } catch (error) {
+    console.error('Erro ao buscar transacoes do manager:', error);
     return [];
   }
 };

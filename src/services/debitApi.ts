@@ -137,6 +137,18 @@ export const getTodayDebitsPaginated = async (page: number, size: number): Promi
   }
 };
 
+export const getTodayDebitsTotal = async (): Promise<number> => {
+  try {
+    const response = await apiRequest('/api/debits/today-total', {
+      method: 'GET',
+    });
+    return response.data || 0;
+  } catch (error) {
+    console.error('Erro ao buscar total de débitos de hoje:', error);
+    return 0;
+  }
+};
+
 export const getPendingCollectionsPaginated = async (page: number, size: number): Promise<{ content: PendingPayment[]; last: boolean; totalElements: number }> => {
   try {
     const response = await apiRequest(`/api/debits/schedule/pending?page=${page}&size=${size}`, {

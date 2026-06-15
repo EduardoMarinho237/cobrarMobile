@@ -158,7 +158,7 @@ const App: React.FC = () => {
           <ManagerTabs />
         </ProtectedRoute>
 
-        <ProtectedRoute exact path="/manager/dashboard">
+        <ProtectedRoute exact path="/manager/reports">
           <ManagerTabs />
         </ProtectedRoute>
 

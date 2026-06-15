@@ -19,7 +19,6 @@ import {
   people
 } from 'ionicons/icons';
 import Cobrancas from './route/Cobrancas';
-import Cobrados from './route/Cobrados';
 import Expenses from './route/Expenses';
 import Fechamento from './route/Fechamento';
 import Clients from './route/Clients';
@@ -48,9 +47,6 @@ const RouteTabs: React.FC = () => {
         <Route exact path="/route/cobrancas">
           {!diaFechado ? <Cobrancas /> : <Redirect to="/route/fechamento" />}
         </Route>
-        <Route exact path="/route/cobrados">
-          {!diaFechado ? <Cobrados /> : <Redirect to="/route/fechamento" />}
-        </Route>
         <Route exact path="/route/gastos">
           {!diaFechado ? <Expenses /> : <Redirect to="/route/fechamento" />}
         </Route>
@@ -76,15 +72,6 @@ const RouteTabs: React.FC = () => {
         >
           <IonIcon aria-hidden="true" icon={receipt} />
           <IonLabel>{t('tabs.collections')}</IonLabel>
-        </IonTabButton>
-        <IonTabButton 
-          tab="cobrados" 
-          href={diaFechado ? "#" : "/route/cobrados"}
-          onClick={diaFechado ? handleTabBloqueada : undefined}
-          disabled={diaFechado}
-        >
-          <IonIcon aria-hidden="true" icon={cash} />
-          <IonLabel>{t('tabs.collected')}</IonLabel>
         </IonTabButton>
         <IonTabButton 
           tab="gastos" 

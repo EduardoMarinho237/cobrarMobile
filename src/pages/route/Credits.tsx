@@ -29,6 +29,7 @@ import {
 } from '@ionic/react';
 import { add, trash, create } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
+import { formatToBrazilTime } from '../../utils/dateFormat';
 import { todayFormatted, nextBusinessDayFormatted, isSunday } from '../../utils/sundayUtil';
 import {
   Credit,
@@ -211,7 +212,7 @@ const Credits: React.FC = () => {
 
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return formatToBrazilTime(dateString);
   };
 
   const getClientName = (clientId: number) => {

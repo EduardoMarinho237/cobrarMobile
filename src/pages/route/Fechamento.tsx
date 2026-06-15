@@ -189,8 +189,139 @@ const Fechamento: React.FC = () => {
       let startY = 65;
       let lastFinalY = 0;
 
+      // === CAIXA INICIAL DO DIA ===
+      const caixaInicial = fechamentoData?.caixaInicial || 0;
+      doc.setFontSize(10);
+      doc.setTextColor(33, 37, 41);
+      doc.text(t('pages.closing.reportInitialBalance'), 14, startY);
+      doc.setFontSize(11);
+      doc.setTextColor(0, 123, 255);
+      doc.text(formatCurrencyWithSymbol(caixaInicial), 14, startY + 6);
+      lastFinalY = startY + 12;
+
+      // === EMPRÉSTIMOS REALIZADOS ===
+      const emprestimos = fechamentoData?.emprestimosHoje || [];
+      const totalEmprestado = fechamentoData?.totalEmprestado || 0;
+      startY = lastFinalY + 8;
+
+      if (emprestimos.length === 0) {
+        doc.setFontSize(10);
+        doc.setTextColor(108, 117, 125);
+        doc.text(t('pages.closing.reportNoCredits'), 14, startY);
+        lastFinalY = startY + 6;
+      } else {
+        const tableRows = emprestimos.map((c: any) => [
+          c.clientName,
+          formatCurrencyWithSymbol(c.initialValue)
+        ]);
+
+        autoTable(doc, {
+          startY,
+          head: [[
+            t('pages.closing.reportCreditClient'),
+            t('pages.closing.reportCreditValue')
+          ]],
+          body: tableRows,
+          foot: [[
+            t('pages.closing.reportCreditTotal'),
+            formatCurrencyWithSymbol(totalEmprestado)
+          ]],
+          theme: 'grid',
+          headStyles: {
+            fillColor: [255, 193, 7],
+            textColor: [33, 37, 41],
+            fontStyle: 'bold',
+            fontSize: 9
+          },
+          footStyles: {
+            fillColor: [248, 249, 250],
+            textColor: [33, 37, 41],
+            fontStyle: 'bold',
+            fontSize: 9
+          },
+          bodyStyles: {
+            fontSize: 8
+          },
+          columnStyles: {
+            0: { cellWidth: 'auto' },
+            1: { cellWidth: 50, halign: 'right' }
+          },
+          margin: { left: 14, right: 14 }
+        });
+
+        lastFinalY = (doc as any).lastAutoTable?.finalY || startY;
+      }
+
+      // === DEPÓSITOS / RETIRADAS ===
+      const depositosRetiradas = fechamentoData?.depositosRetiradas || [];
+      const totalDepositos = fechamentoData?.totalDepositos || 0;
+      const totalRetiradas = fechamentoData?.totalRetiradas || 0;
+      startY = lastFinalY + 12;
+
+      if (depositosRetiradas.length === 0) {
+        doc.setFontSize(10);
+        doc.setTextColor(108, 117, 125);
+        doc.text(t('pages.closing.reportNoDepositsWithdrawals'), 14, startY + 5);
+        lastFinalY = startY + 10;
+      } else {
+        const tableRows = depositosRetiradas.map((t: any) => [
+          t.type === 'MANAGER_DEPOSIT' ? t('pages.closing.reportDeposit') : t('pages.closing.reportWithdrawal'),
+          formatCurrencyWithSymbol(t.type === 'MANAGER_DEPOSIT' ? t.amount : Math.abs(t.amount)),
+          t.description || '-',
+          new Date(t.createdAt).toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        ]);
+
+        autoTable(doc, {
+          startY,
+          head: [[
+            t('pages.closing.reportType'),
+            t('pages.closing.reportValue'),
+            t('pages.closing.reportDescription'),
+            t('pages.closing.reportDateTime')
+          ]],
+          body: tableRows,
+          foot: [
+            [t('pages.closing.reportDeposits'), formatCurrencyWithSymbol(totalDepositos), '', ''],
+            [t('pages.closing.reportWithdrawals'), `-${formatCurrencyWithSymbol(totalRetiradas)}`, '', '']
+          ],
+          theme: 'grid',
+          headStyles: {
+            fillColor: [111, 66, 193],
+            textColor: 255,
+            fontStyle: 'bold',
+            fontSize: 9
+          },
+          footStyles: {
+            fillColor: [248, 249, 250],
+            textColor: [33, 37, 41],
+            fontStyle: 'bold',
+            fontSize: 9
+          },
+          bodyStyles: {
+            fontSize: 8
+          },
+          columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 35, halign: 'right' },
+            2: { cellWidth: 'auto' },
+            3: { cellWidth: 40, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 }
+        });
+
+        lastFinalY = (doc as any).lastAutoTable?.finalY || startY;
+      }
+
+      // === COBRANÇAS ===
       if (type === 'collections' || type === 'both') {
         const collectionsTotal = todayDebits.reduce((sum: number, d: Debit) => sum + d.value, 0);
+        startY = lastFinalY + 12;
 
         if (todayDebits.length === 0) {
           doc.setFontSize(10);
@@ -251,9 +382,10 @@ const Fechamento: React.FC = () => {
         }
       }
 
+      // === GASTOS ===
       if (type === 'expenses' || type === 'both') {
         const expensesTotal = todayExpenses.reduce((sum: number, e: Expense) => sum + e.value, 0);
-        startY = lastFinalY > 0 ? lastFinalY + 15 : startY;
+        startY = lastFinalY > 0 ? lastFinalY + 12 : startY;
 
         if (todayExpenses.length === 0) {
           doc.setFontSize(10);
@@ -316,34 +448,54 @@ const Fechamento: React.FC = () => {
 
           lastFinalY = (doc as any).lastAutoTable?.finalY || startY;
         }
+      }
 
-        if (type === 'both') {
-          const debitsTotal = todayDebits.reduce((sum: number, d: Debit) => sum + d.value, 0);
-          const netBalance = debitsTotal - expensesTotal;
-          const balanceLabel = netBalance >= 0 ? t('pages.closing.reportPositive') : t('pages.closing.reportNegative');
+      // === RESUMO / BALANÇO ===
+      if (type === 'both') {
+        const debitsTotal = todayDebits.reduce((sum: number, d: Debit) => sum + d.value, 0);
+        const expensesTotal = todayExpenses.reduce((sum: number, e: Expense) => sum + e.value, 0);
+        const totalDepositos = fechamentoData?.totalDepositos || 0;
+        const totalRetiradas = fechamentoData?.totalRetiradas || 0;
+        const netBalance = caixaInicial + totalDepositos - totalRetiradas + debitsTotal - totalEmprestado - expensesTotal;
+        const balanceLabel = netBalance >= 0 ? t('pages.closing.reportPositive') : t('pages.closing.reportNegative');
 
-          startY = lastFinalY + 15;
+        startY = lastFinalY + 15;
 
-          autoTable(doc, {
-            startY,
-            head: [[
-              t('pages.closing.reportNetBalance'),
-              formatCurrencyWithSymbol(Math.abs(netBalance)),
-              balanceLabel
-            ]],
-            headStyles: {
-              fillColor: netBalance >= 0 ? [40, 167, 69] : [220, 53, 69],
-              textColor: 255,
-              fontStyle: 'bold',
-              fontSize: 10
-            },
-            body: [],
-            theme: 'grid',
-            margin: { left: 14, right: 14 }
-          });
+        autoTable(doc, {
+          startY,
+          head: [[
+            t('pages.closing.reportSummary'),
+            '',
+            ''
+          ]],
+          body: [
+            [t('pages.closing.reportInitialBalance'), formatCurrencyWithSymbol(caixaInicial), ''],
+            [t('pages.closing.reportDeposits'), formatCurrencyWithSymbol(totalDepositos), ''],
+            [t('pages.closing.reportWithdrawals'), `-${formatCurrencyWithSymbol(totalRetiradas)}`, ''],
+            [t('pages.closing.reportTotal'), formatCurrencyWithSymbol(debitsTotal), t('pages.closing.reportCollections')],
+            [t('pages.closing.reportCreditTotal'), `-${formatCurrencyWithSymbol(totalEmprestado)}`, t('pages.closing.reportCredits')],
+            [t('pages.closing.reportTotalExpenses'), `-${formatCurrencyWithSymbol(expensesTotal)}`, t('pages.closing.reportTypeExpenses')],
+            [t('pages.closing.reportBalance'), formatCurrencyWithSymbol(netBalance), balanceLabel]
+          ],
+          theme: 'grid',
+          headStyles: {
+            fillColor: [108, 117, 125],
+            textColor: 255,
+            fontStyle: 'bold',
+            fontSize: 10
+          },
+          bodyStyles: {
+            fontSize: 9
+          },
+          columnStyles: {
+            0: { cellWidth: 'auto', fontStyle: 'bold' },
+            1: { cellWidth: 50, halign: 'right' },
+            2: { cellWidth: 50, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 }
+        });
 
-          lastFinalY = (doc as any).lastAutoTable?.finalY || startY;
-        }
+        lastFinalY = (doc as any).lastAutoTable?.finalY || startY;
       }
 
       const footerY = lastFinalY > 0 ? lastFinalY + 15 : 80;
@@ -501,6 +653,11 @@ const Fechamento: React.FC = () => {
                   <p style={{ textAlign: 'center', color: '#666', marginTop: '8px', fontSize: '14px' }}>
                     {cashBalance >= 0 ? t('pages.closing.cashBoxPositive') : t('pages.closing.cashBoxNegative')}
                   </p>
+                  {fechamentoData && (
+                    <p style={{ textAlign: 'center', color: '#888', marginTop: '4px', fontSize: '12px' }}>
+                      {t('pages.closing.initialBalance')}: {formatCurrencyWithSymbol(fechamentoData.caixaInicial)}
+                    </p>
+                  )}
                 </IonCardContent>
               </IonCard>
 

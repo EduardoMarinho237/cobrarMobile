@@ -28,6 +28,7 @@ import {
 } from '@ionic/react';
 import { add, trash, create, eye, wallet, refresh } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
+import { formatToBrazilTime } from '../../utils/dateFormat';
 import { 
   getGastosDoDia, 
   createGasto, 
@@ -559,7 +560,7 @@ const GastosRoute: React.FC = () => {
                     <IonItem>
                       <IonLabel>
                         <h3>{t('pages.expensesRoute.date')}</h3>
-                        <p>{new Date(selectedGasto.data).toLocaleString('pt-BR')}</p>
+                        <p>{formatToBrazilTime(selectedGasto.data)}</p>
                       </IonLabel>
                     </IonItem>
                   </IonCardContent>

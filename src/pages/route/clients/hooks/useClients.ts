@@ -18,6 +18,7 @@ import {
 } from '../../../../services/creditApi';
 import { getCurrentUser, apiRequest } from '../../../../services/api';
 import { todayFormatted, nextBusinessDayFormatted, isSunday } from '../../../../utils/sundayUtil';
+import { formatToBrazilTime } from '../../../../utils/dateFormat';
 import { useInfiniteScroll } from '../../../../hooks/useInfiniteScroll';
 import { useInView } from 'react-intersection-observer';
 
@@ -303,8 +304,7 @@ export const useClients = () => {
   }, []);
 
   const formatDate = useCallback((dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
+    return formatToBrazilTime(dateString);
   }, []);
 
   const calculateProgress = useCallback((credit: Credit): ProgressResult => {

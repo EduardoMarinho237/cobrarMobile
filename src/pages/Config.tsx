@@ -22,9 +22,6 @@ import { logOut, person, lockClosed, lockOpen, refresh, helpCircle } from 'ionic
 import { getCurrentUser, logout } from '../services/api';
 import { useFechamentoControl } from '../hooks/useFechamentoControl';
 import { useTranslation } from 'react-i18next';
-// NOTE: Language selector temporarily disabled - only Spanish (es-CO) is available now
-// import LanguageSelector from '../components/LanguageSelector';
-import LocaleSelector from '../components/LocaleSelector';
 import { translateRole } from '../utils/roleTranslation';
 
 const Config: React.FC = () => {
@@ -125,23 +122,6 @@ const Config: React.FC = () => {
                   </IonItem>
                 </>
               )}
-            </IonCardContent>
-          </IonCard>
-
-          {/* Card de País */}
-          <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
-            <IonCardHeader>
-              <IonCardTitle>
-                {t('config.country')}
-              </IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              {/* NOTE: Language selector temporarily disabled - only Spanish (es-CO) is available now
-              <LanguageSelector />
-              */}
-              <div style={{ marginTop: '16px' }}>
-                <LocaleSelector />
-              </div>
             </IonCardContent>
           </IonCard>
 

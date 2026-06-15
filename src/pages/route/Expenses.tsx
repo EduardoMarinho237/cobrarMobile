@@ -28,6 +28,7 @@ import {
 } from '@ionic/react';
 import { add, trash, create, eye, wallet, refresh } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
+import { formatToBrazilTime } from '../../utils/dateFormat';
 import { 
   Expense, 
   CreateExpenseRequest, 
@@ -257,7 +258,7 @@ const Expenses: React.FC = () => {
 
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR');
+    return formatToBrazilTime(dateString);
   };
 
   const getCategoryName = (typeId: number) => {
