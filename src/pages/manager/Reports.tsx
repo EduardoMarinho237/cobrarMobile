@@ -26,7 +26,7 @@ import {
 import { close, add, download, trash, document, calendar, chevronDown, chevronUp } from 'ionicons/icons';
 import { getRoutes } from '../../services/routeApi';
 import { getCurrentUser } from '../../services/api';
-import { generateReport, generateWeeklyByRouteReport, listReports, deleteReport, Report } from '../../services/reportApi';
+import { generateReport, generateWeeklyByRouteReport, generateSimpleWeeklyReport, listReports, deleteReport, Report } from '../../services/reportApi';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
@@ -57,6 +57,8 @@ const Reports: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [expandedByRoute, setExpandedByRoute] = useState(false);
+  const [showSimpleWeeklyModal, setShowSimpleWeeklyModal] = useState(false);
+  const [expandedSimpleWeekly, setExpandedSimpleWeekly] = useState(false);
 
   useEffect(() => {
     loadReports();
@@ -193,6 +195,38 @@ const Reports: React.FC = () => {
       handleDownloadPDF(newReport);
     } catch (error) {
       console.error('Erro ao gerar relatório:', error);
+      showToast(t('reports.errorGenerating'), 'danger');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleGenerateSimpleWeekly = async () => {
+    if (selectedRoutes.length === 0) {
+      showToast(t('reports.selectAtLeastOneRoute'), 'warning');
+      return;
+    }
+    const { start, end } = calculatePeriod();
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+
+    setIsGenerating(true);
+    try {
+      const newReport = await generateSimpleWeeklyReport({
+        periodStart: startStr,
+        periodEnd: endStr,
+        routeIds: selectedRoutes
+      });
+      if (!newReport) {
+        showToast(t('reports.errorGenerating'), 'danger');
+        return;
+      }
+      setReports(prev => [newReport, ...prev]);
+      setShowSimpleWeeklyModal(false);
+      showToast(t('reports.generatedSuccess'), 'success');
+      handleDownloadPDF(newReport);
+    } catch (error) {
+      console.error('Erro ao gerar relatório simplificado:', error);
       showToast(t('reports.errorGenerating'), 'danger');
     } finally {
       setIsGenerating(false);
@@ -416,6 +450,153 @@ const Reports: React.FC = () => {
       });
     }
 
+    if (report.reportType === 'SIMPLE_WEEKLY' && report.data.simpleDays) {
+      const doc = new jsPDF('l', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const simpleDays = report.data.simpleDays;
+      const summary = report.data.simpleSummary!;
+
+      doc.setFontSize(16);
+      doc.setTextColor(33, 37, 41);
+      doc.text(report.title, pageWidth / 2, 15, { align: 'center' });
+
+      doc.setFontSize(8);
+      doc.setTextColor(108, 117, 125);
+      doc.text(`${t('reports.generatedAt')}: ${new Date(report.createdAt).toLocaleString()}`, pageWidth / 2, 22, { align: 'center' });
+
+      let startY = 30;
+
+      if (report.data.includedRoutes && report.data.includedRoutes.length > 0) {
+        doc.setFontSize(9);
+        doc.setTextColor(33, 37, 41);
+        doc.text(t('reports.route') + 's: ' + report.data.includedRoutes.join(', '), 14, startY);
+        startY += 7;
+      }
+
+      const dayHeaders = [
+        t('reports.dayOfWeek'),
+        t('reports.date'),
+        t('reports.newCredits'),
+        t('reports.paymentsValue'),
+        t('reports.collectedClients'),
+        t('reports.activeCredits'),
+        t('reports.creditsWithPayment'),
+        t('reports.creditsWithoutPayment'),
+        t('reports.expenses'),
+        t('reports.deposits'),
+        t('reports.withdrawals'),
+        t('reports.cashAdjustment'),
+        t('reports.cashBalance')
+      ];
+      const dayRows = simpleDays.map(d => [
+        d.dayOfWeek.substring(0, 3),
+        d.date,
+        `${formatCurrencyWithSymbol(d.newCreditsValue)} (${d.newCreditsCount})`,
+        `${formatCurrencyWithSymbol(d.paymentsValue)} (${d.paymentsCount})`,
+        String(d.collectedClientsCount ?? 0),
+        String(d.activeCreditsCount),
+        String(d.creditsWithPayment),
+        String(d.creditsWithoutPayment),
+        formatCurrencyWithSymbol(d.totalExpenses),
+        formatCurrencyWithSymbol(d.deposits),
+        formatCurrencyWithSymbol(d.withdrawals),
+        formatCurrencyWithSymbol(d.cashAdjustment),
+        formatCurrencyWithSymbol(d.cashBalance)
+      ]);
+
+      autoTable(doc, {
+        startY,
+        head: [dayHeaders],
+        body: dayRows,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [0, 123, 255],
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 7
+        },
+        bodyStyles: { fontSize: 9, fontStyle: 'bold', cellPadding: 1 },
+        columnStyles: {
+          0: { cellWidth: 11, halign: 'left' },
+          1: { cellWidth: 19, halign: 'center' },
+          2: { cellWidth: 32, halign: 'right' },
+          3: { cellWidth: 32, halign: 'right' },
+          4: { cellWidth: 16, halign: 'center' },
+          5: { cellWidth: 16, halign: 'center' },
+          6: { cellWidth: 15, halign: 'center' },
+          7: { cellWidth: 15, halign: 'center' },
+          8: { cellWidth: 29, halign: 'right' },
+          9: { cellWidth: 29, halign: 'right' },
+          10: { cellWidth: 27, halign: 'right' },
+          11: { cellWidth: 23, halign: 'right' },
+          12: { cellWidth: 25, halign: 'right' }
+        },
+        margin: { left: 4, right: 4 }
+      });
+
+      startY = (doc as any).lastAutoTable?.finalY || startY;
+      startY += 4;
+
+      const totalDays = summary.totalDays || simpleDays.length;
+      const totalNewCreditsValue = simpleDays.reduce((s, d) => s + d.newCreditsValue, 0);
+      const totalExpenses = simpleDays.reduce((s, d) => s + d.totalExpenses, 0);
+      const totalDeposits = simpleDays.reduce((s, d) => s + d.deposits, 0);
+      const totalWithdrawals = simpleDays.reduce((s, d) => s + d.withdrawals, 0);
+
+      const calcAvg = (fn: (d: typeof simpleDays[0]) => number) =>
+        totalDays > 0 ? Math.round((simpleDays.reduce((s, d) => s + fn(d), 0) / totalDays) * 100) / 100 : 0;
+
+      const avgCollectedClients = calcAvg(d => d.collectedClientsCount ?? 0);
+      const avgActiveCredits = calcAvg(d => d.activeCreditsCount);
+      const avgWithPayment = calcAvg(d => d.creditsWithPayment);
+      const avgWithoutPayment = calcAvg(d => d.creditsWithoutPayment);
+      const avgExpenses = calcAvg(d => d.totalExpenses);
+      const avgDeposits = calcAvg(d => d.deposits);
+      const avgWithdrawals = calcAvg(d => d.withdrawals);
+      const avgCashBalance = calcAvg(d => d.cashBalance);
+
+      doc.setFontSize(11);
+      doc.setTextColor(40, 167, 69);
+      doc.text(t('reports.summaryTitle'), 4, startY);
+      startY += 4;
+
+      const summaryRows = [
+        [t('reports.totalNewCreditsValue'), formatCurrencyWithSymbol(totalNewCreditsValue)],
+        [t('reports.totalPaymentsValue'), formatCurrencyWithSymbol(summary.totalPaymentsValue)],
+        [t('reports.averagePaymentsPerDay'), String(summary.averagePaymentsPerDay)],
+        [t('reports.avgCollectedClientsPerDay'), String(avgCollectedClients)],
+        [t('reports.avgActiveCredits'), String(avgActiveCredits)],
+        [t('reports.avgWithPayment'), String(avgWithPayment)],
+        [t('reports.avgWithoutPayment'), String(avgWithoutPayment)],
+        [t('reports.totalExpenses'), formatCurrencyWithSymbol(totalExpenses)],
+        [t('reports.avgExpensesPerDay'), formatCurrencyWithSymbol(avgExpenses)],
+        [t('reports.totalDeposits'), formatCurrencyWithSymbol(totalDeposits)],
+        [t('reports.avgDepositsPerDay'), formatCurrencyWithSymbol(avgDeposits)],
+        [t('reports.totalWithdrawals'), formatCurrencyWithSymbol(totalWithdrawals)],
+        [t('reports.avgWithdrawalsPerDay'), formatCurrencyWithSymbol(avgWithdrawals)],
+        [t('reports.avgCashBalance'), formatCurrencyWithSymbol(avgCashBalance)]
+      ];
+
+      autoTable(doc, {
+        startY,
+        body: summaryRows,
+        theme: 'grid',
+        bodyStyles: {
+          fontSize: 10,
+          fontStyle: 'bold'
+        },
+        columnStyles: {
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 50, halign: 'right' }
+        },
+        margin: { left: 4, right: 4 }
+      });
+
+      const fileName = `relatorio-simplificado-${report.periodStart}-${report.periodEnd}.pdf`;
+      doc.save(fileName);
+      return;
+    }
+
     // Weekly summary
     if (startY > 230) {
       doc.addPage();
@@ -428,29 +609,31 @@ const Reports: React.FC = () => {
     startY += 10;
 
     const ws = report.data.weeklySummary;
-    const summaryRows = [
-      [t('reports.totalLent'), formatCurrencyWithSymbol(ws.totalLent)],
-      [t('reports.totalCollected'), formatCurrencyWithSymbol(ws.totalCollected)],
-      [t('reports.totalExpenses'), formatCurrencyWithSymbol(ws.totalExpenses)],
-      [t('reports.totalDeposits'), formatCurrencyWithSymbol(ws.totalDeposits)],
-      [t('reports.totalWithdrawals'), formatCurrencyWithSymbol(ws.totalWithdrawals)],
-      [t('reports.finalBalance'), formatCurrencyWithSymbol(ws.finalBalance)]
-    ];
+    if (ws) {
+      const summaryRows = [
+        [t('reports.totalLent'), formatCurrencyWithSymbol(ws.totalLent)],
+        [t('reports.totalCollected'), formatCurrencyWithSymbol(ws.totalCollected)],
+        [t('reports.totalExpenses'), formatCurrencyWithSymbol(ws.totalExpenses)],
+        [t('reports.totalDeposits'), formatCurrencyWithSymbol(ws.totalDeposits)],
+        [t('reports.totalWithdrawals'), formatCurrencyWithSymbol(ws.totalWithdrawals)],
+        [t('reports.finalBalance'), formatCurrencyWithSymbol(ws.finalBalance)]
+      ];
 
-    autoTable(doc, {
-      startY,
-      body: summaryRows,
-      theme: 'grid',
-      bodyStyles: {
-        fontSize: 10,
-        fontStyle: 'bold'
-      },
-      columnStyles: {
-        0: { cellWidth: 'auto' },
-        1: { cellWidth: 50, halign: 'right' }
-      },
-      margin: { left: 14, right: 14 }
-    });
+      autoTable(doc, {
+        startY,
+        body: summaryRows,
+        theme: 'grid',
+        bodyStyles: {
+          fontSize: 10,
+          fontStyle: 'bold'
+        },
+        columnStyles: {
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 50, halign: 'right' }
+        },
+        margin: { left: 14, right: 14 }
+      });
+    }
 
     const fileName = `relatorio-${report.periodStart}-${report.periodEnd}.pdf`;
     doc.save(fileName);
@@ -491,6 +674,129 @@ const Reports: React.FC = () => {
         </IonRefresher>
 
         <div style={{ padding: '16px' }}>
+          {/* Simple Weekly Report - Top */}
+          <IonButton
+            expand="block"
+            color="primary"
+            onClick={() => setExpandedSimpleWeekly(!expandedSimpleWeekly)}
+            style={{ 
+              marginBottom: expandedSimpleWeekly ? '16px' : '0', 
+              height: '56px',
+              borderRadius: '4px'
+            }}
+          >
+            <IonIcon icon={document} slot="start" style={{ fontSize: '24px' }} />
+            <span style={{ fontSize: '16px' }}>
+              {t('reports.simpleWeekly')}
+            </span>
+            <IonIcon 
+              icon={expandedSimpleWeekly ? chevronUp : chevronDown} 
+              slot="end" 
+              style={{ fontSize: '20px' }}
+            />
+          </IonButton>
+
+          {/* Expanded Content for Simple Weekly */}
+          {expandedSimpleWeekly && (
+            <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
+              <IonCardContent style={{ padding: '12px' }}>
+                {isLoading ? (
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <IonSpinner name="dots" />
+                    <p style={{ fontSize: '12px', color: '#666' }}>{t('reports.loading')}</p>
+                  </div>
+                ) : (
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {reports.filter(r => r && r.reportType === 'SIMPLE_WEEKLY').length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <IonIcon icon={document} style={{ fontSize: '32px', color: '#ccc' }} />
+                        <p style={{ color: '#666', fontSize: '14px', marginTop: '8px' }}>
+                          {t('reports.noReports')}
+                        </p>
+                      </div>
+                    ) : (
+                      reports.filter(r => r && r.reportType === 'SIMPLE_WEEKLY').map(report => (
+                        <div 
+                          key={report.id} 
+                          style={{ 
+                            padding: '10px', 
+                            borderBottom: '1px solid #eee',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ 
+                              fontSize: '14px', 
+                              fontWeight: 'bold',
+                              color: '#333',
+                              margin: '0 0 4px 0',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>
+                              {report.title}
+                            </p>
+                            <p style={{ fontSize: '11px', color: '#666', margin: 0 }}>
+                              {report.periodStart} → {report.periodEnd}
+                            </p>
+                            <div style={{ marginTop: '4px' }}>
+                              <IonBadge color="success" style={{ fontSize: '10px' }}>
+                                {report.data.simpleSummary?.totalPaymentsCount || 0} {t('reports.paymentsCount')}
+                              </IonBadge>
+                              <IonBadge color="primary" style={{ fontSize: '10px', marginLeft: '4px' }}>
+                                {report.data.simpleSummary?.totalCollectedClients || 0} {t('reports.collectedClients')}
+                              </IonBadge>
+                              <span style={{ fontSize: '10px', color: '#666', marginLeft: '6px' }}>
+                                {report.data.simpleDays?.length || 0} {t('reports.days')}
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '4px', marginLeft: '8px' }}>
+                            <IonButton
+                              fill="clear"
+                              size="small"
+                              color="primary"
+                              onClick={() => handleDownloadPDF(report)}
+                              style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
+                            >
+                              <IonIcon icon={download} style={{ fontSize: '18px' }} />
+                            </IonButton>
+                            <IonButton
+                              fill="clear"
+                              size="small"
+                              color="danger"
+                              onClick={() => handleDelete(report.id)}
+                              style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
+                            >
+                              <IonIcon icon={trash} style={{ fontSize: '18px' }} />
+                            </IonButton>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Generate New Button */}
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee' }}>
+                    <IonButton
+                    expand="block"
+                    shape="round"
+                    color="primary"
+                    fill="outline"
+                    onClick={() => setShowSimpleWeeklyModal(true)}
+                    style={{ height: '40px' }}
+                  >
+                    <IonIcon icon={add} slot="start" />
+                    {t('reports.generateNew')}
+                  </IonButton>
+                </div>
+              </IonCardContent>
+            </IonCard>
+          )}
+
           {/* Main Expandable Button */}
           <IonButton
             expand="block"
@@ -559,9 +865,9 @@ const Reports: React.FC = () => {
                               {report.periodStart} → {report.periodEnd}
                             </p>
                             <div style={{ marginTop: '4px' }}>
-                              <IonBadge color={report.data.weeklySummary.finalBalance >= 0 ? 'success' : 'danger'} style={{ fontSize: '10px' }}>
-                                 {report.data.weeklySummary.finalBalance >= 0 ? '+' : ''}
-                                {formatCurrencyWithSymbol(report.data.weeklySummary.finalBalance)}
+                              <IonBadge color={(report.data.weeklySummary?.finalBalance ?? 0) >= 0 ? 'success' : 'danger'} style={{ fontSize: '10px' }}>
+                                 {(report.data.weeklySummary?.finalBalance ?? 0) >= 0 ? '+' : ''}
+                                {formatCurrencyWithSymbol(report.data.weeklySummary?.finalBalance ?? 0)}
                               </IonBadge>
                               <span style={{ fontSize: '10px', color: '#666', marginLeft: '6px' }}>
                                 {(report.data.days?.length || report.data.detailedDays?.length || 0)} {t('reports.days')}
@@ -680,9 +986,9 @@ const Reports: React.FC = () => {
                               {report.periodStart} → {report.periodEnd}
                             </p>
                             <div style={{ marginTop: '4px' }}>
-                              <IonBadge color={report.data.weeklySummary.finalBalance >= 0 ? 'success' : 'danger'} style={{ fontSize: '10px' }}>
-                                 {report.data.weeklySummary.finalBalance >= 0 ? '+' : ''}
-                                {formatCurrencyWithSymbol(report.data.weeklySummary.finalBalance)}
+                              <IonBadge color={(report.data.weeklySummary?.finalBalance ?? 0) >= 0 ? 'success' : 'danger'} style={{ fontSize: '10px' }}>
+                                 {(report.data.weeklySummary?.finalBalance ?? 0) >= 0 ? '+' : ''}
+                                {formatCurrencyWithSymbol(report.data.weeklySummary?.finalBalance ?? 0)}
                               </IonBadge>
                               <span style={{ fontSize: '10px', color: '#666', marginLeft: '6px' }}>
                                 {(report.data.days?.length || report.data.detailedDays?.length || 0)} {t('reports.days')}
@@ -732,6 +1038,7 @@ const Reports: React.FC = () => {
               </IonCardContent>
             </IonCard>
           )}
+
         </div>
 
         {/* Generate General Modal */}
@@ -918,6 +1225,112 @@ const Reports: React.FC = () => {
                 color="primary"
                 onClick={handleGenerateByRoute}
                 disabled={isGenerating || selectedRoute === null}
+              >
+                {isGenerating ? (
+                  <IonSpinner name="dots" slot="start" />
+                ) : (
+                  <IonIcon icon={add} slot="start" />
+                )}
+                {isGenerating ? t('reports.generating') : t('reports.generate')}
+              </IonButton>
+            </div>
+          </IonContent>
+        </IonModal>
+
+        {/* Generate Simple Weekly Modal */}
+        <IonModal isOpen={showSimpleWeeklyModal} onDidDismiss={() => setShowSimpleWeeklyModal(false)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>{t('reports.simpleWeekly')}</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setShowSimpleWeeklyModal(false)}>
+                  <IonIcon icon={close} />
+                </IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent>
+            <div style={{ padding: '16px' }}>
+              {/* Period Selection */}
+              <IonCard style={{ marginBottom: '16px' }}>
+                <IonCardHeader>
+                  <IonCardTitle style={{ fontSize: '16px' }}>
+                    <IonIcon icon={calendar} style={{ marginRight: '8px' }} />
+                    {t('reports.selectPeriod')}
+                  </IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  <IonItem>
+                    <IonLabel>{t('reports.last7Days')}</IonLabel>
+                    <IonCheckbox
+                      slot="end"
+                      checked={selectedPeriod === 'LAST_7_DAYS'}
+                      onIonChange={() => setSelectedPeriod('LAST_7_DAYS')}
+                    />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>{t('reports.lastWeek')}</IonLabel>
+                    <IonCheckbox
+                      slot="end"
+                      checked={selectedPeriod === 'LAST_WEEK'}
+                      onIonChange={() => setSelectedPeriod('LAST_WEEK')}
+                    />
+                  </IonItem>
+                </IonCardContent>
+              </IonCard>
+
+              {/* Routes Selection */}
+              <IonCard style={{ marginBottom: '16px' }}>
+                <IonCardHeader>
+                  <IonCardTitle style={{ fontSize: '16px' }}>
+                    {t('reports.selectRoutes')}
+                  </IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  {isLoadingRoutes ? (
+                    <div style={{ textAlign: 'center' }}>
+                      <IonSpinner name="dots" />
+                    </div>
+                  ) : routes.length === 0 ? (
+                    <p>{t('reports.noRoutes')}</p>
+                  ) : (
+                    <>
+                      <IonItem>
+                        <IonLabel>{t('reports.allRoutes')}</IonLabel>
+                        <IonCheckbox
+                          slot="end"
+                          checked={selectedRoutes.length === routes.length}
+                          onIonChange={() => {
+                            if (selectedRoutes.length === routes.length) {
+                              setSelectedRoutes([]);
+                            } else {
+                              setSelectedRoutes(routes.map(r => r.id));
+                            }
+                          }}
+                        />
+                      </IonItem>
+                      {routes.map(route => (
+                        <IonItem key={route.id}>
+                          <IonLabel>{route.name}</IonLabel>
+                          <IonCheckbox
+                            slot="end"
+                            checked={selectedRoutes.includes(route.id)}
+                            onIonChange={() => handleRouteToggle(route.id)}
+                          />
+                        </IonItem>
+                      ))}
+                    </>
+                  )}
+                </IonCardContent>
+              </IonCard>
+
+              {/* Generate Button */}
+              <IonButton
+                expand="block"
+                shape="round"
+                color="primary"
+                onClick={handleGenerateSimpleWeekly}
+                disabled={isGenerating || selectedRoutes.length === 0}
               >
                 {isGenerating ? (
                   <IonSpinner name="dots" slot="start" />
