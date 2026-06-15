@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   IonContent,
   IonPage,
@@ -26,7 +26,7 @@ import {
   IonCheckbox,
   IonText
 } from '@ionic/react';
-import { create, refresh, cashOutline, personOutline, locationOutline, callOutline, timeOutline } from 'ionicons/icons';
+import { create, refresh, cashOutline, personOutline, locationOutline, callOutline, timeOutline, searchOutline, close } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { formatToBrazilTime } from '../../utils/dateFormat';
 import { 
@@ -64,6 +64,7 @@ const Cobrancas: React.FC = () => {
   const [editedValues, setEditedValues] = useState<{ [key: number]: number }>({});
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
   const [searchQuery, setSearchQuery] = useState('');
+  const [todayDebitsSearchQuery, setTodayDebitsSearchQuery] = useState('');
   const [activeCreditId, setActiveCreditId] = useState<number | null>(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [creditHistory, setCreditHistory] = useState<CreditHistoryEntry[]>([]);
@@ -81,9 +82,11 @@ const Cobrancas: React.FC = () => {
     items: pendingPayments,
     isLoading,
     isLoadingMore,
+    isLoadingAll,
     hasMore,
     loadMore,
     refresh,
+    loadAllPages,
   } = useInfiniteScroll<PendingPayment>({
     fetchPage: async (page, size) => {
       const response = await getPendingCollectionsPaginated(page, size);
@@ -103,6 +106,21 @@ const Cobrancas: React.FC = () => {
       loadMore();
     }
   }, [inView, hasMore, isLoading, isLoadingMore, loadMore]);
+
+  const hasLoadedAllForSearch = useRef(false);
+  const prevSearchQuery = useRef('');
+
+  useEffect(() => {
+    if (searchQuery && !hasLoadedAllForSearch.current) {
+      hasLoadedAllForSearch.current = true;
+      loadAllPages();
+    }
+    if (!searchQuery && prevSearchQuery.current) {
+      hasLoadedAllForSearch.current = false;
+      refresh();
+    }
+    prevSearchQuery.current = searchQuery;
+  }, [searchQuery]);
 
   useEffect(() => {
     loadData();
@@ -130,7 +148,12 @@ const Cobrancas: React.FC = () => {
     try {
       const scheduleData = await getDailySchedule();
       setDailySchedule(scheduleData);
-      await refresh();
+      if (searchQuery) {
+        hasLoadedAllForSearch.current = false;
+        await loadAllPages();
+      } else {
+        await refresh();
+      }
       await loadTodayTotal();
     } catch (error: any) {
       console.error('Erro ao carregar agenda diária:', error);
@@ -335,6 +358,13 @@ const Cobrancas: React.FC = () => {
     );
   }, [pendingPayments, searchQuery]);
 
+  const filteredTodayDebits = useMemo(() => {
+    if (!todayDebitsSearchQuery) return todayDebits;
+    return todayDebits.filter((debit) =>
+      matchesSearchQuery(todayDebitsSearchQuery, debit.clientName, debit.value.toString(), debit.createdAt)
+    );
+  }, [todayDebits, todayDebitsSearchQuery]);
+
   const openClientModal = async (clientId: number, creditId?: number) => {
     const client = await getClientById(clientId);
     if (client) {
@@ -464,10 +494,10 @@ const Cobrancas: React.FC = () => {
             </IonGrid>
           )}
 
-          {isLoading ? (
+          {isLoading || isLoadingAll ? (
             <div style={{ textAlign: 'center', padding: '40px' }}>
               <IonSpinner name="dots" />
-              <p style={{ color: '#666', marginTop: '16px' }}>{t('pages.collections.loadingCollections')}</p>
+              <p style={{ color: '#666', marginTop: '16px' }}>{isLoadingAll ? t('common.loading') : t('pages.collections.loadingCollections')}</p>
             </div>
           ) : pendingPayments.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -973,17 +1003,32 @@ const Cobrancas: React.FC = () => {
         </IonHeader>
         <IonContent>
           <div style={{ padding: '16px' }}>
+            {/* Search bar inside modal */}
+            <IonItem style={{ marginBottom: '12px', borderRadius: '8px', '--background': '#f4f5f8' } as any}>
+              <IonIcon icon={searchOutline} slot="start" style={{ marginLeft: '8px' }} />
+              <IonInput
+                placeholder={t('common.searchPlaceholder')}
+                value={todayDebitsSearchQuery}
+                onIonInput={(e: any) => setTodayDebitsSearchQuery(e.detail.value || '')}
+                style={{ fontSize: '14px' }}
+              />
+              {todayDebitsSearchQuery && (
+                <IonButton fill="clear" size="small" onClick={() => setTodayDebitsSearchQuery('')}>
+                  <IonIcon icon={close} />
+                </IonButton>
+              )}
+            </IonItem>
             {isLoadingTodayDebits ? (
               <div style={{ textAlign: 'center', padding: '40px' }}>
                 <IonSpinner name="dots" />
                 <p style={{ color: '#666', marginTop: '16px' }}>{t('pages.collections.loadingTodayDebits')}</p>
               </div>
-            ) : todayDebits.length === 0 ? (
+            ) : filteredTodayDebits.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px' }}>
-                <p style={{ color: '#666' }}>{t('pages.collections.noDebitsToday')}</p>
+                <p style={{ color: '#666' }}>{todayDebits.length === 0 ? t('pages.collections.noDebitsToday') : t('common.noSearchResults')}</p>
               </div>
             ) : (
-              todayDebits.map((debit) => (
+              filteredTodayDebits.map((debit) => (
                 <IonCard key={debit.id} style={{ marginBottom: '12px', borderRadius: '12px' }}>
                   <IonCardContent>
                     <IonGrid>

@@ -9,18 +9,22 @@ interface UseInfiniteScrollResult<T> {
   items: T[];
   isLoading: boolean;
   isLoadingMore: boolean;
+  isLoadingAll: boolean;
   hasMore: boolean;
   loadMore: () => void;
   refresh: () => void;
   setItems: React.Dispatch<React.SetStateAction<T[]>>;
+  loadAllPages: () => Promise<void>;
 }
 
 export function useInfiniteScroll<T>({ fetchPage, pageSize }: UseInfiniteScrollOptions<T>): UseInfiniteScrollResult<T> {
   const [items, setItems] = useState<T[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isLoadingAll, setIsLoadingAll] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const pageRef = useRef(0);
+  const cancelledRef = useRef(false);
 
   const loadMore = useCallback(async () => {
     if (isLoading || isLoadingMore || !hasMore) return;
@@ -74,13 +78,44 @@ export function useInfiniteScroll<T>({ fetchPage, pageSize }: UseInfiniteScrollO
     }
   }, [fetchPage, pageSize]);
 
+  const loadAllPages = useCallback(async () => {
+    cancelledRef.current = false;
+    setIsLoadingAll(true);
+    
+    let currentPage = 0;
+    let allItems: T[] = [];
+    let hasMorePages = true;
+    
+    while (hasMorePages) {
+      if (cancelledRef.current) break;
+      try {
+        const response = await fetchPage(currentPage, pageSize);
+        allItems = [...allItems, ...response.content];
+        hasMorePages = !response.last;
+        currentPage++;
+      } catch (error) {
+        console.error('Error loading page during loadAll:', error);
+        break;
+      }
+    }
+    
+    if (!cancelledRef.current) {
+      setItems(allItems);
+      setHasMore(false);
+      pageRef.current = currentPage;
+    }
+    setIsLoadingAll(false);
+  }, [fetchPage, pageSize]);
+
   return {
     items,
     isLoading,
     isLoadingMore,
+    isLoadingAll,
     hasMore,
     loadMore,
     refresh,
     setItems,
+    loadAllPages,
   };
 }

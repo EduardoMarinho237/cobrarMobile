@@ -50,9 +50,11 @@ export const useClients = () => {
     items: clients,
     isLoading,
     isLoadingMore,
+    isLoadingAll,
     hasMore,
     loadMore,
     refresh,
+    loadAllPages,
   } = useInfiniteScroll<Client>({
     fetchPage: async (page, size) => {
       const response = await getClientsPaginated(page, size);
@@ -323,6 +325,7 @@ export const useClients = () => {
     clients,
     isLoading,
     isLoadingMore,
+    isLoadingAll,
     hasMore,
     sentinelRef,
     showCreateModal,
@@ -354,6 +357,7 @@ export const useClients = () => {
     todayTotal,
     loadClients,
     loadTodayTotal,
+    loadAllPages,
     handleCreateClient,
     handleEditClient,
     handleDeleteClient,

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import {
   IonContent,
   IonPage,
@@ -67,6 +67,8 @@ const Clients: React.FC = () => {
     currentTax,
     loadClients,
     loadTodayTotal,
+    isLoadingAll,
+    loadAllPages,
     todayTotal,
     handleCreateClient,
     handleEditClient,
@@ -80,6 +82,21 @@ const Clients: React.FC = () => {
     formatDate,
     calculateProgress
   } = useClients();
+
+  const hasLoadedAllForSearch = useRef(false);
+  const prevSearchQuery = useRef('');
+
+  useEffect(() => {
+    if (searchQuery && !hasLoadedAllForSearch.current) {
+      hasLoadedAllForSearch.current = true;
+      loadAllPages();
+    }
+    if (!searchQuery && prevSearchQuery.current) {
+      hasLoadedAllForSearch.current = false;
+      loadClients();
+    }
+    prevSearchQuery.current = searchQuery;
+  }, [searchQuery]);
 
   const [todayCredits, setTodayCredits] = useState<TodayCredit[]>([]);
   const [showTodayCreditsModal, setShowTodayCreditsModal] = useState(false);
@@ -113,7 +130,16 @@ const Clients: React.FC = () => {
       />
 
       <IonContent fullscreen style={{ '--padding-bottom': '60px' } as any}>
-        <IonRefresher slot="fixed" onIonRefresh={async (e) => { await loadClients(); await loadTodayTotal(); e.detail.complete(); }}>
+        <IonRefresher slot="fixed" onIonRefresh={async (e) => {
+          if (searchQuery) {
+            hasLoadedAllForSearch.current = false;
+            await loadAllPages();
+          } else {
+            await loadClients();
+          }
+          await loadTodayTotal();
+          e.detail.complete();
+        }}>
           <IonRefresherContent />
         </IonRefresher>
 
@@ -128,11 +154,11 @@ const Clients: React.FC = () => {
             {t('pages.clients.addClient')}
           </IonButton>
 
-          {isLoading ? (
+          {isLoading || isLoadingAll ? (
             <div style={{ textAlign: 'center', padding: '40px' }}>
               <IonSpinner name="dots" />
               <p style={{ color: '#666', marginTop: '16px' }}>
-                {t('pages.clients.loadingClients')}
+                {isLoadingAll ? t('common.loading') : t('pages.clients.loadingClients')}
               </p>
             </div>
           ) : clients.length === 0 ? (
