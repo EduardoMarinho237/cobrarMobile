@@ -12,7 +12,7 @@ import {
 } from '@ionic/react';
 import { close, download } from 'ionicons/icons';
 import type jsPDF from 'jspdf';
-import { savePdf } from '../utils/saveFile';
+import { savePdf, downloadPdfBlob } from '../utils/saveFile';
 
 interface PdfViewerModalProps {
   isOpen: boolean;
@@ -29,20 +29,53 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   fileName,
   title = 'Visualizar PDF',
 }) => {
-  const [pdfDataUri, setPdfDataUri] = React.useState<string>('');
+  const [pdfUrl, setPdfUrl] = React.useState<string>('');
   const [isSaving, setIsSaving] = React.useState(false);
+  const [saveMessage, setSaveMessage] = React.useState('');
 
   React.useEffect(() => {
     if (isOpen && doc) {
-      setPdfDataUri(doc.output('datauristring'));
+      try {
+        const blob = doc.output('blob');
+        const url = URL.createObjectURL(blob);
+        setPdfUrl(url);
+      } catch (err) {
+        console.error('Erro ao criar blob URL:', err);
+      }
     }
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+      }
+    };
   }, [isOpen, doc]);
+
+  React.useEffect(() => {
+    if (!isOpen) {
+      setSaveMessage('');
+    }
+  }, [isOpen]);
 
   const handleDownload = async () => {
     if (!doc) return;
     setIsSaving(true);
+    setSaveMessage('');
     try {
-      await savePdf(doc, fileName);
+      const savedUri = await savePdf(doc, fileName);
+      if (savedUri) {
+        setSaveMessage('PDF salvo em: ' + savedUri);
+      } else {
+        setSaveMessage('Download concluído');
+      }
+    } catch (err) {
+      console.error('Erro ao salvar PDF:', err);
+      try {
+        downloadPdfBlob(doc, fileName);
+        setSaveMessage('Download via navegador concluído');
+      } catch (fallbackErr) {
+        console.error('Erro no fallback:', fallbackErr);
+        setSaveMessage('Erro ao salvar PDF');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -61,9 +94,9 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-no-padding">
-        {pdfDataUri ? (
+        {pdfUrl ? (
           <iframe
-            src={pdfDataUri}
+            src={pdfUrl}
             title="PDF Viewer"
             style={{
               width: '100%',
@@ -77,6 +110,11 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
       </IonContent>
       <IonFooter>
         <IonToolbar style={{ padding: '8px 16px' }}>
+          {saveMessage && (
+            <div style={{ textAlign: 'center', fontSize: '12px', color: saveMessage.includes('Erro') ? '#dc3545' : '#28a745', marginBottom: '8px' }}>
+              {saveMessage}
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <IonButton fill="outline" onClick={onClose}>
               Fechar
@@ -84,7 +122,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
             <IonButton
               color="primary"
               onClick={handleDownload}
-              disabled={isSaving || !pdfDataUri}
+              disabled={isSaving || !pdfUrl}
             >
               <IonIcon icon={download} slot="start" />
               {isSaving ? 'Salvando...' : 'Baixar PDF'}
