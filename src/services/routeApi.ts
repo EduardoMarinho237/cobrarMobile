@@ -1,4 +1,5 @@
 import { apiRequest, isDev } from './api';
+import i18n from '../i18n';
 
 export const createRoute = async (name: string, login: string, password: string, tax: number, initialDeposit?: number) => {
   try {
@@ -29,7 +30,7 @@ export const createRoute = async (name: string, login: string, password: string,
   } catch (error) {
     return {
       success: false,
-      message: 'Erro de conexão, tente novamente'
+      message: i18n.t('common.connectionError')
     };
   }
 };
@@ -68,7 +69,7 @@ export const updateRoute = async (id: number, name: string, login: string, tax: 
   } catch (error) {
     return {
       success: false,
-      message: 'Erro de conexão, tente novamente'
+      message: i18n.t('common.connectionError')
     };
   }
 };
@@ -101,7 +102,7 @@ export const deleteRoute = async (id: number) => {
   } catch (error) {
     return {
       success: false,
-      message: 'Erro de conexão, tente novamente'
+      message: i18n.t('common.connectionError')
     };
   }
 };

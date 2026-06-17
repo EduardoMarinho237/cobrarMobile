@@ -180,7 +180,10 @@ const Cobrancas: React.FC = () => {
     setIsLoadingTodayDebits(true);
     try {
       const response = await getTodayDebitsPaginated(0, 1000);
-      setTodayDebits(response.content);
+      const sorted = [...response.content].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setTodayDebits(sorted);
     } catch (error) {
       console.error('Erro ao carregar débitos de hoje:', error);
     } finally {

@@ -202,6 +202,10 @@ const App: React.FC = () => {
           <RouteTabs />
         </ProtectedRoute>
 
+        <ProtectedRoute exact path="/route/reports">
+          <RouteTabs />
+        </ProtectedRoute>
+
         <ProtectedRoute exact path="/route/config">
           <RouteTabs />
         </ProtectedRoute>

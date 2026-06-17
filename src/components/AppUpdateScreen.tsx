@@ -54,32 +54,36 @@ const AppUpdateScreen: React.FC<AppUpdateScreenProps> = ({ message, downloadUrl,
       // Converter base64 para salvar no filesystem
       const base64Data = response.data;
 
-      // Salvar no diretório externo (downloads)
-      await Filesystem.writeFile({
+      // Salvar no diretório Documents (compatível com Android 10+ Scoped Storage)
+      const writeResult = await Filesystem.writeFile({
         path: filename,
         data: base64Data,
-        directory: Directory.External,
+        directory: Directory.Documents,
         recursive: true,
       });
 
       setDownloadProgress(100);
-      console.log('[AppUpdate] APK salvo em Downloads/', filename);
+      console.log('[AppUpdate] APK salvo em Documents/', filename, 'uri:', writeResult.uri);
 
       // Tentar abrir o APK para instalação
       const fileUri = await Filesystem.getUri({
         path: filename,
-        directory: Directory.External,
+        directory: Directory.Documents,
       });
 
-      // Abrir o arquivo APK no instalador do Android
-      // Usamos window.open com intent para forçar o instalador
-      const intentUrl = `intent://${fileUri.uri.replace('file://', '')}#Intent;action=android.intent.action.VIEW;type=application/vnd.android.package-archive;end`;
+      // Abrir o arquivo APK no instalador do Android via intent
+      // Formatos de tentativa: intent:// e file:// direto
+      const cleanPath = fileUri.uri.replace('file://', '');
+      const intentUrl = `intent://${cleanPath}#Intent;action=android.intent.action.VIEW;type=application/vnd.android.package-archive;end`;
       window.open(intentUrl, '_system');
 
-      // Se o intent falhar, abrimos o link direto
+      // Fallbacks: tentar abrir a URI direta e depois o link original
+      setTimeout(() => {
+        window.open(fileUri.uri, '_system');
+      }, 800);
       setTimeout(() => {
         window.open(downloadUrl, '_system');
-      }, 1000);
+      }, 1600);
 
     } catch (error) {
       console.error('[AppUpdate] Erro no download:', error);

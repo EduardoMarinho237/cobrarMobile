@@ -1,4 +1,5 @@
 import { apiRequest, isDev } from './api';
+import i18n from '../i18n';
 
 export interface DashboardData {
   id: number;
@@ -193,7 +194,7 @@ export const generateDashboard = async (request: DashboardRequest) => {
   } catch (error) {
     return {
       success: false,
-      message: 'Erro de conexão, tente novamente'
+      message: i18n.t('common.connectionError')
     };
   }
 };

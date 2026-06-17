@@ -1,3 +1,5 @@
+import i18n from '../i18n';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'DEV';
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || '0.0.0';
 
@@ -89,6 +91,7 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
 
   // Verificar se endpoint é exceção (não precisa de X-App-Version)
   const isAuthEndpoint = endpoint.startsWith('/api/auth');
+  const isLoginEndpoint = endpoint === '/api/auth/login';
   const isPublicEndpoint = endpoint.startsWith('/api/public');
   const skipVersionHeader = isAuthEndpoint || isPublicEndpoint;
 
@@ -123,6 +126,18 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     console.log('Resposta fetch recebida - status:', response.status);
 
     if (response.status === 401) {
+      // Para o endpoint de login, não limpa sessão nem redireciona
+      if (isLoginEndpoint) {
+        console.log('Login retornou 401 - retornando resposta da API');
+        try {
+          const errorText = await response.text();
+          const errorData = errorText ? JSON.parse(errorText) : null;
+          return errorData;
+        } catch (e) {
+          return null;
+        }
+      }
+
       console.log('Token expirado (401) - limpando sessão e redirecionando');
       clearSessionData();
       (window as any).globalToast?.('Sesión vencida');
@@ -145,6 +160,11 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
         }
       } catch (e) {
         // Se não conseguir parsear, continua sem os dados
+      }
+
+      // Para o endpoint de login, retorna o erro bruto sem tratamentos especiais
+      if (isLoginEndpoint) {
+        return errorData;
       }
 
       // Verificar se é erro de app desatualizado (needToUpdate: true)
@@ -193,7 +213,7 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
       }
       
       // Retorna o erro diretamente em vez de lançar exceção
-      return errorData || { success: false, message: 'Erro de conexão, tente novamente' };
+      return errorData || { success: false, message: i18n.t('common.connectionError') };
     }
 
     // Tratar respostas vazias ou sem conteúdo
@@ -234,14 +254,14 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     } catch (error) {
       console.error('Erro ao fazer parse do JSON:', error);
       console.error('Resposta bruta:', text);
-      throw new Error('Erro de conexão, tente novamente');
+      throw new Error(i18n.t('common.connectionError'));
     }
   } catch (error) {
     console.error('Erro no apiRequest:', error);
 
     // Se for erro de rede ou conexão, usa mensagem padrão
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('Erro de conexão, tente novamente');
+      throw new Error(i18n.t('common.connectionError'));
     }
 
     // Se já for uma mensagem de erro personalizada, propaga
@@ -428,7 +448,7 @@ export const createManager = async (name: string, login: string, password: strin
   } catch (error) {
     return {
       success: false,
-      message: 'Erro de conexão, tente novamente'
+      message: i18n.t('common.connectionError')
     };
   }
 };
@@ -497,7 +517,7 @@ export const updateManager = async (id: number, name: string, login: string) => 
   } catch (error) {
     return {
       success: false,
-      message: 'Erro de conexão, tente novamente'
+      message: i18n.t('common.connectionError')
     };
   }
 };
@@ -539,7 +559,7 @@ export const toggleManagerAudit = async (id: number, appearOnAudit: boolean) => 
   } catch (error) {
     return {
       success: false,
-      message: 'Erro de conexão, tente novamente'
+      message: i18n.t('common.connectionError')
     };
   }
 };
@@ -581,7 +601,7 @@ export const toggleRouteAudit = async (id: number, appearOnAudit: boolean) => {
   } catch (error) {
     return {
       success: false,
-      message: 'Erro de conexão, tente novamente'
+      message: i18n.t('common.connectionError')
     };
   }
 };

@@ -157,7 +157,7 @@ const Managers: React.FC = () => {
       }
     } catch (error) {
       console.error('Erro ao criar manager:', error);
-      showToast('Erro de conexão, tente novamente', 'danger');
+      showToast(t('common.connectionError'), 'danger');
     }
   };
 
@@ -182,7 +182,7 @@ const Managers: React.FC = () => {
       })
       .catch((error) => {
         console.error('Erro ao atualizar manager:', error);
-        showToast('Erro de conexão, tente novamente', 'danger');
+        showToast(t('common.connectionError'), 'danger');
       });
   };
 
@@ -222,7 +222,7 @@ const Managers: React.FC = () => {
       
     } catch (error) {
       console.error('Erro ao alterar acesso:', error);
-      showToast('Erro de conexão, tente novamente', 'danger');
+      showToast(t('common.connectionError'), 'danger');
       
       // Mesmo com erro, tenta atualizar o estado local
       const newAppearOnAudit = !selectedManager.appearOnAudit;
@@ -261,7 +261,7 @@ const Managers: React.FC = () => {
       const response = await changeManagerPassword(selectedManager.id, newPassword.password);
       
       // SEMPRE usa a mensagem da API, se não tiver mensagem, mostra erro de conexão
-      const message = response?.message || 'Erro de conexão';
+      const message = response?.message || t('common.connectionError');
       const color = response?.success === true ? 'success' : 'danger';
       
       showToast(message, color);
@@ -272,7 +272,7 @@ const Managers: React.FC = () => {
       }
     } catch (error) {
       console.error('Erro ao alterar senha:', error);
-      showToast('Erro de conexão', 'danger');
+      showToast(t('common.connectionError'), 'danger');
     }
   };
 

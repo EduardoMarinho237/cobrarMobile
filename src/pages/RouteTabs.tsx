@@ -16,13 +16,15 @@ import {
   card, 
   statsChart, 
   settings,
-  people
+  people,
+  document
 } from 'ionicons/icons';
 import Cobrancas from './route/Cobrancas';
 import Expenses from './route/Expenses';
 import Fechamento from './route/Fechamento';
 import Clients from './route/Clients';
 import Config from './Config';
+import RouteReports from './route/RouteReports';
 import { useFechamentoControl } from '../hooks/useFechamentoControl';
 import { useTranslation } from 'react-i18next';
 
@@ -59,6 +61,9 @@ const RouteTabs: React.FC = () => {
         <Route exact path="/route/config">
           <Config />
         </Route>
+        <Route exact path="/route/reports">
+          <RouteReports />
+        </Route>
         <Route exact path="/route">
           <Redirect to={diaFechado ? "/route/fechamento" : "/route/cobrancas"} />
         </Route>
@@ -94,6 +99,10 @@ const RouteTabs: React.FC = () => {
         <IonTabButton tab="fechamento" href="/route/fechamento">
           <IonIcon aria-hidden="true" icon={statsChart} />
           <IonLabel>{t('tabs.closing')}</IonLabel>
+        </IonTabButton>
+        <IonTabButton tab="reports" href="/route/reports">
+          <IonIcon aria-hidden="true" icon={document} />
+          <IonLabel>{t('tabs.reports')}</IonLabel>
         </IonTabButton>
         <IonTabButton tab="config" href="/route/config">
           <IonIcon aria-hidden="true" icon={settings} />

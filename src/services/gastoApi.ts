@@ -1,4 +1,5 @@
 import { apiRequest, isDev } from './api';
+import i18n from '../i18n';
 
 export interface CategoriaGasto {
   id: number;
@@ -145,7 +146,7 @@ export const createCategoria = async (nome: string) => {
   } catch (error) {
     return {
       success: false,
-      message: 'Erro de conexão, tente novamente'
+      message: i18n.t('common.connectionError')
     };
   }
 };
@@ -186,7 +187,7 @@ export const updateCategoria = async (id: number, nome: string) => {
   } catch (error) {
     return {
       success: false,
-      message: 'Erro de conexão, tente novamente'
+      message: i18n.t('common.connectionError')
     };
   }
 };
@@ -405,7 +406,7 @@ export const createTipoGasto = async (nome: string, categoriaId?: number) => {
   } catch (error) {
     return {
       success: false,
-      message: 'Erro de conexão, tente novamente'
+      message: i18n.t('common.connectionError')
     };
   }
 };
@@ -447,7 +448,7 @@ export const updateTipoGasto = async (id: number, nome: string, categoriaId?: nu
   } catch (error) {
     return {
       success: false,
-      message: 'Erro de conexão, tente novamente'
+      message: i18n.t('common.connectionError')
     };
   }
 };
