@@ -42,7 +42,7 @@ interface Route {
   name: string;
 }
 
-type PeriodOption = 'LAST_7_DAYS' | 'LAST_WEEK';
+type PeriodOption = 'LAST_WEEK';
 
 const Reports: React.FC = () => {
   const { t } = useTranslation();
@@ -54,7 +54,7 @@ const Reports: React.FC = () => {
   const [showByRouteModal, setShowByRouteModal] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [reportToDelete, setReportToDelete] = useState<number | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodOption>('LAST_7_DAYS');
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodOption>('LAST_WEEK');
   const [selectedRoutes, setSelectedRoutes] = useState<number[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<number | null>(null);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
@@ -151,20 +151,13 @@ const Reports: React.FC = () => {
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ...
     
-    if (selectedPeriod === 'LAST_7_DAYS') {
-      const end = new Date(today);
-      const start = new Date(today);
-      start.setDate(today.getDate() - 6);
-      return { start, end };
-    } else {
-      // Last week: Monday to Saturday of last week
-      const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      const lastMonday = new Date(today);
-      lastMonday.setDate(today.getDate() - daysSinceMonday - 7);
-      const lastSaturday = new Date(lastMonday);
-      lastSaturday.setDate(lastMonday.getDate() + 5);
-      return { start: lastMonday, end: lastSaturday };
-    }
+    // Last week: Monday to Saturday of last week
+    const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const lastMonday = new Date(today);
+    lastMonday.setDate(today.getDate() - daysSinceMonday - 7);
+    const lastSaturday = new Date(lastMonday);
+    lastSaturday.setDate(lastMonday.getDate() + 5);
+    return { start: lastMonday, end: lastSaturday };
   };
 
   const handleGenerateGeneral = async () => {
@@ -1778,14 +1771,6 @@ const Reports: React.FC = () => {
                 </IonCardHeader>
                 <IonCardContent>
                   <IonItem>
-                    <IonLabel>{t('reports.last7Days')}</IonLabel>
-                    <IonCheckbox
-                      slot="end"
-                      checked={selectedPeriod === 'LAST_7_DAYS' && !useCustomDates}
-                      onIonChange={() => { setSelectedPeriod('LAST_7_DAYS'); setUseCustomDates(false); }}
-                    />
-                  </IonItem>
-                  <IonItem>
                     <IonLabel>{t('reports.lastWeek')}</IonLabel>
                     <IonCheckbox
                       slot="end"
@@ -1904,14 +1889,6 @@ const Reports: React.FC = () => {
                 </IonCardHeader>
                 <IonCardContent>
                   <IonItem>
-                    <IonLabel>{t('reports.last7Days')}</IonLabel>
-                    <IonCheckbox
-                      slot="end"
-                      checked={selectedPeriod === 'LAST_7_DAYS' && !useCustomDates}
-                      onIonChange={() => { setSelectedPeriod('LAST_7_DAYS'); setUseCustomDates(false); }}
-                    />
-                  </IonItem>
-                  <IonItem>
                     <IonLabel>{t('reports.lastWeek')}</IonLabel>
                     <IonCheckbox
                       slot="end"
@@ -2013,14 +1990,6 @@ const Reports: React.FC = () => {
                   </IonCardTitle>
                 </IonCardHeader>
                 <IonCardContent>
-                  <IonItem>
-                    <IonLabel>{t('reports.last7Days')}</IonLabel>
-                    <IonCheckbox
-                      slot="end"
-                      checked={selectedPeriod === 'LAST_7_DAYS' && !useCustomDates}
-                      onIonChange={() => { setSelectedPeriod('LAST_7_DAYS'); setUseCustomDates(false); }}
-                    />
-                  </IonItem>
                   <IonItem>
                     <IonLabel>{t('reports.lastWeek')}</IonLabel>
                     <IonCheckbox
