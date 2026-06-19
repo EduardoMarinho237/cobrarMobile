@@ -18,6 +18,7 @@ import {
   IonCheckbox,
 } from '@ionic/react';
 import { useTranslation } from 'react-i18next';
+import { formatDateToLocalISO } from '../../../utils/dateFormat';
 
 interface GenerateDailyReportModalProps {
   isOpen: boolean;
@@ -60,7 +61,7 @@ const GenerateDailyReportModal: React.FC<GenerateDailyReportModalProps> = ({
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     if (yesterday.getDay() === 0) yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday.toISOString().split('T')[0];
+    return formatDateToLocalISO(yesterday);
   };
 
   const canGenerate = useDefaultDate || (dailyDate && !isFutureOrToday(dailyDate) && !isSunday(dailyDate));

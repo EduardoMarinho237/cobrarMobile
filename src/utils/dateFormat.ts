@@ -1,15 +1,12 @@
-/**
- * Utility for formatting dates to Brazil timezone (America/Sao_Paulo)
- * All dates should be displayed in Brasilia time (UTC-3)
- */
+const TIMEZONE = 'America/Sao_Paulo';
 
-export const TIMEZONE = 'America/Sao_Paulo';
+export const formatDateToLocalISO = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
 
-/**
- * Format a date string to Brazil time (pt-BR format)
- * @param dateString - ISO date string from backend
- * @returns Formatted string in Brazil timezone
- */
 export const formatToBrazilTime = (dateString: string): string => {
   if (!dateString) return '';
   try {
@@ -27,9 +24,6 @@ export const formatToBrazilTime = (dateString: string): string => {
   }
 };
 
-/**
- * Format a date to Brazil date only (dd/MM/yyyy)
- */
 export const formatToBrazilDate = (dateString: string): string => {
   if (!dateString) return '';
   try {
@@ -45,18 +39,12 @@ export const formatToBrazilDate = (dateString: string): string => {
   }
 };
 
-/**
- * Get current date in Brazil timezone
- */
 export const getCurrentBrazilDate = (): Date => {
   return new Date(
     new Date().toLocaleString('en-US', { timeZone: TIMEZONE })
   );
 };
 
-/**
- * Format the current time to Brazil timezone string
- */
 export const getCurrentBrazilTimeString = (): string => {
   return new Date().toLocaleString('pt-BR', {
     timeZone: TIMEZONE,

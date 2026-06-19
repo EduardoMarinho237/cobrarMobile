@@ -257,7 +257,9 @@ export const generateSimpleWeeklyReport = async (request: CreateSimpleWeeklyRepo
     method: 'POST',
     body: JSON.stringify(request)
   });
-  return response?.data;
+  if (!response) throw new Error('Erro ao gerar relatório');
+  if (response.success === false) throw new Error(response.message || 'Erro ao gerar relatório');
+  return response.data;
 };
 
 export const generateWeeklyByRouteReport = async (request: GenerateWeeklyByRouteReportRequest): Promise<Report> => {
@@ -314,7 +316,9 @@ export const generateWeeklyByRouteReport = async (request: GenerateWeeklyByRoute
     method: 'POST',
     body: JSON.stringify(request)
   });
-  return response?.data;
+  if (!response) throw new Error('Erro ao gerar relatório');
+  if (response.success === false) throw new Error(response.message || 'Erro ao gerar relatório');
+  return response.data;
 };
 
 export const generateReport = async (request: GenerateReportRequest): Promise<Report> => {
@@ -381,7 +385,9 @@ export const generateReport = async (request: GenerateReportRequest): Promise<Re
     method: 'POST',
     body: JSON.stringify(request)
   });
-  return response?.data;
+  if (!response) throw new Error('Erro ao gerar relatório');
+  if (response.success === false) throw new Error(response.message || 'Erro ao gerar relatório');
+  return response.data;
 };
 
 export const listReports = async (): Promise<Report[]> => {
@@ -456,14 +462,14 @@ export const generateRouteDailyTodayReport = async (): Promise<{ report: Report;
   return { report: response.data, message: response.message };
 };
 
-export const generateRouteWeeklyReport = async (request: CreateRouteWeeklyReportRequest): Promise<Report> => {
+export const generateRouteWeeklyReport = async (request: CreateRouteWeeklyReportRequest): Promise<{ report: Report; message: string }> => {
   const response = await apiRequest('/api/reports/route/weekly', {
     method: 'POST',
     body: JSON.stringify(request)
   });
   if (!response) throw new Error('Erro ao gerar relatório');
   if (response.success === false) throw new Error(response.message || 'Erro ao gerar relatório');
-  return response.data;
+  return { report: response.data, message: response.message };
 };
 
 export const listRouteReports = async (): Promise<Report[]> => {
@@ -491,7 +497,8 @@ export const deleteReport = async (id: number): Promise<void> => {
     return;
   }
 
-  await apiRequest(`/api/reports/${id}`, {
+  const response = await apiRequest(`/api/reports/${id}`, {
     method: 'DELETE'
   });
+  if (response && response.success === false) throw new Error(response.message || 'Erro ao excluir relatório');
 };

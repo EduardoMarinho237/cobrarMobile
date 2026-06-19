@@ -869,6 +869,18 @@
     "capital": "Capital",
     "totals": "TOTALES"
   },
+  "pdfViewer": {
+    "title": "Ver PDF",
+    "loading": "Cargando PDF...",
+    "loadingPage": "Cargando página...",
+    "loadError": "Error al cargar el PDF.",
+    "renderError": "Error al renderizar el PDF.",
+    "share": "Compartir PDF",
+    "sharing": "Abriendo...",
+    "shareSuccess": "PDF compartilhado con éxito",
+    "shareError": "Error al compartir el PDF",
+    "pageCounter": "{{current}} / {{total}}"
+  },
   "alerts": {
     "error": "Error",
     "accessBlocked": "Acceso Bloqueado",

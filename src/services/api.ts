@@ -41,10 +41,8 @@ const getFechamentoEvents = () => {
   return fechamentoEvents;
 };
 
-// Inicializa o timezone padrão se não existir
-if (!localStorage.getItem('timezone')) {
-  localStorage.setItem('timezone', 'America/Sao_Paulo');
-}
+// Timezone fixo: America/Sao_Paulo
+localStorage.setItem('timezone', 'America/Sao_Paulo');
 
 console.log('API_BASE_URL:', API_BASE_URL);
 console.log('isDev():', isDev());
@@ -80,7 +78,7 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
   
   const finalToken = token || fallbackToken;
   const currentLanguage = localStorage.getItem('language') || 'pt-BR';
-  const currentTimezone = localStorage.getItem('timezone') || 'America/Sao_Paulo';
+  const currentTimezone = 'America/Sao_Paulo';
 
   console.log('apiRequest - user from localStorage:', user);
   console.log('apiRequest - token from auth_token:', token);

@@ -32,6 +32,7 @@ import Toast from '../../components/Toast';
 import PdfViewerModal from '../../components/PdfViewerModal';
 import { useTranslation } from 'react-i18next';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
+import { formatDateToLocalISO } from '../../utils/dateFormat';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { savePdf } from '../../utils/saveFile';
@@ -82,7 +83,7 @@ const Reports: React.FC = () => {
     if (yesterday.getDay() === 0) {
       yesterday.setDate(yesterday.getDate() - 1);
     }
-    return yesterday.toISOString().split('T')[0];
+    return formatDateToLocalISO(yesterday);
   };
   const [selectedDate, setSelectedDate] = useState<string>(getYesterday());
 
@@ -172,8 +173,8 @@ const Reports: React.FC = () => {
       return;
     }
     const { start, end } = calculatePeriod();
-    const startStr = start.toISOString().split('T')[0];
-    const endStr = end.toISOString().split('T')[0];
+    const startStr = formatDateToLocalISO(start);
+    const endStr = formatDateToLocalISO(end);
 
     setIsGenerating(true);
     try {
@@ -191,9 +192,9 @@ const Reports: React.FC = () => {
       setShowGeneralModal(false);
       showToast(t('reports.generatedSuccess'), 'success');
       handleViewPDF(newReport);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao gerar relatório:', error);
-      showToast(t('reports.errorGenerating'), 'danger');
+      showToast(error?.message || t('reports.errorGenerating'), 'danger');
     } finally {
       setIsGenerating(false);
     }
@@ -205,8 +206,8 @@ const Reports: React.FC = () => {
       return;
     }
     const { start, end } = calculatePeriod();
-    const startStr = start.toISOString().split('T')[0];
-    const endStr = end.toISOString().split('T')[0];
+    const startStr = formatDateToLocalISO(start);
+    const endStr = formatDateToLocalISO(end);
 
     setIsGenerating(true);
     try {
@@ -223,9 +224,9 @@ const Reports: React.FC = () => {
       setShowByRouteModal(false);
       showToast(t('reports.generatedSuccess'), 'success');
       handleViewPDF(newReport);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao gerar relatório:', error);
-      showToast(t('reports.errorGenerating'), 'danger');
+      showToast(error?.message || t('reports.errorGenerating'), 'danger');
     } finally {
       setIsGenerating(false);
     }
@@ -237,8 +238,8 @@ const Reports: React.FC = () => {
       return;
     }
     const { start, end } = calculatePeriod();
-    const startStr = start.toISOString().split('T')[0];
-    const endStr = end.toISOString().split('T')[0];
+    const startStr = formatDateToLocalISO(start);
+    const endStr = formatDateToLocalISO(end);
 
     setIsGenerating(true);
     try {
@@ -255,9 +256,9 @@ const Reports: React.FC = () => {
       setShowSimpleWeeklyModal(false);
       showToast(t('reports.generatedSuccess'), 'success');
       handleViewPDF(newReport);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao gerar relatório simplificado:', error);
-      showToast(t('reports.errorGenerating'), 'danger');
+      showToast(error?.message || t('reports.errorGenerating'), 'danger');
     } finally {
       setIsGenerating(false);
     }
@@ -1199,8 +1200,8 @@ const Reports: React.FC = () => {
       await deleteReport(reportToDelete);
       setReports(prev => prev.filter(r => r.id !== reportToDelete));
       showToast(t('reports.deletedSuccess'), 'success');
-    } catch (error) {
-      showToast(t('reports.errorDeleting'), 'danger');
+    } catch (error: any) {
+      showToast(error?.message || t('reports.errorDeleting'), 'danger');
     } finally {
       setShowDeleteAlert(false);
       setReportToDelete(null);

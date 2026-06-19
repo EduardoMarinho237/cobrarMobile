@@ -1,4 +1,5 @@
 import { apiRequest, isDev } from './api';
+import { formatDateToLocalISO } from '../utils/dateFormat';
 import { getMyInitialBalance, getMyManagerTransactions } from './cashBoxApi';
 
 export interface FechamentoData {
@@ -98,7 +99,7 @@ export const getFechamentoData = async (): Promise<FechamentoData> => {
     console.log('Resposta despesas:', expensesResponse);
     
     // 3. Calcular gastos do dia (somente despesas de hoje)
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateToLocalISO(new Date());
     const todayExpenses = expensesResponse?.data?.filter(expense => 
       expense.createdAt.startsWith(today)
     ) || [];

@@ -873,6 +873,18 @@
     "capital": "Capital",
     "totals": "TOTAIS"
   },
+  "pdfViewer": {
+    "title": "Visualizar PDF",
+    "loading": "Carregando PDF...",
+    "loadingPage": "Carregando página...",
+    "loadError": "Erro ao carregar o PDF.",
+    "renderError": "Erro ao renderizar o PDF.",
+    "share": "Compartilhar PDF",
+    "sharing": "Abrindo...",
+    "shareSuccess": "PDF compartilhado com sucesso",
+    "shareError": "Erro ao compartilhar PDF",
+    "pageCounter": "{{current}} / {{total}}"
+  },
   "alerts": {
     "error": "Erro",
     "accessBlocked": "Acesso Bloqueado",

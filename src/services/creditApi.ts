@@ -1,4 +1,5 @@
 import { apiRequest } from './api';
+import { formatDateToLocalISO } from '../utils/dateFormat';
 
 // Interfaces
 export interface Credit {
@@ -247,7 +248,7 @@ export const createCredit = async (credit: CreateCreditRequest): Promise<ApiResp
         tax: tax,
         totalDebt: credit.initialValue + (credit.initialValue * tax / 100),
         quantityDays: credit.quantityDays,
-        finalDate: new Date(new Date(credit.startDate).getTime() + credit.quantityDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        finalDate: formatDateToLocalISO(new Date(new Date(credit.startDate).getTime() + credit.quantityDays * 24 * 60 * 60 * 1000)),
         dayValue: Math.round((credit.initialValue + (credit.initialValue * tax / 100)) / credit.quantityDays),
         lastInstallment: credit.quantityDays,
         clientId: credit.clientId,
@@ -314,7 +315,7 @@ export const updateCredit = async (id: number, credit: UpdateCreditRequest): Pro
         tax: tax,
         totalDebt: credit.initialValue + (credit.initialValue * tax / 100),
         quantityDays: credit.quantityDays,
-        finalDate: new Date(new Date(credit.startDate).getTime() + credit.quantityDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        finalDate: formatDateToLocalISO(new Date(new Date(credit.startDate).getTime() + credit.quantityDays * 24 * 60 * 60 * 1000)),
         dayValue: Math.round((credit.initialValue + (credit.initialValue * tax / 100)) / credit.quantityDays),
         lastInstallment: credit.quantityDays,
         clientId: credit.clientId,

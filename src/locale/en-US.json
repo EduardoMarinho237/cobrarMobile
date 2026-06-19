@@ -646,6 +646,18 @@
     "capital": "Capital",
     "totals": "TOTALS"
   },
+  "pdfViewer": {
+    "title": "View PDF",
+    "loading": "Loading PDF...",
+    "loadingPage": "Loading page...",
+    "loadError": "Error loading PDF.",
+    "renderError": "Error rendering PDF.",
+    "share": "Share PDF",
+    "sharing": "Opening...",
+    "shareSuccess": "PDF shared successfully",
+    "shareError": "Error sharing PDF",
+    "pageCounter": "{{current}} / {{total}}"
+  },
   "alerts": {
     "error": "Error",
     "accessBlocked": "Access Blocked",

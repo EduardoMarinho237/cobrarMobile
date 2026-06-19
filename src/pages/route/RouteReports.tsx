@@ -23,6 +23,7 @@ import GenerateDailyReportModal from './modals/GenerateDailyReportModal';
 import GenerateWeeklyReportModal from './modals/GenerateWeeklyReportModal';
 import { useTranslation } from 'react-i18next';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
+import { formatDateToLocalISO } from '../../utils/dateFormat';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { savePdf } from '../../utils/saveFile';
@@ -54,7 +55,7 @@ const RouteReports: React.FC = () => {
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
   if (yesterday.getDay() === 0) yesterday.setDate(yesterday.getDate() - 1);
-  const [dailyDate, setDailyDate] = useState<string>(yesterday.toISOString().split('T')[0]);
+  const [dailyDate, setDailyDate] = useState<string>(formatDateToLocalISO(yesterday));
   const [useDefaultDate, setUseDefaultDate] = useState(true);
 
   // Weekly form
@@ -62,8 +63,8 @@ const RouteReports: React.FC = () => {
   lastSaturday.setDate(today.getDate() - (today.getDay() === 0 ? 1 : today.getDay() + 1));
   const lastMonday = new Date(lastSaturday);
   lastMonday.setDate(lastSaturday.getDate() - 5);
-  const [weeklyStart, setWeeklyStart] = useState<string>(lastMonday.toISOString().split('T')[0]);
-  const [weeklyEnd, setWeeklyEnd] = useState<string>(lastSaturday.toISOString().split('T')[0]);
+  const [weeklyStart, setWeeklyStart] = useState<string>(formatDateToLocalISO(lastMonday));
+  const [weeklyEnd, setWeeklyEnd] = useState<string>(formatDateToLocalISO(lastSaturday));
 
   useEffect(() => {
     loadReports();
@@ -88,13 +89,13 @@ const RouteReports: React.FC = () => {
   const handleGenerateWeekly = async () => {
     setIsGenerating(true);
     try {
-      const report = await generateRouteWeeklyReport({
+      const { report, message } = await generateRouteWeeklyReport({
         periodStart: weeklyStart,
         periodEnd: weeklyEnd
       });
       setReports(prev => [report, ...prev]);
       setShowWeeklyModal(false);
-      showToastMsg(t('reports.generatedSuccess'), 'success');
+      showToastMsg(message || t('reports.generatedSuccess'), 'success');
       // Auto-open PDF viewer
       setTimeout(() => handleViewPDF(report), 300);
     } catch (error: any) {
@@ -111,12 +112,12 @@ const RouteReports: React.FC = () => {
       const yesterday = new Date(today);
       yesterday.setDate(today.getDate() - 1);
       if (yesterday.getDay() === 0) yesterday.setDate(yesterday.getDate() - 1);
-      const dateToUse = useDefaultDate ? yesterday.toISOString().split('T')[0] : dailyDate;
+      const dateToUse = useDefaultDate ? formatDateToLocalISO(yesterday) : dailyDate;
 
-      const { report } = await generateRouteDailyReport({ date: dateToUse });
+      const { report, message } = await generateRouteDailyReport({ date: dateToUse });
       setReports(prev => [report, ...prev]);
       setShowDailyModal(false);
-      showToastMsg(t('reports.generatedSuccess'), 'success');
+      showToastMsg(message || t('reports.generatedSuccess'), 'success');
       // Auto-open PDF viewer
       setTimeout(() => handleViewPDF(report), 300);
     } catch (error: any) {
