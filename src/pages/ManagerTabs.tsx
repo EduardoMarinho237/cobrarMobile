@@ -18,7 +18,7 @@ import { isSunday } from '../utils/sundayUtil';
 
 const ManagerTabs: React.FC = () => {
   const { t } = useTranslation();
-  const isDevMode = import.meta.env.VITE_DEV_MODE === 'TRUE';
+  const isDevMode = !!import.meta.env.VITE_DEV_MODE;
   const blocked = isSunday() && !isDevMode;
   
   return (

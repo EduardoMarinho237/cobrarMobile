@@ -93,11 +93,13 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
   const isPublicEndpoint = endpoint.startsWith('/api/public');
   const skipVersionHeader = isAuthEndpoint || isPublicEndpoint;
 
-  // API key para bypass de bloqueio dominical
-  const apiKey = localStorage.getItem('api_key');
+  // Chave de API configurada no .env como VITE_DEV_MODE para bypass dominical
+  const envApiKey = import.meta.env.VITE_DEV_MODE;
 
-  // Modo desenvolvimento para bypass de regras de domingo
-  const isDevMode = import.meta.env.VITE_DEV_MODE === 'TRUE';
+  // Legacy: chave de API salva no localStorage
+  const localApiKey = localStorage.getItem('api_key');
+
+  const apiKey = envApiKey || localApiKey;
 
   const headers = {
     'Content-Type': 'application/json',
@@ -106,7 +108,6 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     ...(!skipVersionHeader && { 'X-App-Version': APP_VERSION }),
     ...(finalToken && { Authorization: `Bearer ${finalToken}` }),
     ...(apiKey && { 'X-API-Key': apiKey }),
-    ...(isDevMode && { 'X-Dev-Mode': 'true' }),
     ...options?.headers,
   };
 

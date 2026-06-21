@@ -125,7 +125,7 @@ const App: React.FC = () => {
       }
 
       const user = getCurrentUser();
-      const isDevMode = import.meta.env.VITE_DEV_MODE === 'TRUE';
+      const isDevMode = !!import.meta.env.VITE_DEV_MODE;
       if (user?.role === 'MANAGER' && isSunday() && !isDevMode) {
         const currentPath = rest.path || '';
         if (currentPath.startsWith('/manager') && !currentPath.includes('/manager/reports') && !currentPath.includes('/manager/config')) {
