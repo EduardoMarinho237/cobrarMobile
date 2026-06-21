@@ -14,9 +14,11 @@ import Gastos from './manager/Gastos';
 import Routes from './manager/Routes';
 import Config from './Config';
 import { useTranslation } from 'react-i18next';
+import { isSunday } from '../utils/sundayUtil';
 
 const ManagerTabs: React.FC = () => {
   const { t } = useTranslation();
+  const sunday = isSunday();
   
   return (
     <IonTabs>
@@ -25,16 +27,16 @@ const ManagerTabs: React.FC = () => {
           <Reports />
         </Route>
         <Route exact path="/manager/gastos">
-          <Gastos />
+          {sunday ? <Redirect to="/manager/reports" /> : <Gastos />}
         </Route>
         <Route exact path="/manager/routes">
-          <Routes />
+          {sunday ? <Redirect to="/manager/reports" /> : <Routes />}
         </Route>
         <Route exact path="/manager/config">
           <Config />
         </Route>
         <Route exact path="/manager">
-          <Redirect to="/manager/routes" />
+          <Redirect to={sunday ? '/manager/reports' : '/manager/routes'} />
         </Route>
       </IonRouterOutlet>
       <IonTabBar slot="bottom">
@@ -42,14 +44,18 @@ const ManagerTabs: React.FC = () => {
           <IonIcon aria-hidden="true" icon={document} />
           <IonLabel>{t('tabs.reports')}</IonLabel>
         </IonTabButton>
-        <IonTabButton tab="gastos" href="/manager/gastos">
-          <IonIcon aria-hidden="true" icon={wallet} />
-          <IonLabel>{t('tabs.expenses')}</IonLabel>
-        </IonTabButton>
-        <IonTabButton tab="routes" href="/manager/routes">
-          <IonIcon aria-hidden="true" icon={map} />
-          <IonLabel>{t('tabs.routes')}</IonLabel>
-        </IonTabButton>
+        {!sunday && (
+          <IonTabButton tab="gastos" href="/manager/gastos">
+            <IonIcon aria-hidden="true" icon={wallet} />
+            <IonLabel>{t('tabs.expenses')}</IonLabel>
+          </IonTabButton>
+        )}
+        {!sunday && (
+          <IonTabButton tab="routes" href="/manager/routes">
+            <IonIcon aria-hidden="true" icon={map} />
+            <IonLabel>{t('tabs.routes')}</IonLabel>
+          </IonTabButton>
+        )}
         <IonTabButton tab="config" href="/manager/config">
           <IonIcon aria-hidden="true" icon={settings} />
           <IonLabel>{t('common.config')}</IonLabel>

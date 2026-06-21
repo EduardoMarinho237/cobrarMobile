@@ -727,7 +727,7 @@
     "downloading": "Descargando actualización...",
     "downloadComplete": "Descarga completada. Abriendo instalador...",
     "downloadError": "Error al descargar. Intentando abrir en el navegador...",
-    "nativeNote": "El APK se descargará y el instalador de Android se abrirá automáticamente.",
+    "nativeNote": "La descarga se abrirá en el navegador. Después de descargar, toque la notificación para instalar.",
     "webNote": "Haga clic en Actualizar para recargar la aplicación con la versión más reciente."
   },
   "reports": {

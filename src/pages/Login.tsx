@@ -11,6 +11,7 @@ import {
 } from '@ionic/react';
 import { login, isDev } from '../services/api';
 import { useTranslation } from 'react-i18next';
+import { isSunday } from '../utils/sundayUtil';
 // NOTE: Language selector temporarily disabled - only Spanish (es-CO) is available now
 // import LanguageSelector from '../components/LanguageSelector';
 
@@ -73,10 +74,12 @@ const Login: React.FC = () => {
             console.log('Redirecionando para /admin/managers');
             window.location.href = '/admin/managers';
             break;
-          case 'MANAGER':
-            console.log('Redirecionando para /manager/routes');
-            window.location.href = '/manager/routes';
+          case 'MANAGER': {
+            const managerRedirect = isSunday() ? '/manager/reports' : '/manager/routes';
+            console.log('Redirecionando para', managerRedirect);
+            window.location.href = managerRedirect;
             break;
+          }
           case 'ROUTE':
             console.log('Redirecionando para /route/config');
             window.location.href = '/route/config';

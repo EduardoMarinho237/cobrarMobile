@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CapacitorHttp, Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
+import { AppLauncher } from '@capacitor/app-launcher';
 import { logout } from '../services/api';
 
 interface AppUpdateScreenProps {
@@ -13,84 +13,28 @@ interface AppUpdateScreenProps {
 const AppUpdateScreen: React.FC<AppUpdateScreenProps> = ({ message, downloadUrl, onDismiss }) => {
   const { t } = useTranslation();
   const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(0);
   const [isNative, setIsNative] = useState(false);
 
   useEffect(() => {
-    // Detecta se estamos em plataforma nativa Capacitor
     setIsNative(Capacitor.isNativePlatform());
   }, []);
 
   const handleUpdate = async () => {
-    if (!isNative) {
-      // Modo desenvolvimento/navegador: apenas recarrega a página
-      console.log('[AppUpdate] Modo web - recarregando página');
-      window.location.reload();
-      return;
-    }
-
-    // Modo nativo: baixar APK e instalar
     setIsDownloading(true);
-    setDownloadProgress(0);
-
     try {
-      console.log('[AppUpdate] Iniciando download do APK:', downloadUrl);
-
-      // Opção 1: Tentar baixar via CapacitorHttp e salvar com Filesystem
-      const filename = 'app-update.apk';
-
-      // Baixar o arquivo como arraybuffer
-      const response = await CapacitorHttp.get({
-        url: downloadUrl,
-        responseType: 'arraybuffer',
-      });
-
-      if (response.status !== 200 || !response.data) {
-        throw new Error('Falha no download do APK');
+      if (isNative) {
+        console.log('[AppUpdate] Abrindo URL de download:', downloadUrl);
+        await AppLauncher.openUrl({ url: downloadUrl });
+      } else {
+        console.log('[AppUpdate] Modo web - recarregando página');
+        window.location.reload();
       }
-
-      setDownloadProgress(50);
-
-      // Converter base64 para salvar no filesystem
-      const base64Data = response.data;
-
-      // Salvar no diretório Documents (compatível com Android 10+ Scoped Storage)
-      const writeResult = await Filesystem.writeFile({
-        path: filename,
-        data: base64Data,
-        directory: Directory.Documents,
-        recursive: true,
-      });
-
-      setDownloadProgress(100);
-      console.log('[AppUpdate] APK salvo em Documents/', filename, 'uri:', writeResult.uri);
-
-      // Tentar abrir o APK para instalação
-      const fileUri = await Filesystem.getUri({
-        path: filename,
-        directory: Directory.Documents,
-      });
-
-      // Abrir o arquivo APK no instalador do Android via intent
-      // Formatos de tentativa: intent:// e file:// direto
-      const cleanPath = fileUri.uri.replace('file://', '');
-      const intentUrl = `intent://${cleanPath}#Intent;action=android.intent.action.VIEW;type=application/vnd.android.package-archive;end`;
-      window.open(intentUrl, '_system');
-
-      // Fallbacks: tentar abrir a URI direta e depois o link original
-      setTimeout(() => {
-        window.open(fileUri.uri, '_system');
-      }, 800);
-      setTimeout(() => {
-        window.open(downloadUrl, '_system');
-      }, 1600);
-
     } catch (error) {
-      console.error('[AppUpdate] Erro no download:', error);
-      // Fallback: abrir o link diretamente no navegador/sistema
+      console.error('[AppUpdate] Erro:', error);
       window.open(downloadUrl, '_system');
     } finally {
       setIsDownloading(false);
+      onDismiss();
     }
   };
 
@@ -114,7 +58,6 @@ const AppUpdateScreen: React.FC<AppUpdateScreenProps> = ({ message, downloadUrl,
         textAlign: 'center',
       }}
     >
-      {/* Ícone de atualização */}
       <div style={{ marginBottom: '32px' }}>
         <svg
           width="80"
@@ -132,7 +75,6 @@ const AppUpdateScreen: React.FC<AppUpdateScreenProps> = ({ message, downloadUrl,
         </svg>
       </div>
 
-      {/* Título */}
       <h1
         style={{
           color: '#f8fafc',
@@ -145,7 +87,6 @@ const AppUpdateScreen: React.FC<AppUpdateScreenProps> = ({ message, downloadUrl,
         {t('appUpdate.title')}
       </h1>
 
-      {/* Mensagem da API */}
       <p
         style={{
           color: '#94a3b8',
@@ -158,7 +99,6 @@ const AppUpdateScreen: React.FC<AppUpdateScreenProps> = ({ message, downloadUrl,
         {message}
       </p>
 
-      {/* URL do download (para debug) */}
       <p
         style={{
           color: '#64748b',
@@ -170,33 +110,14 @@ const AppUpdateScreen: React.FC<AppUpdateScreenProps> = ({ message, downloadUrl,
         {downloadUrl}
       </p>
 
-      {/* Progresso de download */}
       {isDownloading && (
         <div style={{ width: '100%', maxWidth: '320px', marginBottom: '24px' }}>
-          <div
-            style={{
-              height: '8px',
-              backgroundColor: '#1e293b',
-              borderRadius: '4px',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                height: '100%',
-                width: `${downloadProgress}%`,
-                backgroundColor: '#3b82f6',
-                transition: 'width 0.3s ease',
-              }}
-            />
-          </div>
           <p style={{ color: '#94a3b8', fontSize: '14px', marginTop: '8px' }}>
             {t('appUpdate.downloading')}
           </p>
         </div>
       )}
 
-      {/* Botões */}
       <div
         style={{
           display: 'flex',
@@ -243,7 +164,6 @@ const AppUpdateScreen: React.FC<AppUpdateScreenProps> = ({ message, downloadUrl,
         </button>
       </div>
 
-      {/* Nota de rodapé */}
       <p
         style={{
           color: '#475569',
@@ -252,9 +172,7 @@ const AppUpdateScreen: React.FC<AppUpdateScreenProps> = ({ message, downloadUrl,
           maxWidth: '320px',
         }}
       >
-        {isNative
-          ? t('appUpdate.nativeNote')
-          : t('appUpdate.webNote')}
+        {t('appUpdate.nativeNote')}
       </p>
     </div>
   );

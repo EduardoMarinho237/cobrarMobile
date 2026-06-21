@@ -9,7 +9,8 @@ import RouteTabs from './pages/RouteTabs';
 import EditarCategoria from './pages/manager/EditarCategoria';
 import DetalhesGastos from './pages/manager/DetalhesGastos';
 import SundayBlocked from './pages/route/SundayBlocked';
-import { getCurrentUser, setAppUpdateCallback, resetUpdateModalFlag, checkToken, clearSessionData, setAppUpdateBlocked } from './services/api';
+import { getCurrentUser, setAppUpdateCallback, checkToken, clearSessionData, setAppUpdateBlocked } from './services/api';
+import { isSunday } from './utils/sundayUtil';
 import AppUpdateScreen from './components/AppUpdateScreen';
 
 /* Core CSS required for Ionic components to work properly */
@@ -88,7 +89,6 @@ const App: React.FC = () => {
   const handleUpdateDismiss = () => {
     setShowUpdateAlert(false);
     setAppUpdateBlocked(false);
-    resetUpdateModalFlag();
   };
 
   const checkAuth = () => {
@@ -104,7 +104,7 @@ const App: React.FC = () => {
       case 'ADMIN':
         return '/admin/managers';
       case 'MANAGER':
-        return '/manager/routes';
+        return isSunday() ? '/manager/reports' : '/manager/routes';
       case 'ROUTE':
         return '/route/config';
       default:
@@ -122,6 +122,14 @@ const App: React.FC = () => {
 
       if (!isAuth) {
         return <Redirect to="/login" />;
+      }
+
+      const user = getCurrentUser();
+      if (user?.role === 'MANAGER' && isSunday()) {
+        const currentPath = rest.path || '';
+        if (currentPath.startsWith('/manager') && !currentPath.includes('/manager/reports') && !currentPath.includes('/manager/config')) {
+          return <Redirect to="/manager/reports" />;
+        }
       }
 
       return <Route {...rest}>{children}</Route>;

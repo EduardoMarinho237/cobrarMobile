@@ -504,7 +504,7 @@
     "downloading": "Downloading update...",
     "downloadComplete": "Download complete. Opening installer...",
     "downloadError": "Download error. Trying to open in browser...",
-    "nativeNote": "The APK will be downloaded and the Android installer will open automatically.",
+    "nativeNote": "The download will open in your browser. After downloading, tap the notification to install.",
     "webNote": "Click Update to reload the application with the latest version."
   },
   "reports": {
