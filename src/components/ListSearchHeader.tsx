@@ -39,7 +39,6 @@ const ListSearchHeader: React.FC<ListSearchHeaderProps> = ({
       <IonToolbar>
         {showSearch ? (
           <IonSearchbar
-            value={searchQuery}
             onIonInput={(e) => onSearchQueryChange(e.detail.value ?? '')}
             onIonClear={() => onSearchQueryChange('')}
             onIonCancel={closeSearch}

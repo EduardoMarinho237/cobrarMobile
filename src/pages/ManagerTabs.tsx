@@ -18,7 +18,8 @@ import { isSunday } from '../utils/sundayUtil';
 
 const ManagerTabs: React.FC = () => {
   const { t } = useTranslation();
-  const sunday = isSunday();
+  const isDevMode = import.meta.env.VITE_DEV_MODE === 'TRUE';
+  const blocked = isSunday() && !isDevMode;
   
   return (
     <IonTabs>
@@ -27,16 +28,16 @@ const ManagerTabs: React.FC = () => {
           <Reports />
         </Route>
         <Route exact path="/manager/gastos">
-          {sunday ? <Redirect to="/manager/reports" /> : <Gastos />}
+          {blocked ? <Redirect to="/manager/reports" /> : <Gastos />}
         </Route>
         <Route exact path="/manager/routes">
-          {sunday ? <Redirect to="/manager/reports" /> : <Routes />}
+          {blocked ? <Redirect to="/manager/reports" /> : <Routes />}
         </Route>
         <Route exact path="/manager/config">
           <Config />
         </Route>
         <Route exact path="/manager">
-          <Redirect to={sunday ? '/manager/reports' : '/manager/routes'} />
+          <Redirect to={blocked ? '/manager/reports' : '/manager/routes'} />
         </Route>
       </IonRouterOutlet>
       <IonTabBar slot="bottom">
@@ -44,13 +45,13 @@ const ManagerTabs: React.FC = () => {
           <IonIcon aria-hidden="true" icon={document} />
           <IonLabel>{t('tabs.reports')}</IonLabel>
         </IonTabButton>
-        {!sunday && (
+        {!blocked && (
           <IonTabButton tab="gastos" href="/manager/gastos">
             <IonIcon aria-hidden="true" icon={wallet} />
             <IonLabel>{t('tabs.expenses')}</IonLabel>
           </IonTabButton>
         )}
-        {!sunday && (
+        {!blocked && (
           <IonTabButton tab="routes" href="/manager/routes">
             <IonIcon aria-hidden="true" icon={map} />
             <IonLabel>{t('tabs.routes')}</IonLabel>

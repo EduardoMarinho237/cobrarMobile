@@ -125,7 +125,8 @@ const App: React.FC = () => {
       }
 
       const user = getCurrentUser();
-      if (user?.role === 'MANAGER' && isSunday()) {
+      const isDevMode = import.meta.env.VITE_DEV_MODE === 'TRUE';
+      if (user?.role === 'MANAGER' && isSunday() && !isDevMode) {
         const currentPath = rest.path || '';
         if (currentPath.startsWith('/manager') && !currentPath.includes('/manager/reports') && !currentPath.includes('/manager/config')) {
           return <Redirect to="/manager/reports" />;
@@ -159,6 +160,10 @@ const App: React.FC = () => {
         </ProtectedRoute>
 
         <ProtectedRoute exact path="/admin/api-keys">
+          <AdminTabs />
+        </ProtectedRoute>
+
+        <ProtectedRoute exact path="/admin/transactions">
           <AdminTabs />
         </ProtectedRoute>
 

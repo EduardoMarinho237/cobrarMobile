@@ -75,7 +75,8 @@ const Login: React.FC = () => {
             window.location.href = '/admin/managers';
             break;
           case 'MANAGER': {
-            const managerRedirect = isSunday() ? '/manager/reports' : '/manager/routes';
+            const isDevMode = import.meta.env.VITE_DEV_MODE === 'TRUE';
+            const managerRedirect = isSunday() && !isDevMode ? '/manager/reports' : '/manager/routes';
             console.log('Redirecionando para', managerRedirect);
             window.location.href = managerRedirect;
             break;

@@ -36,6 +36,7 @@ export interface Debit {
   createdAt: string;
   visible: boolean;
   changeAllDays: boolean;
+  transactionId?: string;
 }
 
 export interface ApiResponse<T> {

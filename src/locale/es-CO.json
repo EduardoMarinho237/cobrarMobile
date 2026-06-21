@@ -56,7 +56,8 @@
     "credits": "Créditos",
     "clients": "Clientes",
     "closing": "Cierre",
-    "apiKeys": "Claves de API"
+    "apiKeys": "Claves de API",
+    "transactions": "Transacciones"
   },
   "config": {
     "title": "Configuración",
@@ -718,6 +719,36 @@
       "onlyAvailable": "Solo puede verificar la disponibilidad o cerrar sesión.",
       "checkAvailability": "Verificar Disponibilidad",
       "logout": "Cerrar Sesión"
+    },
+    "transactions": {
+      "title": "Transacciones",
+      "filter": "Filtrar por",
+      "filterAll": "Todas",
+      "filterManager": "Mis Rutas",
+      "filterRoute": "Ruta Específica",
+      "manager": "Gerente",
+      "selectManager": "Seleccionar gerente",
+      "route": "Ruta",
+      "selectRoute": "Seleccionar ruta",
+      "lastUpdate": "Última actualización",
+      "empty": "Sin transacciones",
+      "balanceBefore": "Saldo Antes",
+      "balanceAfter": "Saldo Después",
+      "page": "Página",
+      "of": "de",
+      "types": {
+        "CREDIT_CREATED": "Crédito Creado",
+        "CREDIT_UPDATED": "Crédito Actualizado",
+        "CREDIT_DELETED": "Crédito Eliminado",
+        "DEBIT_APPLIED": "Abono Aplicado",
+        "DEBIT_DELETED": "Abono Eliminado",
+        "DEBIT_UNDONE": "Abono Deshecho",
+        "EXPENSE_REGISTERED": "Gasto Registrado",
+        "EXPENSE_UPDATED": "Gasto Actualizado",
+        "EXPENSE_DELETED": "Gasto Eliminado",
+        "MANAGER_DEPOSIT": "Depósito del Gerente",
+        "MANAGER_WITHDRAWAL": "Retiro del Gerente"
+      }
     }
   },
   "appUpdate": {

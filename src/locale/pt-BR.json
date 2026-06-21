@@ -56,7 +56,8 @@
     "credits": "Créditos",
     "clients": "Clientes",
     "closing": "Fechamento",
-    "apiKeys": "Chaves de API"
+    "apiKeys": "Chaves de API",
+    "transactions": "Transações"
   },
   "config": {
     "title": "Configurações",
@@ -722,6 +723,36 @@
       "migrateExpenseType": "Migrar Tipo de Gasto",
       "chooseTypeToMigrate": "Escolha para qual tipo migrar os gastos de \"{typeName}\"",
       "migrateWarning": "Ao migrar, todos os gastos de '{categoryName}' serão movidos para o tipo selecionado. Esta ação não pode ser desfeita."
+    },
+    "transactions": {
+      "title": "Transações",
+      "filter": "Filtrar por",
+      "filterAll": "Todas",
+      "filterManager": "Minhas Rotas",
+      "filterRoute": "Rota Específica",
+      "manager": "Gerente",
+      "selectManager": "Selecionar gerente",
+      "route": "Rota",
+      "selectRoute": "Selecionar rota",
+      "lastUpdate": "Última atualização",
+      "empty": "Sem transações",
+      "balanceBefore": "Saldo Antes",
+      "balanceAfter": "Saldo Depois",
+      "page": "Página",
+      "of": "de",
+      "types": {
+        "CREDIT_CREATED": "Crédito Criado",
+        "CREDIT_UPDATED": "Crédito Atualizado",
+        "CREDIT_DELETED": "Crédito Excluído",
+        "DEBIT_APPLIED": "Abono Aplicado",
+        "DEBIT_DELETED": "Abono Excluído",
+        "DEBIT_UNDONE": "Abono Desfeito",
+        "EXPENSE_REGISTERED": "Gasto Registrado",
+        "EXPENSE_UPDATED": "Gasto Atualizado",
+        "EXPENSE_DELETED": "Gasto Excluído",
+        "MANAGER_DEPOSIT": "Depósito do Gerente",
+        "MANAGER_WITHDRAWAL": "Retirada do Gerente"
+      }
     }
   },
   "appUpdate": {

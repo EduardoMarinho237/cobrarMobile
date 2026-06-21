@@ -65,6 +65,7 @@ const Cobrancas: React.FC = () => {
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [todayDebitsSearchQuery, setTodayDebitsSearchQuery] = useState('');
+  const [todayDebitsSearchKey, setTodayDebitsSearchKey] = useState(0);
   const [activeCreditId, setActiveCreditId] = useState<number | null>(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [creditHistory, setCreditHistory] = useState<CreditHistoryEntry[]>([]);
@@ -257,13 +258,13 @@ const Cobrancas: React.FC = () => {
     return credit.initialValue + (credit.initialValue * credit.tax / 100);
   };
 
-  const buildWhatsAppMessage = (
-    clientName: string,
-    amountPaid: number,
-    initialDebt: number,
-    remainingDebt: number,
-    transactionId: number
-  ) => {
+const buildWhatsAppMessage = (
+  clientName: string,
+  amountPaid: number,
+  initialDebt: number,
+  remainingDebt: number,
+  transactionId: string | number
+) => {
     return [
       `${t('pages.collections.whatsappShareClientName')}: ${clientName}`,
       `${t('pages.collections.whatsappShareAmountPaid')}: ${formatCurrencyWithSymbol(amountPaid)}`,
@@ -309,13 +310,13 @@ const Cobrancas: React.FC = () => {
           console.error('Erro ao buscar saldo atualizado do crédito:', error);
         }
 
-        if (shareOnWhatsApp && response.data.id) {
+        if (shareOnWhatsApp && (response.data.transactionId || response.data.id)) {
           const message = buildWhatsAppMessage(
             selectedPayment.clientName,
             paidValue,
             calculateInitialDebt(paymentCredit),
             remainingDebt,
-            response.data.id
+            response.data.transactionId || String(response.data.id)
           );
           openWhatsAppShare(message);
         }
@@ -593,8 +594,8 @@ const Cobrancas: React.FC = () => {
                         <div style={{ flex: 1 }}>
                           <IonInput
                             type="number"
-                            value={editedValues[payment.creditId] !== undefined ? editedValues[payment.creditId] : payment.installmentValue}
-                            onIonInput={(e: any) => {
+                            key={`payment-val-${payment.creditId}`}
+                            onIonChange={(e: any) => {
                               const value = e.detail.value === '' ? 0 : Number(e.detail.value);
                               setEditedValues(prev => ({ ...prev, [payment.creditId]: value }));
                             }}
@@ -1011,12 +1012,12 @@ const Cobrancas: React.FC = () => {
               <IonIcon icon={searchOutline} slot="start" style={{ marginLeft: '8px' }} />
               <IonInput
                 placeholder={t('common.searchPlaceholder')}
-                value={todayDebitsSearchQuery}
+                key={todayDebitsSearchKey}
                 onIonInput={(e: any) => setTodayDebitsSearchQuery(e.detail.value || '')}
                 style={{ fontSize: '14px' }}
               />
               {todayDebitsSearchQuery && (
-                <IonButton fill="clear" size="small" onClick={() => setTodayDebitsSearchQuery('')}>
+                <IonButton fill="clear" size="small" onClick={() => { setTodayDebitsSearchQuery(''); setTodayDebitsSearchKey(prev => prev + 1); }}>
                   <IonIcon icon={close} />
                 </IonButton>
               )}

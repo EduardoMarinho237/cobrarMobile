@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   IonContent,
   IonPage,
@@ -96,6 +96,10 @@ const Expenses: React.FC = () => {
   // States para selects aninhados
   const [selectedCategory, setSelectedCategory] = useState<number>(0);
   const [editSelectedCategory, setEditSelectedCategory] = useState<number>(0);
+
+  // Keys para forçar remontagem dos IonInputs ao abrir modais (evita cursor jumping)
+  const [createFormKey, setCreateFormKey] = useState(0);
+  const [editFormKey, setEditFormKey] = useState(0);
 
   useEffect(() => {
     loadData();
@@ -253,6 +257,7 @@ const Expenses: React.FC = () => {
       expenseTypeId: expense.expenseTypeId,
       description: expense.description
     });
+    setEditFormKey(prev => prev + 1);
     setShowEditModal(true);
   };
 
@@ -294,7 +299,12 @@ const Expenses: React.FC = () => {
           <IonButton 
             expand="block" 
             shape="round"
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => {
+              setNewExpense({ value: 0, expenseTypeId: 0, description: '' });
+              setSelectedCategory(0);
+              setCreateFormKey(prev => prev + 1);
+              setShowCreateModal(true);
+            }}
             style={{ marginBottom: '16px' }}
           >
             <IonIcon slot="start" icon={add} />
@@ -436,8 +446,11 @@ const Expenses: React.FC = () => {
                   labelPlacement="floating"
                   placeholder={t('pages.expenses.valuePlaceholder')}
                   type="number"
-                  value={newExpense.value}
-                  onIonInput={(e: any) => setNewExpense({ ...newExpense, value: Number(e.detail.value) })}
+                  key={`create-val-${createFormKey}`}
+                  onIonChange={(e: any) => {
+                    const val = e.detail.value;
+                    setNewExpense(prev => ({ ...prev, value: val === '' ? 0 : Number(val) }));
+                  }}
                 />
               </IonItem>
               <IonItem>
@@ -445,8 +458,8 @@ const Expenses: React.FC = () => {
                   label={t('pages.expenses.description')}
                   labelPlacement="floating"
                   placeholder={t('pages.expenses.descriptionPlaceholder')}
-                  value={newExpense.description}
-                  onIonInput={(e: any) => setNewExpense({ ...newExpense, description: e.detail.value })}
+                  key={`create-desc-${createFormKey}`}
+                  onIonChange={(e: any) => setNewExpense(prev => ({ ...prev, description: e.detail.value || '' }))}
                 />
               </IonItem>
               <IonButton 
@@ -508,8 +521,12 @@ const Expenses: React.FC = () => {
                   labelPlacement="floating"
                   placeholder={t('pages.expenses.valuePlaceholder')}
                   type="number"
-                  value={editExpense.value}
-                  onIonInput={(e: any) => setEditExpense({ ...editExpense, value: Number(e.detail.value) })}
+                  key={`edit-val-${editFormKey}`}
+                  defaultValue={selectedExpense?.value ?? editExpense.value}
+                  onIonChange={(e: any) => {
+                    const val = e.detail.value;
+                    setEditExpense(prev => ({ ...prev, value: val === '' ? 0 : Number(val) }));
+                  }}
                 />
               </IonItem>
               <IonItem>
@@ -517,8 +534,9 @@ const Expenses: React.FC = () => {
                   label={t('pages.expenses.description')}
                   labelPlacement="floating"
                   placeholder={t('pages.expenses.descriptionPlaceholder')}
-                  value={editExpense.description}
-                  onIonInput={(e: any) => setEditExpense({ ...editExpense, description: e.detail.value })}
+                  key={`edit-desc-${editFormKey}`}
+                  defaultValue={selectedExpense?.description ?? editExpense.description}
+                  onIonChange={(e: any) => setEditExpense(prev => ({ ...prev, description: e.detail.value || '' }))}
                 />
               </IonItem>
               <IonButton 

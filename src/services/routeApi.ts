@@ -40,6 +40,10 @@ export const getRoutes = async () => {
   return apiRequest('/api/users');
 };
 
+export const getRoutesByManager = async (managerId: number) => {
+  return apiRequest(`/api/users/${managerId}/routes`);
+};
+
 export const updateRoute = async (id: number, name: string, login: string, tax: number) => {
   try {
     const response = await apiRequest(`/api/users/${id}`, {

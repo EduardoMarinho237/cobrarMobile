@@ -55,7 +55,8 @@
     "credits": "Credits",
     "clients": "Clients",
     "closing": "Closing",
-    "apiKeys": "API Keys"
+    "apiKeys": "API Keys",
+    "transactions": "Transactions"
   },
   "config": {
     "title": "Settings",
@@ -495,6 +496,36 @@
       "onlyAvailable": "You can only check availability or log out of the system.",
       "checkAvailability": "Check Availability",
       "logout": "Logout"
+    },
+    "transactions": {
+      "title": "Transactions",
+      "filter": "Filter by",
+      "filterAll": "All",
+      "filterManager": "My Routes",
+      "filterRoute": "Specific Route",
+      "manager": "Manager",
+      "selectManager": "Select manager",
+      "route": "Route",
+      "selectRoute": "Select route",
+      "lastUpdate": "Last update",
+      "empty": "No transactions",
+      "balanceBefore": "Balance Before",
+      "balanceAfter": "Balance After",
+      "page": "Page",
+      "of": "of",
+      "types": {
+        "CREDIT_CREATED": "Credit Created",
+        "CREDIT_UPDATED": "Credit Updated",
+        "CREDIT_DELETED": "Credit Deleted",
+        "DEBIT_APPLIED": "Debit Applied",
+        "DEBIT_DELETED": "Debit Deleted",
+        "DEBIT_UNDONE": "Debit Undone",
+        "EXPENSE_REGISTERED": "Expense Registered",
+        "EXPENSE_UPDATED": "Expense Updated",
+        "EXPENSE_DELETED": "Expense Deleted",
+        "MANAGER_DEPOSIT": "Manager Deposit",
+        "MANAGER_WITHDRAWAL": "Manager Withdrawal"
+      }
     }
   },
   "appUpdate": {

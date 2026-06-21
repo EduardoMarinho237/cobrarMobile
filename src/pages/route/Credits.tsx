@@ -56,6 +56,8 @@ const Credits: React.FC = () => {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [selectedCredit, setSelectedCredit] = useState<Credit | null>(null);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
+  const [createFormKey, setCreateFormKey] = useState(0);
+  const [editFormKey, setEditFormKey] = useState(0);
 
   // Form states
   const defaultStartDate = isSunday(new Date()) ? nextBusinessDayFormatted() : todayFormatted();
@@ -207,6 +209,7 @@ const Credits: React.FC = () => {
       quantityDays: credit.quantityDays,
       clientId: credit.clientId
     });
+    setEditFormKey(prev => prev + 1);
     setShowEditModal(true);
   };
 
@@ -253,7 +256,7 @@ const Credits: React.FC = () => {
           <IonButton 
             expand="block" 
             shape="round"
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => { setNewCredit({ ...newCredit, initialValue: 0, quantityDays: 1 }); setCreateFormKey(prev => prev + 1); setShowCreateModal(true); }}
             style={{ marginBottom: '16px' }}
           >
             <IonIcon slot="start" icon={add} />
@@ -431,8 +434,11 @@ const Credits: React.FC = () => {
                   labelPlacement="floating"
                   placeholder="0,00"
                   type="number"
-                  value={newCredit.initialValue}
-                  onIonInput={(e: any) => setNewCredit({ ...newCredit, initialValue: Number(e.detail.value) })}
+                  key={`create-init-${createFormKey}`}
+                  onIonChange={(e: any) => {
+                    const val = e.detail.value;
+                    setNewCredit(prev => ({ ...prev, initialValue: val === '' ? 0 : Number(val) }));
+                  }}
                 />
               </IonItem>
               <IonItem lines="none">
@@ -465,8 +471,11 @@ const Credits: React.FC = () => {
                   labelPlacement="floating"
                   placeholder="1"
                   type="number"
-                  value={newCredit.quantityDays}
-                  onIonInput={(e: any) => setNewCredit({ ...newCredit, quantityDays: Number(e.detail.value) })}
+                  key={`create-qty-${createFormKey}`}
+                  onIonChange={(e: any) => {
+                    const val = e.detail.value;
+                    setNewCredit(prev => ({ ...prev, quantityDays: val === '' ? 1 : Number(val) }));
+                  }}
                 />
               </IonItem>
               <IonItem>
@@ -544,8 +553,12 @@ const Credits: React.FC = () => {
                   labelPlacement="floating"
                   placeholder="0,00"
                   type="number"
-                  value={editCredit.initialValue}
-                  onIonInput={(e: any) => setEditCredit({ ...editCredit, initialValue: Number(e.detail.value) })}
+                  key={`edit-init-${editFormKey}`}
+                  defaultValue={editCredit.initialValue}
+                  onIonChange={(e: any) => {
+                    const val = e.detail.value;
+                    setEditCredit(prev => ({ ...prev, initialValue: val === '' ? 0 : Number(val) }));
+                  }}
                 />
               </IonItem>
               <IonItem>
@@ -553,8 +566,9 @@ const Credits: React.FC = () => {
                   label={t('pages.credits.startDateRequired')}
                   labelPlacement="floating"
                   type="date"
-                  value={editCredit.startDate}
-                  onIonInput={(e: any) => setEditCredit({ ...editCredit, startDate: e.detail.value })}
+                  key={`edit-date-${editFormKey}`}
+                  defaultValue={editCredit.startDate}
+                  onIonChange={(e: any) => setEditCredit(prev => ({ ...prev, startDate: e.detail.value }))}
                 />
               </IonItem>
               <IonItem>
@@ -563,8 +577,12 @@ const Credits: React.FC = () => {
                   labelPlacement="floating"
                   placeholder="1"
                   type="number"
-                  value={editCredit.quantityDays}
-                  onIonInput={(e: any) => setEditCredit({ ...editCredit, quantityDays: Number(e.detail.value) })}
+                  key={`edit-qty-${editFormKey}`}
+                  defaultValue={editCredit.quantityDays}
+                  onIonChange={(e: any) => {
+                    const val = e.detail.value;
+                    setEditCredit(prev => ({ ...prev, quantityDays: val === '' ? 1 : Number(val) }));
+                  }}
                 />
               </IonItem>
               <IonButton 

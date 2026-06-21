@@ -258,7 +258,7 @@ export const getExpenses = async (): Promise<Expense[]> => {
 
 export const getExpensesPaginated = async (page: number, size: number): Promise<{ content: Expense[]; last: boolean; totalElements: number }> => {
   try {
-    const response = await apiRequest(`/api/expenses/paged?page=${page}&size=${size}`, {
+    const response = await apiRequest(`/api/expenses/paged?page=${page}&size=${size}&sort=createdAt,desc`, {
       method: 'GET',
     });
 
