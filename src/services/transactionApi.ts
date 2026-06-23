@@ -1,4 +1,4 @@
-import { apiRequest, isDev } from './api';
+import { apiRequest } from './api';
 
 export interface Transaction {
   id: number;
@@ -35,23 +35,15 @@ interface TransactionsParams {
   type?: string | null;
   page?: number;
   size?: number;
+  date?: string;
 }
 
 export const getAdminTransactions = async (params: TransactionsParams): Promise<TransactionPage | null> => {
-  if (isDev()) {
-    return {
-      content: [],
-      totalPages: 0,
-      totalElements: 0,
-      number: 0,
-      size: 50,
-    };
-  }
-
   const queryParams = new URLSearchParams();
   if (params.tenantId != null) queryParams.append('tenantId', String(params.tenantId));
   if (params.routeId != null) queryParams.append('routeId', String(params.routeId));
   if (params.type != null) queryParams.append('type', params.type);
+  if (params.date != null) queryParams.append('date', params.date);
   queryParams.append('page', String(params.page ?? 0));
   queryParams.append('size', String(params.size ?? 50));
 
@@ -62,6 +54,7 @@ export const getAdminTransactions = async (params: TransactionsParams): Promise<
   if (!response) return null;
 
   const apiResponse = response as any;
+  if (apiResponse.success === false) return null;
   if (apiResponse.data) {
     return apiResponse.data as TransactionPage;
   }
@@ -69,16 +62,6 @@ export const getAdminTransactions = async (params: TransactionsParams): Promise<
 };
 
 export const getManagerTransactions = async (params: TransactionsParams): Promise<TransactionPage | null> => {
-  if (isDev()) {
-    return {
-      content: [],
-      totalPages: 0,
-      totalElements: 0,
-      number: 0,
-      size: 50,
-    };
-  }
-
   const queryParams = new URLSearchParams();
   if (params.routeId != null) queryParams.append('routeId', String(params.routeId));
   if (params.type != null) queryParams.append('type', params.type);
@@ -92,6 +75,7 @@ export const getManagerTransactions = async (params: TransactionsParams): Promis
   if (!response) return null;
 
   const apiResponse = response as any;
+  if (apiResponse.success === false) return null;
   if (apiResponse.data) {
     return apiResponse.data as TransactionPage;
   }

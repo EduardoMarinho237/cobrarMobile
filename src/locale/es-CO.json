@@ -722,9 +722,11 @@
     },
     "transactions": {
       "title": "Transacciones",
+      "date": "Fecha",
+      "today": "Hoy",
       "filter": "Filtrar por",
       "filterAll": "Todas",
-      "filterManager": "Mis Rutas",
+      "filterManager": "Mis Gerentes",
       "filterRoute": "Ruta Específica",
       "manager": "Gerente",
       "selectManager": "Seleccionar gerente",

@@ -726,6 +726,8 @@
     },
     "transactions": {
       "title": "Transações",
+      "date": "Data",
+      "today": "Hoje",
       "filter": "Filtrar por",
       "filterAll": "Todas",
       "filterManager": "Minhas Rotas",

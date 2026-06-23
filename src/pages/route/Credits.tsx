@@ -27,17 +27,15 @@ import {
   IonSpinner,
   IonProgressBar
 } from '@ionic/react';
-import { add, trash, create } from 'ionicons/icons';
+import { add, trash } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { formatToBrazilTime } from '../../utils/dateFormat';
 import { todayFormatted, nextBusinessDayFormatted, isSunday } from '../../utils/sundayUtil';
 import {
   Credit,
   CreateCreditRequest,
-  UpdateCreditRequest,
   getCredits,
   createCredit,
-  updateCredit,
   deleteCredit
 } from '../../services/creditApi';
 import { getClients, Client } from '../../services/clientApi';
@@ -52,14 +50,11 @@ const Credits: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [cashBalance, setCashBalance] = useState<number>(0);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [selectedCredit, setSelectedCredit] = useState<Credit | null>(null);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
   const [createFormKey, setCreateFormKey] = useState(0);
-  const [editFormKey, setEditFormKey] = useState(0);
 
-  // Form states
   const defaultStartDate = isSunday(new Date()) ? nextBusinessDayFormatted() : todayFormatted();
 
   const [newCredit, setNewCredit] = useState<CreateCreditRequest>({ 
@@ -68,13 +63,6 @@ const Credits: React.FC = () => {
     quantityDays: 1,
     clientId: 0,
     overdue: 'EXTEND_TERM'
-  });
-
-  const [editCredit, setEditCredit] = useState<UpdateCreditRequest>({
-    initialValue: 0,
-    startDate: defaultStartDate,
-    quantityDays: 1,
-    clientId: 0
   });
 
   useEffect(() => {
@@ -143,45 +131,6 @@ const Credits: React.FC = () => {
     }
   };
 
-  const handleEditCredit = async () => {
-    if (!editCredit.clientId) {
-      showToast(t('pages.credits.clientRequiredError'), 'danger');
-      return;
-    }
-
-    if (editCredit.initialValue < 1) {
-      showToast(t('pages.credits.initialValueGreaterThanZero'), 'danger');
-      return;
-    }
-
-    if (editCredit.quantityDays < 1) {
-      showToast(t('pages.credits.quantityDaysGreaterThanZero'), 'danger');
-      return;
-    }
-
-    if (!selectedCredit) return;
-
-    try {
-      const response = await updateCredit(selectedCredit.id, editCredit);
-      if (response.success) {
-        showToast(t('pages.credits.creditUpdatedSuccess'), 'success');
-        setShowEditModal(false);
-        setEditCredit({
-          initialValue: 0,
-          startDate: isSunday(new Date()) ? nextBusinessDayFormatted() : todayFormatted(),
-          quantityDays: 1,
-          clientId: 0
-        });
-        setSelectedCredit(null);
-        loadData();
-      } else {
-        showToast(response.message || t('pages.credits.errorUpdatingCredit'), 'danger');
-      }
-    } catch (error) {
-      showToast(t('pages.credits.errorUpdatingCredit'), 'danger');
-    }
-  };
-
   const handleDeleteCredit = () => {
     if (!selectedCredit) return;
 
@@ -200,19 +149,6 @@ const Credits: React.FC = () => {
         showToast(t('pages.credits.errorConnection'), 'danger');
       });
   };
-
-  const openEditModal = (credit: Credit) => {
-    setSelectedCredit(credit);
-    setEditCredit({ 
-      initialValue: credit.initialValue,
-      startDate: credit.startDate,
-      quantityDays: credit.quantityDays,
-      clientId: credit.clientId
-    });
-    setEditFormKey(prev => prev + 1);
-    setShowEditModal(true);
-  };
-
 
   const formatDate = (dateString: string) => {
     return formatToBrazilTime(dateString);
@@ -372,15 +308,7 @@ const Credits: React.FC = () => {
                       </IonCol>
                     </IonRow>
                     <IonRow>
-                      <IonCol size="6">
-                        <IonButton
-                          fill="clear"
-                          onClick={() => openEditModal(credit)}
-                        >
-                          <IonIcon icon={create} />
-                        </IonButton>
-                      </IonCol>
-                      <IonCol size="6">
+                      <IonCol size="12" style={{ textAlign: 'right' }}>
                         <IonButton
                           fill="clear"
                           color="danger"
@@ -515,83 +443,6 @@ const Credits: React.FC = () => {
                 color="primary"
               >
                 {t('pages.credits.create')}
-              </IonButton>
-            </div>
-          </IonContent>
-        </IonModal>
-
-        {/* Modal Editar Crédito */}
-        <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('pages.credits.editCreditTitle')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowEditModal(false)}>{t('common.close')}</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent>
-            <div style={{ padding: '16px' }}>
-              <IonItem>
-                <IonSelect
-                  label={t('pages.credits.clientRequired')}
-                  labelPlacement="floating"
-                  placeholder={t('pages.credits.selectClient')}
-                  value={editCredit.clientId}
-                  onIonChange={(e) => setEditCredit({ ...editCredit, clientId: e.detail.value as number })}
-                >
-                  {clients.map((client) => (
-                    <IonSelectOption key={client.id} value={client.id}>
-                      {client.name}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
-              <IonItem>
-                <IonInput
-                  label={t('pages.credits.initialValueRequired')}
-                  labelPlacement="floating"
-                  placeholder="0,00"
-                  type="number"
-                  key={`edit-init-${editFormKey}`}
-                  defaultValue={editCredit.initialValue}
-                  onIonChange={(e: any) => {
-                    const val = e.detail.value;
-                    setEditCredit(prev => ({ ...prev, initialValue: val === '' ? 0 : Number(val) }));
-                  }}
-                />
-              </IonItem>
-              <IonItem>
-                <IonInput
-                  label={t('pages.credits.startDateRequired')}
-                  labelPlacement="floating"
-                  type="date"
-                  key={`edit-date-${editFormKey}`}
-                  defaultValue={editCredit.startDate}
-                  onIonChange={(e: any) => setEditCredit(prev => ({ ...prev, startDate: e.detail.value }))}
-                />
-              </IonItem>
-              <IonItem>
-                <IonInput
-                  label={t('pages.credits.quantityDaysRequired')}
-                  labelPlacement="floating"
-                  placeholder="1"
-                  type="number"
-                  key={`edit-qty-${editFormKey}`}
-                  defaultValue={editCredit.quantityDays}
-                  onIonChange={(e: any) => {
-                    const val = e.detail.value;
-                    setEditCredit(prev => ({ ...prev, quantityDays: val === '' ? 1 : Number(val) }));
-                  }}
-                />
-              </IonItem>
-              <IonButton 
-                expand="block" 
-                shape="round"
-                onClick={handleEditCredit}
-                style={{ marginTop: '16px' }}
-              >
-                {t('pages.credits.update')}
               </IonButton>
             </div>
           </IonContent>

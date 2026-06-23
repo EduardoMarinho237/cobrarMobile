@@ -9,7 +9,7 @@ import {
   IonLoading,
   IonCheckbox
 } from '@ionic/react';
-import { login, isDev } from '../services/api';
+import { login } from '../services/api';
 import { useTranslation } from 'react-i18next';
 import { isSunday } from '../utils/sundayUtil';
 // NOTE: Language selector temporarily disabled - only Spanish (es-CO) is available now
@@ -189,16 +189,6 @@ const Login: React.FC = () => {
               {t('login.loginButton')}
             </IonButton>
             
-            {isDev() && (
-              <div style={{ marginTop: '20px' }}>
-                <small style={{ color: '#666' }}>
-                  <strong>{t('login.testUsers')}</strong><br/>
-                  admin/admin ({t('userRoles.ADMIN')})<br/>
-                  manager/manager ({t('userRoles.MANAGER')})<br/>
-                  route/route ({t('userRoles.ROUTE')})
-                </small>
-              </div>
-            )}
           </div>
           
           {/* NOTE: Language selector temporarily disabled - only Spanish (es-CO) is available now

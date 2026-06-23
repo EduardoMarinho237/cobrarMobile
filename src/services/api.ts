@@ -3,8 +3,6 @@ import i18n from '../i18n';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'DEV';
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || '0.0.0';
 
-export const isDev = () => API_BASE_URL === 'DEV';
-
 // Event emitter para app desatualizado
 let appUpdateCallback: ((message: string, downloadUrl: string) => void) | null = null;
 
@@ -45,16 +43,9 @@ const getFechamentoEvents = () => {
 localStorage.setItem('timezone', 'America/Sao_Paulo');
 
 console.log('API_BASE_URL:', API_BASE_URL);
-console.log('isDev():', isDev());
 
 export const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   console.log('apiRequest chamado - endpoint:', endpoint);
-  console.log('isDev():', isDev());
-  
-  if (isDev()) {
-    console.log('Retornando null (modo mock)');
-    return null; // Mock mode
-  }
 
   // Bloquear requisições durante tela de atualização (exceto logout)
   const isLogoutEndpoint = endpoint === '/api/auth/logout';
@@ -72,8 +63,11 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
   const token = localStorage.getItem('auth_token');
   
   // Fallback para compatibilidade com código existente
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
+  let user: any = null;
+  try {
+    const userStr = localStorage.getItem('user');
+    user = userStr ? JSON.parse(userStr) : null;
+  } catch {}
   const fallbackToken = user?.token;
   
   const finalToken = token || fallbackToken;
@@ -271,36 +265,6 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
 export const login = async (login: string, password: string, rememberMe = false) => {
   console.log('=== INÍCIO DO LOGIN ===');
   console.log('Login para:', login);
-  console.log('isDev():', isDev());
-  
-  if (isDev()) {
-    console.log('Usando modo mock');
-    // Mock login
-    const mockUsers = {
-      admin: { password: 'admin', name: 'ADM', role: 'ADMIN', token: 'mock-token-admin', closedDay: false },
-      manager: { password: 'manager', name: 'Manager', role: 'MANAGER', token: 'mock-token-manager', closedDay: false },
-      route: { password: 'route', name: 'Route', role: 'ROUTE', token: 'mock-token-route', closedDay: false }
-    };
-    
-    const user = mockUsers[login as keyof typeof mockUsers];
-    if (user && user.password === password) {
-      console.log('Login mock successful:', user);
-      return {
-        name: user.name,
-        login: login,
-        role: user.role,
-        token: user.token,
-        userId: 1,
-        type: 'Bearer',
-        closedDay: user.closedDay
-      };
-    }
-    console.log('Credenciais mock inválidas');
-    throw new Error('Credenciais inválidas');
-  }
-
-  // Real API login
-  console.log('Fazendo requisição para API real...');
   try {
     const response = await apiRequest('/api/auth/login', {
       method: 'POST',
@@ -369,10 +333,6 @@ export const clearSessionData = () => {
 };
 
 export const checkToken = async (): Promise<boolean> => {
-  if (isDev()) {
-    return !!localStorage.getItem('auth_token');
-  }
-
   const token = localStorage.getItem('auth_token');
   if (!token) {
     return false;
@@ -392,11 +352,9 @@ export const checkToken = async (): Promise<boolean> => {
 
 export const logout = async () => {
   try {
-    if (!isDev()) {
-      await apiRequest('/api/auth/logout', {
-        method: 'POST',
-      });
-    }
+    await apiRequest('/api/auth/logout', {
+      method: 'POST',
+    });
   } catch (error) {
     console.error('Erro ao encerrar sessão no servidor:', error);
   } finally {
@@ -406,19 +364,15 @@ export const logout = async () => {
 };
 
 export const getCurrentUser = () => {
-  const userStr = localStorage.getItem('user');
-  return userStr ? JSON.parse(userStr) : null;
+  try {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  } catch {
+    return null;
+  }
 };
 
 export const createManager = async (name: string, login: string, password: string) => {
-  if (isDev()) {
-    // Mock response
-    return {
-      success: true,
-      message: 'Manager criado com sucesso'
-    };
-  }
-
   try {
     const response = await apiRequest('/api/users', {
       method: 'POST',
@@ -453,41 +407,10 @@ export const createManager = async (name: string, login: string, password: strin
 };
 
 export const getManagers = async () => {
-  if (isDev()) {
-    // Mock response
-    return [
-      {
-        id: 5,
-        name: 'Juan Manager',
-        login: 'juan.manager',
-        role: 'MANAGER',
-        lastAccess: null,
-        appearOnAudit: true
-      },
-      {
-        id: 6,
-        name: 'Maria Manager',
-        login: 'maria.manager',
-        role: 'MANAGER',
-        lastAccess: '2024-01-15T10:30:00Z',
-        appearOnAudit: false
-      }
-    ];
-  }
-
-  // Para endpoints GET, retorna a resposta diretamente
   return apiRequest('/api/users');
 };
 
 export const updateManager = async (id: number, name: string, login: string) => {
-  if (isDev()) {
-    // Mock response
-    return {
-      success: true,
-      message: 'Manager atualizado com sucesso'
-    };
-  }
-
   try {
     const response = await apiRequest(`/api/users/${id}`, {
       method: 'PUT',
@@ -522,14 +445,6 @@ export const updateManager = async (id: number, name: string, login: string) => 
 };
 
 export const toggleManagerAudit = async (id: number, appearOnAudit: boolean) => {
-  if (isDev()) {
-    // Mock response
-    return {
-      success: true,
-      message: appearOnAudit ? 'Acesso restaurado com sucesso' : 'Acesso restrito com sucesso'
-    };
-  }
-
   try {
     const response = await apiRequest(`/api/users/${id}`, {
       method: 'PUT',
@@ -564,14 +479,6 @@ export const toggleManagerAudit = async (id: number, appearOnAudit: boolean) => 
 };
 
 export const toggleRouteAudit = async (id: number, appearOnAudit: boolean) => {
-  if (isDev()) {
-    // Mock response
-    return {
-      success: true,
-      message: appearOnAudit ? 'Acesso restaurado com sucesso' : 'Acesso restrito com sucesso'
-    };
-  }
-
   try {
     const response = await apiRequest(`/api/users/${id}`, {
       method: 'PUT',
@@ -606,14 +513,6 @@ export const toggleRouteAudit = async (id: number, appearOnAudit: boolean) => {
 };
 
 export const changeManagerPassword = async (id: number, newPassword: string) => {
-  if (isDev()) {
-    // Mock response
-    return {
-      success: true,
-      message: 'Senha alterada com sucesso'
-    };
-  }
-
   const requestBody = JSON.stringify({ newPassword });
   console.log('Enviando request para alterar senha:', requestBody);
 

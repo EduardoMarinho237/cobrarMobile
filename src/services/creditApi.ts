@@ -26,13 +26,6 @@ export interface CreateCreditRequest {
   overdue?: 'CAPITALIZE_DEBT' | 'EXTEND_TERM';
 }
 
-export interface UpdateCreditRequest {
-  initialValue: number;
-  startDate: string;
-  quantityDays: number;
-  clientId: number;
-  overdue?: 'CAPITALIZE_DEBT' | 'EXTEND_TERM';
-}
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -276,71 +269,6 @@ export const createCredit = async (credit: CreateCreditRequest): Promise<ApiResp
     return {
       success: false,
       message: error.message || 'Erro ao criar crédito',
-      data: null
-    };
-  }
-};
-
-export const updateCredit = async (id: number, credit: UpdateCreditRequest): Promise<ApiResponse<Credit>> => {
-  try {
-    const response = await apiRequest(`/api/credits/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        ...credit,
-        overdue: credit.overdue || 'EXTEND_TERM'
-      }),
-    });
-
-    // Se for modo mock, atualiza o crédito mockado
-    if (response.mock) {
-      const creditIndex = mockCredits.findIndex(c => c.id === id);
-      if (creditIndex === -1) {
-        return {
-          success: false,
-          message: 'Crédito não encontrado',
-          data: null
-        };
-      }
-
-      const existingCredit = mockCredits[creditIndex];
-      // Obter taxa do usuário logado (route)
-      const userStr = localStorage.getItem('user');
-      const user = userStr ? JSON.parse(userStr) : null;
-      const tax = user?.tax || 0; // Taxa padrão 0 se não encontrada
-      
-      const updatedCredit: Credit = {
-        ...existingCredit,
-        initialValue: credit.initialValue,
-        startDate: credit.startDate,
-        tax: tax,
-        totalDebt: credit.initialValue + (credit.initialValue * tax / 100),
-        quantityDays: credit.quantityDays,
-        finalDate: formatDateToLocalISO(new Date(new Date(credit.startDate).getTime() + credit.quantityDays * 24 * 60 * 60 * 1000)),
-        dayValue: Math.round((credit.initialValue + (credit.initialValue * tax / 100)) / credit.quantityDays),
-        lastInstallment: credit.quantityDays,
-        clientId: credit.clientId,
-        clientName: `Cliente ${credit.clientId}` // Em um app real, buscaria o nome do cliente
-      };
-
-      mockCredits[creditIndex] = updatedCredit;
-      
-      return {
-        success: true,
-        message: 'Crédito atualizado com sucesso',
-        data: updatedCredit
-      };
-    }
-
-    return {
-      success: true,
-      message: response.message || 'Crédito atualizado com sucesso',
-      data: response.data!
-    };
-  } catch (error: any) {
-    console.error('Erro ao atualizar crédito:', error);
-    return {
-      success: false,
-      message: error.message || 'Erro ao atualizar crédito',
       data: null
     };
   }

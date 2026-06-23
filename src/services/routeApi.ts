@@ -1,4 +1,4 @@
-import { apiRequest, isDev } from './api';
+import { apiRequest } from './api';
 import i18n from '../i18n';
 
 export const createRoute = async (name: string, login: string, password: string, tax: number, initialDeposit?: number) => {

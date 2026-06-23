@@ -1,4 +1,4 @@
-import { apiRequest, isDev } from './api';
+import { apiRequest } from './api';
 
 export interface CashTransaction {
   id: number;
@@ -33,9 +33,6 @@ export interface WithdrawalRequest {
 }
 
 export const deposit = async (request: DepositRequest): Promise<{ success: boolean; message: string; data?: any }> => {
-  if (isDev()) {
-    return { success: true, message: 'Deposito realizado com sucesso' };
-  }
   return apiRequest('/api/cash-box/deposit', {
     method: 'POST',
     body: JSON.stringify(request)
@@ -43,9 +40,6 @@ export const deposit = async (request: DepositRequest): Promise<{ success: boole
 };
 
 export const withdrawal = async (request: WithdrawalRequest): Promise<{ success: boolean; message: string; data?: any }> => {
-  if (isDev()) {
-    return { success: true, message: 'Retirada realizada com sucesso' };
-  }
   return apiRequest('/api/cash-box/withdrawal', {
     method: 'POST',
     body: JSON.stringify(request)
@@ -53,9 +47,6 @@ export const withdrawal = async (request: WithdrawalRequest): Promise<{ success:
 };
 
 export const getMyBalance = async (): Promise<number> => {
-  if (isDev()) {
-    return 10000;
-  }
   try {
     const response: CashBalanceResponse = await apiRequest('/api/cash-box/my-balance');
     return response?.data || 0;
@@ -66,9 +57,6 @@ export const getMyBalance = async (): Promise<number> => {
 };
 
 export const getMyInitialBalance = async (): Promise<number> => {
-  if (isDev()) {
-    return 10000;
-  }
   try {
     const response: CashBalanceResponse = await apiRequest('/api/cash-box/my-initial-balance');
     return response?.data || 0;
@@ -79,9 +67,6 @@ export const getMyInitialBalance = async (): Promise<number> => {
 };
 
 export const getBalance = async (routeId: number): Promise<number> => {
-  if (isDev()) {
-    return 10000;
-  }
   try {
     const response: CashBalanceResponse = await apiRequest(`/api/cash-box/balance/${routeId}`);
     return response?.data || 0;
@@ -92,11 +77,6 @@ export const getBalance = async (routeId: number): Promise<number> => {
 };
 
 export const getMyTransactions = async (): Promise<CashTransaction[]> => {
-  if (isDev()) {
-    return [
-      { id: 1, routeId: 1, createdBy: 2, type: 'MANAGER_DEPOSIT', amount: 10000, balanceBefore: 0, balanceAfter: 10000, referenceId: null, referenceType: null, description: 'Deposito inicial', createdAt: '2024-01-01T00:00:00' }
-    ];
-  }
   try {
     const response = await apiRequest('/api/cash-box/my-transactions');
     return response?.data || [];
@@ -107,11 +87,6 @@ export const getMyTransactions = async (): Promise<CashTransaction[]> => {
 };
 
 export const getTransactions = async (routeId: number): Promise<CashTransaction[]> => {
-  if (isDev()) {
-    return [
-      { id: 1, routeId, createdBy: 2, type: 'MANAGER_DEPOSIT', amount: 10000, balanceBefore: 0, balanceAfter: 10000, referenceId: null, referenceType: null, description: 'Deposito inicial', createdAt: '2024-01-01T00:00:00' }
-    ];
-  }
   try {
     const response = await apiRequest(`/api/cash-box/transactions/${routeId}`);
     return response?.data || [];
@@ -122,11 +97,6 @@ export const getTransactions = async (routeId: number): Promise<CashTransaction[
 };
 
 export const getMyManagerTransactions = async (): Promise<CashTransaction[]> => {
-  if (isDev()) {
-    return [
-      { id: 1, routeId: 1, createdBy: 2, type: 'MANAGER_DEPOSIT', amount: 5000, balanceBefore: 5000, balanceAfter: 10000, referenceId: null, referenceType: null, description: 'Deposito do manager', createdAt: '2024-01-01T10:00:00' }
-    ];
-  }
   try {
     const response = await apiRequest('/api/cash-box/my-manager-transactions');
     return response?.data || [];

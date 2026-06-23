@@ -21,8 +21,9 @@ import {
   IonGrid,
   IonRow,
   IonCol,
+  IonInput,
 } from '@ionic/react';
-import { refresh,chevronBack,chevronForward } from 'ionicons/icons';
+import { refresh,chevronBack,chevronForward,calendar } from 'ionicons/icons';
 import { getAdminTransactions, TransactionPage, Transaction } from '../../services/transactionApi';
 import { getManagers } from '../../services/api';
 import { getRoutesByManager } from '../../services/routeApi';
@@ -43,8 +44,6 @@ interface RouteOption {
 
 type FilterMode = 'all' | 'manager' | 'route';
 
-const PAGE_SIZE = 50;
-
 const Transactions: React.FC = () => {
   const { t } = useTranslation();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -59,13 +58,18 @@ const Transactions: React.FC = () => {
   const [managers, setManagers] = useState<ManagerOption[]>([]);
   const [routes, setRoutes] = useState<RouteOption[]>([]);
   const [routeManagerId, setRouteManagerId] = useState<number | null>(null);
+  const dateInputRef = useRef<HTMLIonInputElement>(null);
   const [lastUpdate, setLastUpdate] = useState<string>('');
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+
+  const isToday = selectedDate === todayStr;
 
   const fetchTransactions = useCallback(async (currentPage: number, append: boolean = false) => {
     setLoading(true);
     setError(null);
     try {
-      const params: any = { page: currentPage, size: PAGE_SIZE };
+      const params: any = { page: isToday ? 0 : currentPage, size: isToday ? 99999 : 50, date: selectedDate };
       if (filterMode === 'manager' && selectedManagerId != null) {
         params.tenantId = selectedManagerId;
       } else if (filterMode === 'route' && selectedRouteId != null) {
@@ -85,7 +89,7 @@ const Transactions: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [filterMode, selectedManagerId, selectedRouteId]);
+  }, [filterMode, selectedManagerId, selectedRouteId, selectedDate]);
 
   useEffect(() => {
     setPage(0);
@@ -95,9 +99,9 @@ const Transactions: React.FC = () => {
   const startAutoRefresh = useCallback(() => {
     stopAutoRefresh();
     intervalRef.current = setInterval(() => {
-      fetchTransactions(0, false);
+      fetchTransactions(page, false);
     }, 20000);
-  }, [fetchTransactions]);
+  }, [fetchTransactions, page]);
 
   const stopAutoRefresh = () => {
     if (intervalRef.current) {
@@ -118,7 +122,7 @@ const Transactions: React.FC = () => {
       } else if (res?.data && Array.isArray(res.data)) {
         setManagers(res.data.filter((m: any) => m.role === 'MANAGER').map((m: any) => ({ id: m.id, name: m.name })));
       }
-    });
+    }).catch(() => {});
   }, []);
 
   const handleRefresh = async (e: CustomEvent) => {
@@ -166,6 +170,25 @@ const Transactions: React.FC = () => {
 
         <IonList>
           <IonItem>
+            <IonIcon icon={calendar} slot="start" />
+            <IonLabel>
+              {t('pages.transactions.date')}
+              {isToday && <span style={{ fontSize: '0.75em', opacity: 0.7 }}> ({t('pages.transactions.today')})</span>}
+            </IonLabel>
+            <IonInput
+              ref={dateInputRef}
+              type="date"
+              value={selectedDate}
+              max={todayStr}
+              onIonChange={e => {
+                setSelectedDate(e.detail.value || todayStr);
+                setPage(0);
+              }}
+              style={{ textAlign: 'right' }}
+            />
+          </IonItem>
+
+          <IonItem>
             <IonLabel>{t('pages.transactions.filter')}</IonLabel>
             <IonSelect value={filterMode} onIonChange={e => { setFilterMode(e.detail.value); setPage(0); }}
               interface="popover">
@@ -200,7 +223,7 @@ const Transactions: React.FC = () => {
                     getRoutesByManager(mgrId).then((res: any) => {
                       const list = Array.isArray(res) ? res : (res?.data || []);
                       setRoutes(list.filter((r: any) => r.role === 'ROUTE' || r.adminId === mgrId).map((r: any) => ({ id: r.id, name: r.name })));
-                    });
+                    }).catch(() => {});
                   } else {
                     setRoutes([]);
                   }
@@ -276,7 +299,7 @@ const Transactions: React.FC = () => {
           ))}
         </IonList>
 
-        {totalPages > 0 && (
+        {!isToday && totalPages > 0 && (
           <IonGrid>
             <IonRow className="ion-justify-content-center ion-align-items-center">
               <IonCol size="auto">

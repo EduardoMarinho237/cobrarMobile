@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCurrentUser, apiRequest, isDev } from '../services/api';
+import { getCurrentUser, apiRequest } from '../services/api';
 
 // Event emitter para comunicação entre o interceptador e o hook
 const fechamentoEvents = {
@@ -57,11 +57,6 @@ export const useFechamentoControl = (): FechamentoStatus & { verificarStatus: ()
 
   // Função para verificar status na API
   const verificarStatusNaAPI = async () => {
-    if (isDev()) {
-      // Em modo dev, sempre retorna dia aberto
-      return false;
-    }
-
     try {
       // Tenta fazer uma chamada simples para qualquer endpoint
       // Se responder com 200 e sem data: "closed-day" ou "blocked", o dia está aberto

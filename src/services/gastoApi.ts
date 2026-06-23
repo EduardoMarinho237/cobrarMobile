@@ -1,4 +1,4 @@
-import { apiRequest, isDev } from './api';
+import { apiRequest } from './api';
 import i18n from '../i18n';
 
 export interface CategoriaGasto {
@@ -84,40 +84,11 @@ export interface DashboardResponse {
 }
 
 export const getCategorias = async () => {
-  if (isDev()) {
-    // Mock response
-    return [
-      {
-        id: 1,
-        name: 'Combustível',
-        expensesTypesCount: 3
-      },
-      {
-        id: 2,
-        name: 'Alimentação',
-        expensesTypesCount: 0
-      },
-      {
-        id: 3,
-        name: 'Manutenção',
-        expensesTypesCount: 5
-      }
-    ];
-  }
-
   // Para endpoints GET, retorna a resposta diretamente
   return apiRequest('/api/expenses-categories');
 };
 
 export const createCategoria = async (nome: string) => {
-  if (isDev()) {
-    // Mock response
-    return {
-      success: true,
-      message: 'Categoria criada com sucesso'
-    };
-  }
-
   try {
     const response = await apiRequest('/api/expenses-categories', {
       method: 'POST',
@@ -152,13 +123,6 @@ export const createCategoria = async (nome: string) => {
 };
 
 export const updateCategoria = async (id: number, nome: string) => {
-  if (isDev()) {
-    return {
-      success: true,
-      message: 'Categoria atualizada com sucesso'
-    };
-  }
-
   try {
     const response = await apiRequest(`/api/expenses-categories/${id}`, {
       method: 'PUT',
@@ -194,14 +158,6 @@ export const updateCategoria = async (id: number, nome: string) => {
 
 export const migrateTiposGastos = async (sourceCategoryId: number, targetCategoryId: number) => {
   console.log('migrateTiposGastos chamada com:', { sourceCategoryId, targetCategoryId });
-  
-  if (isDev()) {
-    console.log('Usando mock response para migrateTiposGastos');
-    return {
-      success: true,
-      message: 'Tipos de gastos migrados com sucesso'
-    };
-  }
 
   try {
     console.log('Fazendo requisição de migração');
@@ -259,14 +215,6 @@ export const migrateTiposGastos = async (sourceCategoryId: number, targetCategor
 
 export const deleteCategoria = async (id: number, migrarPara?: number) => {
   console.log('deleteCategoria chamada com:', { id, migrarPara });
-  
-  if (isDev()) {
-    console.log('Usando mock response para deleteCategoria');
-    return {
-      success: true,
-      message: migrarPara ? 'Categoria excluída e tipos migrados com sucesso' : 'Categoria excluída com sucesso'
-    };
-  }
 
   // Se houver categoria para migrar, primeiro faz a migração
   if (migrarPara) {
@@ -302,81 +250,12 @@ export const deleteCategoria = async (id: number, migrarPara?: number) => {
 };
 
 export const getTiposGastos = async (categoriaId?: number) => {
-  if (isDev()) {
-    // Mock response - retorna todos os tipos, incluindo os sem gastos
-    const todosTipos = [
-      {
-        id: 1,
-        name: 'Gasolina',
-        expenseCategoryId: categoriaId || 1
-      },
-      {
-        id: 2,
-        name: 'Etanol',
-        expenseCategoryId: categoriaId || 1
-      },
-      {
-        id: 3,
-        name: 'Diesel',
-        expenseCategoryId: categoriaId || 1
-      },
-      {
-        id: 4,
-        name: 'GNV',
-        expenseCategoryId: categoriaId || 1
-      },
-      {
-        id: 5,
-        name: 'Almoço',
-        expenseCategoryId: 2
-      },
-      {
-        id: 6,
-        name: 'Janta',
-        expenseCategoryId: 2
-      },
-      {
-        id: 7,
-        name: 'Óleo',
-        expenseCategoryId: 3
-      },
-      {
-        id: 8,
-        name: 'Filtro',
-        expenseCategoryId: 3
-      },
-      {
-        id: 9,
-        name: 'Pneu',
-        expenseCategoryId: 3
-      },
-      {
-        id: 10,
-        name: 'Pastilha',
-        expenseCategoryId: 3
-      }
-    ];
-    
-    if (categoriaId) {
-      return todosTipos.filter(tipo => tipo.expenseCategoryId === categoriaId);
-    }
-    
-    return todosTipos;
-  }
-
   // Para endpoints GET, retorna a resposta diretamente
   const endpoint = categoriaId ? `/api/expenses-types/category/${categoriaId}` : '/api/expenses-types';
   return apiRequest(endpoint);
 };
 
 export const createTipoGasto = async (nome: string, categoriaId?: number) => {
-  if (isDev()) {
-    return {
-      success: true,
-      message: 'Tipo de gasto criado com sucesso'
-    };
-  }
-
   try {
     const body = categoriaId ? { name: nome, expenseCategoryId: categoriaId } : { name: nome };
     const response = await apiRequest('/api/expenses-types', {
@@ -412,13 +291,6 @@ export const createTipoGasto = async (nome: string, categoriaId?: number) => {
 };
 
 export const updateTipoGasto = async (id: number, nome: string, categoriaId?: number) => {
-  if (isDev()) {
-    return {
-      success: true,
-      message: 'Tipo de gasto atualizado com sucesso'
-    };
-  }
-
   try {
     const body = { name: nome }; // Para PUT, só envia o nome
     const response = await apiRequest(`/api/expenses-types/${id}`, {
@@ -455,14 +327,6 @@ export const updateTipoGasto = async (id: number, nome: string, categoriaId?: nu
 
 export const deleteTipoGasto = async (id: number, migrarPara?: number) => {
   console.log('deleteTipoGasto chamada com:', { id, migrarPara });
-  
-  if (isDev()) {
-    console.log('Usando mock response para deleteTipoGasto');
-    return {
-      success: true,
-      message: migrarPara ? 'Tipo de gasto excluído e gastos migrados com sucesso' : 'Tipo de gasto excluído com sucesso'
-    };
-  }
 
   // Se houver tipo para migrar, primeiro faz a migração dos gastos
   if (migrarPara) {
@@ -499,14 +363,6 @@ export const deleteTipoGasto = async (id: number, migrarPara?: number) => {
 
 export const migrateGastos = async (sourceExpenseTypeId: number, targetExpenseTypeId: number) => {
   console.log('migrateGastos chamada com:', { sourceExpenseTypeId, targetExpenseTypeId });
-  
-  if (isDev()) {
-    console.log('Usando mock response para migrateGastos');
-    return {
-      success: true,
-      message: 'Gastos migrados com sucesso'
-    };
-  }
 
   try {
     console.log('Fazendo requisição de migração de gastos');
@@ -555,37 +411,6 @@ export const migrateGastos = async (sourceExpenseTypeId: number, targetExpenseTy
 
 export const getDetalhesGastos = async (categoriaId: number, request: DetalhesRequest) => {
   console.log('getDetalhesGastos chamado com:', { categoriaId, request });
-  
-  if (isDev()) {
-    // Mock response - retorna apenas os tipos que têm gastos no período
-    console.log('Usando mock response');
-    return {
-      categoryId: categoriaId,
-      categoryName: 'Combustível',
-      totalAmount: 1500.50,
-      expenseTypes: [
-        {
-          typeId: 1,
-          typeName: 'Gasolina',
-          totalAmount: 800.00,
-          expenseCount: 40
-        },
-        {
-          typeId: 2,
-          typeName: 'Etanol',
-          totalAmount: 500.00,
-          expenseCount: 25
-        },
-        {
-          typeId: 3,
-          typeName: 'Diesel',
-          totalAmount: 200.50,
-          expenseCount: 10
-        }
-      ]
-    };
-  }
-
   console.log('Fazendo requisição real para:', `/api/expenses-categories/details/${categoriaId}`);
   return apiRequest(`/api/expenses-categories/details/${categoriaId}`, {
     method: 'POST',
@@ -595,69 +420,6 @@ export const getDetalhesGastos = async (categoriaId: number, request: DetalhesRe
 
 export const generateDashboard = async (request: DashboardRequest) => {
   console.log('generateDashboard chamado com:', request);
-  
-  if (isDev()) {
-    // Mock response para dashboard
-    console.log('Usando mock response para dashboard');
-    return {
-      id: 1,
-      dashboardType: request.dashboardType,
-      generatedAt: new Date().toISOString(),
-      timePeriod: request.timePeriod,
-      dateFrom: request.dateFrom,
-      dateTo: request.dateTo,
-      routeFilter: request.routeIds,
-      detail: request.detail || false,
-      totalCollected: 5000,
-      totalExpenses: 1000,
-      totalBalance: 4000,
-      totalClients: 50,
-      totalDebtors: 15,
-      totalDebtAmount: 2000,
-      totalEfficiency: 85.5,
-      expectedCollection: 6000,
-      averageDailyCollection: 166.67,
-      collectionRatio: 83.33,
-      expenseRatio: 20.0,
-      dailyVariance: 12.5,
-      activeDays: 22,
-      daysWithoutCollection: 8,
-      overdueDebts: 8,
-      paymentDelayDays: 3.2,
-      routesData: [
-        {
-          routeId: 1,
-          routeName: 'Rota A',
-          totalCollected: 2500,
-          totalExpenses: 500,
-          totalBalance: 2000,
-          totalClients: 25,
-          totalDebtors: 7,
-          totalDebtAmount: 1000,
-          efficiency: 87.5
-        },
-        {
-          routeId: 2,
-          routeName: 'Rota B',
-          totalCollected: 2500,
-          totalExpenses: 500,
-          totalBalance: 2000,
-          totalClients: 25,
-          totalDebtors: 8,
-          totalDebtAmount: 1000,
-          efficiency: 83.5
-        }
-      ],
-      categoriesData: [],
-      typesData: [],
-      clientsData: [],
-      creditsDebitsData: [],
-      dailyData: [],
-      monthlyData: [],
-      yearlyData: []
-    };
-  }
-
   console.log('Fazendo requisição real para:', '/api/dashboard');
   return apiRequest('/api/dashboard', {
     method: 'POST',

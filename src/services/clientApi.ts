@@ -1,4 +1,4 @@
-import { apiRequest, isDev } from './api';
+import { apiRequest } from './api';
 
 export interface Client {
   id: number;
@@ -72,23 +72,11 @@ const mockClients: Client[] = [
 ];
 
 export const getClients = async (): Promise<Client[]> => {
-  if (isDev()) {
-    return mockClients;
-  }
-
   const response: ClientResponse = await apiRequest('/api/clients');
   return Array.isArray(response?.data) ? response.data : [];
 };
 
 export const getClientsPaginated = async (page: number, size: number): Promise<{ content: Client[]; last: boolean; totalElements: number }> => {
-  if (isDev()) {
-    return {
-      content: mockClients,
-      last: true,
-      totalElements: mockClients.length,
-    };
-  }
-
   try {
     const response = await apiRequest(`/api/clients/paged?page=${page}&size=${size}`);
     const pageData = response.data;
@@ -104,42 +92,11 @@ export const getClientsPaginated = async (page: number, size: number): Promise<{
 };
 
 export const getClientById = async (id: number): Promise<Client | null> => {
-  if (isDev()) {
-    // Mock response
-    const mockClients = await getClients();
-    return mockClients.find(client => client.id === id) || null;
-  }
-
   const response: ClientResponse = await apiRequest(`/api/clients/${id}`);
   return response?.data as Client || null;
 };
 
 export const createClient = async (clientData: CreateClientRequest): Promise<ClientResponse> => {
-  if (isDev()) {
-    // Mock response
-    const newClient: Client = {
-      id: Date.now(), // ID simulado
-      ...clientData,
-      cpf: clientData.cpf || '',
-      phone: clientData.phone || '',
-      address: clientData.address || '',
-      shop: clientData.shop || '',
-      visible: true,
-      userId: 123,
-      creditsCount: 0,
-      paidCreditsCount: 0,
-      totalCreditsValue: 0,
-      debitsCount: 0,
-      totalDebitsValue: 0
-    };
-
-    return {
-      success: true,
-      message: 'Cliente criado com sucesso',
-      data: newClient
-    };
-  }
-
   return apiRequest('/api/clients', {
     method: 'POST',
     body: JSON.stringify(clientData),
@@ -147,30 +104,6 @@ export const createClient = async (clientData: CreateClientRequest): Promise<Cli
 };
 
 export const updateClient = async (id: number, clientData: UpdateClientRequest): Promise<ClientResponse> => {
-  if (isDev()) {
-    // Mock response
-    const updatedClient: Client = {
-      id,
-      ...clientData,
-      phone: clientData.phone || '',
-      address: clientData.address || '',
-      shop: clientData.shop || '',
-      visible: true,
-      userId: 123,
-      creditsCount: 2,
-      paidCreditsCount: 1,
-      totalCreditsValue: 1000,
-      debitsCount: 1,
-      totalDebitsValue: 500
-    };
-
-    return {
-      success: true,
-      message: 'Cliente atualizado com sucesso',
-      data: updatedClient
-    };
-  }
-
   return apiRequest(`/api/clients/${id}`, {
     method: 'PUT',
     body: JSON.stringify(clientData),
@@ -178,15 +111,6 @@ export const updateClient = async (id: number, clientData: UpdateClientRequest):
 };
 
 export const deleteClient = async (id: number): Promise<ClientResponse> => {
-  if (isDev()) {
-    // Mock response
-    return {
-      success: true,
-      message: 'Cliente excluído com sucesso',
-      data: null
-    };
-  }
-
   return apiRequest(`/api/clients/${id}`, {
     method: 'DELETE',
   });

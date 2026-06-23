@@ -499,6 +499,8 @@
     },
     "transactions": {
       "title": "Transactions",
+      "date": "Date",
+      "today": "Today",
       "filter": "Filter by",
       "filterAll": "All",
       "filterManager": "My Routes",
