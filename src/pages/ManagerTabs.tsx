@@ -40,7 +40,7 @@ const ManagerTabs: React.FC = () => {
           <Redirect to={blocked ? '/manager/reports' : '/manager/routes'} />
         </Route>
       </IonRouterOutlet>
-      <IonTabBar slot="bottom">
+      <IonTabBar slot="bottom" color="primary">
         <IonTabButton tab="reports" href="/manager/reports">
           <IonIcon aria-hidden="true" icon={document} />
           <IonLabel>{t('tabs.reports')}</IonLabel>

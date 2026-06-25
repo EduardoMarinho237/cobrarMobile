@@ -1,17 +1,14 @@
 import React from 'react';
 import {
   IonModal,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonButton,
   IonContent,
   IonItem,
   IonInput
 } from '@ionic/react';
 import { useTranslation } from 'react-i18next';
 import { CreateClientRequest } from '../../../../services/clientApi';
+import GreenHeader from '../../../../components/ui/GreenHeader';
+import PrimaryButton from '../../../../components/ui/PrimaryButton';
 
 interface CreateClientModalProps {
   isOpen: boolean;
@@ -20,6 +17,15 @@ interface CreateClientModalProps {
   setNewClient: React.Dispatch<React.SetStateAction<CreateClientRequest>>;
   onCreate: () => void;
 }
+
+const inputStyle = {
+  '--background': '#f5f5f5',
+  '--border-radius': '12px',
+  '--padding-start': '16px',
+  '--inner-padding-end': '16px',
+  '--min-height': '52px',
+  marginBottom: '8px',
+} as any;
 
 const CreateClientModal: React.FC<CreateClientModalProps> = ({
   isOpen,
@@ -32,37 +38,50 @@ const CreateClientModal: React.FC<CreateClientModalProps> = ({
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onDidDismiss}>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>{t('pages.clients.addClient')}</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={onDidDismiss}>{t('common.close')}</IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
+      <GreenHeader
+        title={t('pages.clients.addClient')}
+        onClose={onDidDismiss}
+      />
       <IonContent>
-        <div style={{ padding: '16px' }}>
-          {(['name','cpf','phone','address','shop'] as const).map((field) => (
-            <IonItem key={field}>
-              <IonInput
-                label={t(`pages.clients.${field}`)}
-                labelPlacement="floating"
-                placeholder={t(`pages.clients.${field}Placeholder`)}
-                value={newClient[field]}
-                onIonInput={(e: any) =>
-                  setNewClient({ ...newClient, [field]: e.detail.value! })
-                }
+        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: '16px',
+            padding: '20px',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '4px',
+              height: '100%',
+              backgroundColor: '#098947',
+              borderRadius: '16px 0 0 16px'
+            }} />
+            <div style={{ paddingLeft: '8px' }}>
+              {(['name','cpf','phone','address','shop'] as const).map((field) => (
+                <IonItem key={field} style={inputStyle}>
+                  <IonInput
+                    label={t(`pages.clients.${field}`)}
+                    labelPlacement="floating"
+                    placeholder={t(`pages.clients.${field}Placeholder`)}
+                    value={newClient[field]}
+                    onIonInput={(e: any) =>
+                      setNewClient({ ...newClient, [field]: e.detail.value! })
+                    }
+                  />
+                </IonItem>
+              ))}
+              <PrimaryButton
+                onClick={onCreate}
+                label={t('pages.clients.create')}
+                style={{ marginTop: '4px' }}
               />
-            </IonItem>
-          ))}
-          <IonButton
-            expand="block"
-            shape="round"
-            onClick={onCreate}
-            style={{ marginTop: '16px' }}
-          >
-            {t('pages.clients.create')}
-          </IonButton>
+            </div>
+          </div>
         </div>
       </IonContent>
     </IonModal>

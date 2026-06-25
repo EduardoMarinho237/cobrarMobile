@@ -5,22 +5,20 @@ import {
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonCard,
-  IonCardContent,
   IonButton,
   IonIcon,
   IonSpinner,
-  IonBadge,
   IonRefresher,
   IonRefresherContent,
   IonAlert,
 } from '@ionic/react';
-import { add, eye, trash, document, chevronDown, chevronUp } from 'ionicons/icons';
+import { addCircle, eye, trash, documentText, chevronDown, chevronUp } from 'ionicons/icons';
 import { generateRouteDailyReport, generateRouteWeeklyReport, listRouteReports, deleteReport, Report } from '../../services/reportApi';
 import Toast from '../../components/Toast';
 import PdfViewerModal from '../../components/PdfViewerModal';
 import GenerateDailyReportModal from './modals/GenerateDailyReportModal';
 import GenerateWeeklyReportModal from './modals/GenerateWeeklyReportModal';
+import PrimaryButton from '../../components/ui/PrimaryButton';
 import { useTranslation } from 'react-i18next';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { formatDateToLocalISO } from '../../utils/dateFormat';
@@ -37,20 +35,16 @@ const RouteReports: React.FC = () => {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [reportToDelete, setReportToDelete] = useState<number | null>(null);
 
-  // Expandables
   const [expandedDaily, setExpandedDaily] = useState(false);
   const [expandedWeekly, setExpandedWeekly] = useState(false);
 
-  // Modals
   const [showDailyModal, setShowDailyModal] = useState(false);
   const [showWeeklyModal, setShowWeeklyModal] = useState(false);
 
-  // PDF Viewer
   const [pdfDoc, setPdfDoc] = useState<jsPDF | null>(null);
   const [pdfFileName, setPdfFileName] = useState<string>('');
   const [showPdfModal, setShowPdfModal] = useState(false);
 
-  // Daily form
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
@@ -58,7 +52,6 @@ const RouteReports: React.FC = () => {
   const [dailyDate, setDailyDate] = useState<string>(formatDateToLocalISO(yesterday));
   const [useDefaultDate, setUseDefaultDate] = useState(true);
 
-  // Weekly form
   const lastSaturday = new Date(today);
   lastSaturday.setDate(today.getDate() - (today.getDay() === 0 ? 1 : today.getDay() + 1));
   const lastMonday = new Date(lastSaturday);
@@ -96,7 +89,6 @@ const RouteReports: React.FC = () => {
       setReports(prev => [report, ...prev]);
       setShowWeeklyModal(false);
       showToastMsg(message || t('reports.generatedSuccess'), 'success');
-      // Auto-open PDF viewer
       setTimeout(() => handleViewPDF(report), 300);
     } catch (error: any) {
       showToastMsg(error.message || t('reports.errorGenerating'), 'danger');
@@ -118,7 +110,6 @@ const RouteReports: React.FC = () => {
       setReports(prev => [report, ...prev]);
       setShowDailyModal(false);
       showToastMsg(message || t('reports.generatedSuccess'), 'success');
-      // Auto-open PDF viewer
       setTimeout(() => handleViewPDF(report), 300);
     } catch (error: any) {
       showToastMsg(error.message || t('reports.errorGenerating'), 'danger');
@@ -235,6 +226,31 @@ const RouteReports: React.FC = () => {
           startY += 5;
         }
 
+        // Overdue clients for this day
+        if (day.overdueClients && day.overdueClients.length > 0) {
+          doc.setFontSize(10);
+          doc.setTextColor(220, 53, 69);
+          doc.text(t('reports.overdueClients'), 14, startY);
+          startY += 5;
+          autoTable(doc, {
+            startY,
+            head: [[t('reports.client'), t('reports.expectedPayment'), t('reports.amountPaid'), t('reports.remainingDebt'), t('reports.overdue')]],
+            body: day.overdueClients.map(oc => [
+              oc.clientName + (oc.clientShop ? ` (${oc.clientShop})` : ''),
+              formatCurrencyWithSymbol(oc.expectedPayment),
+              formatCurrencyWithSymbol(oc.amountPaid),
+              formatCurrencyWithSymbol(oc.remainingDebt),
+              oc.overdue ? t('reports.overdue') : '-',
+            ]),
+            theme: 'grid',
+            headStyles: { fillColor: [220, 53, 69], textColor: 255, fontSize: 8 },
+            bodyStyles: { fontSize: 7 },
+            margin: { left: 14, right: 14 }
+          });
+          startY = (doc as any).lastAutoTable?.finalY || startY;
+          startY += 5;
+        }
+
         if (day.dailyTotal) {
           doc.setFontSize(9);
           doc.setTextColor(33, 37, 41);
@@ -277,6 +293,34 @@ const RouteReports: React.FC = () => {
           margin: { left: 14, right: 14 }
         });
       }
+
+      // Weekly overdue summary
+      const weeklyOverdue = report.data.weeklyOverdueClients || [];
+      if (weeklyOverdue.length > 0) {
+        if (startY > 200) { doc.addPage(); startY = 20; }
+        startY = (doc as any).lastAutoTable?.finalY || startY;
+        startY += 8;
+        doc.setFontSize(12);
+        doc.setTextColor(220, 53, 69);
+        doc.text(t('reports.overdueClients'), 14, startY);
+        startY += 8;
+
+        autoTable(doc, {
+          startY,
+          head: [[t('reports.client'), t('reports.creditValue'), t('reports.tax'), t('reports.remainingDebt'), t('reports.overdue')]],
+          body: weeklyOverdue.map(oc => [
+            oc.clientName + (oc.clientShop ? ` (${oc.clientShop})` : ''),
+            formatCurrencyWithSymbol(oc.initialValue),
+            `${oc.tax}%`,
+            formatCurrencyWithSymbol(oc.remainingDebt),
+            oc.overdue ? t('reports.overdue') : '-',
+          ]),
+          theme: 'grid',
+          headStyles: { fillColor: [220, 53, 69], textColor: 255, fontSize: 8 },
+          bodyStyles: { fontSize: 7 },
+          margin: { left: 14, right: 14 }
+        });
+      }
     }
     return doc;
   };
@@ -287,6 +331,7 @@ const RouteReports: React.FC = () => {
     const summary = data.dailyRouteSummary;
     const collections = data.collectionRows || [];
     const newCredits = data.newCreditRows || [];
+    const overdueClients = data.overdueClients || [];
     const pageWidth = doc.internal.pageSize.getWidth();
 
     doc.setFontSize(16);
@@ -378,6 +423,30 @@ const RouteReports: React.FC = () => {
       }
     });
 
+    // Overdue Clients Section
+    if (overdueClients.length > 0) {
+      const ocStartY = (doc as any).lastAutoTable?.finalY || startY;
+      doc.setFontSize(12);
+      doc.setTextColor(220, 53, 69);
+      doc.text(t('reports.overdueClients'), 14, ocStartY + 8);
+      startY = ocStartY + 12;
+
+      const ocHeaders = [t('reports.client'), t('reports.creditValue'), t('reports.tax'), t('reports.creditStartDate'), t('reports.expectedPayment'), t('reports.amountPaid'), t('reports.remainingDebt'), t('reports.overdue')];
+      const ocRows = overdueClients.map(c => [
+        c.clientName + (c.clientShop ? ` (${c.clientShop})` : ''),
+        formatCurrencyWithSymbol(c.initialValue), `${c.tax}%`, c.startDate,
+        formatCurrencyWithSymbol(c.expectedPayment), formatCurrencyWithSymbol(c.amountPaid),
+        formatCurrencyWithSymbol(c.remainingDebt), c.overdue ? t('reports.overdue') : '-'
+      ]);
+
+      autoTable(doc, {
+        startY, head: [ocHeaders], body: ocRows, theme: 'grid',
+        headStyles: { fillColor: [220, 53, 69], textColor: 255, fontSize: 7 },
+        bodyStyles: { fontSize: 7, cellPadding: 1 },
+        margin: { left: 10, right: 10 }
+      });
+    }
+
     return doc;
   };
 
@@ -426,296 +495,323 @@ const RouteReports: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
           <IonTitle>{t('reports.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
+      <IonContent>
         <IonRefresher slot="fixed" onIonRefresh={(e) => { loadReports().then(() => e.detail.complete()); }}>
           <IonRefresherContent />
         </IonRefresher>
+        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+          {/* Daily Report Section */}
+          <div
+            onClick={() => setExpandedDaily(!expandedDaily)}
+            style={{
+              background: 'linear-gradient(135deg, #098947 0%, #0ab55a 100%)',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              boxShadow: '0 4px 15px rgba(9,137,71,0.3)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <IonIcon icon={documentText} style={{ fontSize: '22px', color: '#fff' }} />
+              <span style={{ color: '#fff', fontSize: '16px', fontWeight: '700' }}>
+                {t('reports.dailyByRoute')}
+              </span>
+            </div>
+            <IonIcon
+              icon={expandedDaily ? chevronUp : chevronDown}
+              style={{ fontSize: '20px', color: '#fff' }}
+            />
+          </div>
 
-        {/* Daily Report Expandable */}
-        <IonButton
-          expand="block"
-          color="primary"
-          onClick={() => setExpandedDaily(!expandedDaily)}
-          style={{
-            marginBottom: expandedDaily ? '16px' : '0',
-            height: '56px',
-            borderRadius: '4px'
-          }}
-        >
-          <IonIcon icon={document} slot="start" style={{ fontSize: '24px' }} />
-          <span style={{ fontSize: '16px' }}>
-            {t('reports.dailyByRoute')}
-          </span>
-          <IonIcon
-            icon={expandedDaily ? chevronUp : chevronDown}
-            slot="end"
-            style={{ fontSize: '20px' }}
-          />
-        </IonButton>
-
-        {expandedDaily && (
-          <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
-            <IonCardContent style={{ padding: '12px' }}>
-              {isLoading ? (
-                <div style={{ textAlign: 'center', padding: '20px' }}>
-                  <IonSpinner name="dots" />
-                  <p style={{ fontSize: '12px', color: '#666' }}>{t('reports.loading')}</p>
-                </div>
-              ) : (
-                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                  {dailyReports.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '20px' }}>
-                      <IonIcon icon={document} style={{ fontSize: '32px', color: '#ccc' }} />
-                      <p style={{ color: '#666', fontSize: '14px', marginTop: '8px' }}>
-                        {t('reports.noReports')}
-                      </p>
-                    </div>
-                  ) : (
-                    dailyReports.map(report => (
-                      <div
-                        key={report.id}
-                        style={{
-                          padding: '10px',
-                          borderBottom: '1px solid #eee',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{
-                            fontSize: '14px',
-                            fontWeight: 'bold',
-                            color: '#333',
-                            margin: '0 0 4px 0',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
-                          }}>
-                            {report.title}
-                          </p>
-                          <p style={{ fontSize: '11px', color: '#666', margin: 0 }}>
-                            {report.periodStart}
-                          </p>
-                          <div style={{ marginTop: '4px' }}>
-                            <IonBadge color="primary" style={{ fontSize: '10px' }}>
-                              {formatCurrencyWithSymbol(report.data.dailyRouteSummary?.finalCash ?? 0)}
-                            </IonBadge>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '4px', marginLeft: '8px' }}>
-                          <IonButton
-                            fill="clear"
-                            size="small"
-                            color="primary"
-                            onClick={() => handleViewPDF(report)}
-                            style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
-                          >
-                            <IonIcon icon={eye} style={{ fontSize: '18px' }} />
-                          </IonButton>
-                          <IonButton
-                            fill="clear"
-                            size="small"
-                            color="danger"
-                            onClick={() => { setReportToDelete(report.id); setShowDeleteAlert(true); }}
-                            style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
-                          >
-                            <IonIcon icon={trash} style={{ fontSize: '18px' }} />
-                          </IonButton>
-                        </div>
+          {expandedDaily && (
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '16px',
+              marginBottom: '16px',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+              overflow: 'hidden',
+              borderLeft: '4px solid #098947',
+            }}>
+              <div style={{ padding: '16px 20px' }}>
+                {isLoading ? (
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <IonSpinner name="dots" />
+                    <p style={{ fontSize: '12px', color: '#666' }}>{t('reports.loading')}</p>
+                  </div>
+                ) : (
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {dailyReports.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <IonIcon icon={documentText} style={{ fontSize: '32px', color: '#ccc' }} />
+                        <p style={{ color: '#666', fontSize: '14px', marginTop: '8px' }}>
+                          {t('reports.noReports')}
+                        </p>
                       </div>
-                    ))
-                  )}
-                </div>
-              )}
-
-              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee' }}>
-                <IonButton
-                  expand="block"
-                  shape="round"
-                  color="primary"
-                  fill="outline"
-                  onClick={() => setShowDailyModal(true)}
-                  style={{ height: '40px' }}
-                >
-                  <IonIcon icon={add} slot="start" />
-                  {t('reports.generateNew')}
-                </IonButton>
-              </div>
-            </IonCardContent>
-          </IonCard>
-        )}
-
-        {/* Weekly Report Expandable */}
-        <IonButton
-          expand="block"
-          color="primary"
-          onClick={() => setExpandedWeekly(!expandedWeekly)}
-          style={{
-            marginBottom: expandedWeekly ? '16px' : '0',
-            height: '56px',
-            borderRadius: '4px'
-          }}
-        >
-          <IonIcon icon={document} slot="start" style={{ fontSize: '24px' }} />
-          <span style={{ fontSize: '16px' }}>
-            {t('reports.weeklyByRoute')}
-          </span>
-          <IonIcon
-            icon={expandedWeekly ? chevronUp : chevronDown}
-            slot="end"
-            style={{ fontSize: '20px' }}
-          />
-        </IonButton>
-
-        {expandedWeekly && (
-          <IonCard style={{ margin: '0', borderRadius: '12px' }}>
-            <IonCardContent style={{ padding: '12px' }}>
-              {isLoading ? (
-                <div style={{ textAlign: 'center', padding: '20px' }}>
-                  <IonSpinner name="dots" />
-                  <p style={{ fontSize: '12px', color: '#666' }}>{t('reports.loading')}</p>
-                </div>
-              ) : (
-                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                  {weeklyReports.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '20px' }}>
-                      <IonIcon icon={document} style={{ fontSize: '32px', color: '#ccc' }} />
-                      <p style={{ color: '#666', fontSize: '14px', marginTop: '8px' }}>
-                        {t('reports.noReports')}
-                      </p>
-                    </div>
-                  ) : (
-                    weeklyReports.map(report => (
-                      <div
-                        key={report.id}
-                        style={{
-                          padding: '10px',
-                          borderBottom: '1px solid #eee',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{
-                            fontSize: '14px',
-                            fontWeight: 'bold',
-                            color: '#333',
-                            margin: '0 0 4px 0',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
-                          }}>
-                            {report.title}
-                          </p>
-                          <p style={{ fontSize: '11px', color: '#666', margin: 0 }}>
-                            {report.periodStart} → {report.periodEnd}
-                          </p>
-                          <div style={{ marginTop: '4px' }}>
-                            <IonBadge color={(report.data.weeklySummary?.finalBalance ?? 0) >= 0 ? 'success' : 'danger'} style={{ fontSize: '10px' }}>
-                              {(report.data.weeklySummary?.finalBalance ?? 0) >= 0 ? '+' : ''}
-                              {formatCurrencyWithSymbol(report.data.weeklySummary?.finalBalance ?? 0)}
-                            </IonBadge>
-                            <span style={{ fontSize: '10px', color: '#666', marginLeft: '6px' }}>
-                              {(report.data.detailedDays?.length || 0)} {t('reports.days')}
+                    ) : (
+                      dailyReports.map(report => (
+                        <div
+                          key={report.id}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '12px 0',
+                            borderBottom: '1px solid #f0f0f0',
+                          }}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{
+                              fontSize: '14px',
+                              fontWeight: 'bold',
+                              color: '#333',
+                              margin: '0 0 4px 0',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>
+                              {report.title}
+                            </p>
+                            <p style={{ fontSize: '11px', color: '#666', margin: '0 0 4px 0' }}>
+                              {report.periodStart}
+                            </p>
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '2px 10px',
+                              borderRadius: '12px',
+                              backgroundColor: '#e8f5e9',
+                              color: '#098947',
+                              fontSize: '11px',
+                              fontWeight: 600
+                            }}>
+                              {t('reports.finalCash')}: {formatCurrencyWithSymbol(report.data.dailyRouteSummary?.finalCash ?? 0)}
                             </span>
                           </div>
+                          <div style={{ display: 'flex', gap: '4px', marginLeft: '8px' }}>
+                            <IonButton
+                              fill="clear"
+                              size="small"
+                              color="primary"
+                              onClick={() => handleViewPDF(report)}
+                              style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
+                            >
+                              <IonIcon icon={eye} style={{ fontSize: '18px' }} />
+                            </IonButton>
+                            <IonButton
+                              fill="clear"
+                              size="small"
+                              color="danger"
+                              onClick={() => { setReportToDelete(report.id); setShowDeleteAlert(true); }}
+                              style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
+                            >
+                              <IonIcon icon={trash} style={{ fontSize: '18px' }} />
+                            </IonButton>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '4px', marginLeft: '8px' }}>
-                          <IonButton
-                            fill="clear"
-                            size="small"
-                            color="primary"
-                            onClick={() => handleViewPDF(report)}
-                            style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
-                          >
-                            <IonIcon icon={eye} style={{ fontSize: '18px' }} />
-                          </IonButton>
-                          <IonButton
-                            fill="clear"
-                            size="small"
-                            color="danger"
-                            onClick={() => { setReportToDelete(report.id); setShowDeleteAlert(true); }}
-                            style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
-                          >
-                            <IonIcon icon={trash} style={{ fontSize: '18px' }} />
-                          </IonButton>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                      ))
+                    )}
+                  </div>
+                )}
+
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f0f0f0' }}>
+                  <PrimaryButton
+                    onClick={() => setShowDailyModal(true)}
+                    label={t('reports.generateNew')}
+                    icon={addCircle}
+                  />
                 </div>
-              )}
-
-              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee' }}>
-                <IonButton
-                  expand="block"
-                  shape="round"
-                  color="primary"
-                  fill="outline"
-                  onClick={() => setShowWeeklyModal(true)}
-                  style={{ height: '40px' }}
-                >
-                  <IonIcon icon={add} slot="start" />
-                  {t('reports.generateNew')}
-                </IonButton>
               </div>
-            </IonCardContent>
-          </IonCard>
-        )}
+            </div>
+          )}
 
-        <Toast
-          isOpen={toast.isOpen}
-          message={toast.message}
-          color={toast.color}
-          onDidDismiss={() => setToast({ ...toast, isOpen: false })}
-        />
+          {/* Weekly Report Section */}
+          <div
+            onClick={() => setExpandedWeekly(!expandedWeekly)}
+            style={{
+              background: 'linear-gradient(135deg, #098947 0%, #0ab55a 100%)',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              boxShadow: '0 4px 15px rgba(9,137,71,0.3)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <IonIcon icon={documentText} style={{ fontSize: '22px', color: '#fff' }} />
+              <span style={{ color: '#fff', fontSize: '16px', fontWeight: '700' }}>
+                {t('reports.weeklyByRoute')}
+              </span>
+            </div>
+            <IonIcon
+              icon={expandedWeekly ? chevronUp : chevronDown}
+              style={{ fontSize: '20px', color: '#fff' }}
+            />
+          </div>
 
-        <IonAlert
-          isOpen={showDeleteAlert}
-          onDidDismiss={() => setShowDeleteAlert(false)}
-          header={t('reports.confirmDelete')}
-          message={t('reports.confirmDeleteMessage')}
-          buttons={[
-            { text: t('common.cancel'), role: 'cancel' },
-            { text: t('common.delete'), handler: handleDelete }
-          ]}
-        />
+          {expandedWeekly && (
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '16px',
+              marginBottom: '16px',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+              overflow: 'hidden',
+              borderLeft: '4px solid #098947',
+            }}>
+              <div style={{ padding: '16px 20px' }}>
+                {isLoading ? (
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <IonSpinner name="dots" />
+                    <p style={{ fontSize: '12px', color: '#666' }}>{t('reports.loading')}</p>
+                  </div>
+                ) : (
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {weeklyReports.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        <IonIcon icon={documentText} style={{ fontSize: '32px', color: '#ccc' }} />
+                        <p style={{ color: '#666', fontSize: '14px', marginTop: '8px' }}>
+                          {t('reports.noReports')}
+                        </p>
+                      </div>
+                    ) : (
+                      weeklyReports.map(report => (
+                        <div
+                          key={report.id}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '12px 0',
+                            borderBottom: '1px solid #f0f0f0',
+                          }}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{
+                              fontSize: '14px',
+                              fontWeight: 'bold',
+                              color: '#333',
+                              margin: '0 0 4px 0',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>
+                              {report.title}
+                            </p>
+                            <p style={{ fontSize: '11px', color: '#666', margin: '0 0 4px 0' }}>
+                              {report.periodStart} → {report.periodEnd}
+                            </p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{
+                                display: 'inline-block',
+                                padding: '2px 10px',
+                                borderRadius: '12px',
+                                backgroundColor: (report.data.weeklySummary?.finalBalance ?? 0) >= 0 ? '#e8f5e9' : '#ffebee',
+                                color: (report.data.weeklySummary?.finalBalance ?? 0) >= 0 ? '#098947' : '#d32f2f',
+                                fontSize: '11px',
+                                fontWeight: 600
+                              }}>
+                                {(report.data.weeklySummary?.finalBalance ?? 0) >= 0 ? '+' : ''}
+                                {formatCurrencyWithSymbol(report.data.weeklySummary?.finalBalance ?? 0)}
+                              </span>
+                              <span style={{ fontSize: '11px', color: '#666' }}>
+                                {(report.data.detailedDays?.length || 0)} {t('reports.days')}
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '4px', marginLeft: '8px' }}>
+                            <IonButton
+                              fill="clear"
+                              size="small"
+                              color="primary"
+                              onClick={() => handleViewPDF(report)}
+                              style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
+                            >
+                              <IonIcon icon={eye} style={{ fontSize: '18px' }} />
+                            </IonButton>
+                            <IonButton
+                              fill="clear"
+                              size="small"
+                              color="danger"
+                              onClick={() => { setReportToDelete(report.id); setShowDeleteAlert(true); }}
+                              style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
+                            >
+                              <IonIcon icon={trash} style={{ fontSize: '18px' }} />
+                            </IonButton>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
 
-        <PdfViewerModal
-          isOpen={showPdfModal}
-          onClose={() => setShowPdfModal(false)}
-          doc={pdfDoc}
-          fileName={pdfFileName}
-          title={t('reports.title')}
-        />
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f0f0f0' }}>
+                  <PrimaryButton
+                    onClick={() => setShowWeeklyModal(true)}
+                    label={t('reports.generateNew')}
+                    icon={addCircle}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
-        <GenerateDailyReportModal
-          isOpen={showDailyModal}
-          onClose={() => setShowDailyModal(false)}
-          dailyDate={dailyDate}
-          onDailyDateChange={setDailyDate}
-          useDefaultDate={useDefaultDate}
-          onUseDefaultDateChange={setUseDefaultDate}
-          isGenerating={isGenerating}
-          onGenerate={handleGenerateDaily}
-        />
+          <Toast
+            isOpen={toast.isOpen}
+            message={toast.message}
+            color={toast.color}
+            onDidDismiss={() => setToast({ ...toast, isOpen: false })}
+          />
 
-        <GenerateWeeklyReportModal
-          isOpen={showWeeklyModal}
-          onClose={() => setShowWeeklyModal(false)}
-          weeklyStart={weeklyStart}
-          weeklyEnd={weeklyEnd}
-          onWeeklyStartChange={setWeeklyStart}
-          onWeeklyEndChange={setWeeklyEnd}
-          isGenerating={isGenerating}
-          onGenerate={handleGenerateWeekly}
-        />
+          <IonAlert
+            isOpen={showDeleteAlert}
+            onDidDismiss={() => setShowDeleteAlert(false)}
+            header={t('reports.confirmDelete')}
+            message={t('reports.confirmDeleteMessage')}
+            buttons={[
+              { text: t('common.cancel'), role: 'cancel' },
+              { text: t('common.delete'), handler: handleDelete }
+            ]}
+          />
+
+          <PdfViewerModal
+            isOpen={showPdfModal}
+            onClose={() => setShowPdfModal(false)}
+            doc={pdfDoc}
+            fileName={pdfFileName}
+            title={t('reports.title')}
+          />
+
+          <GenerateDailyReportModal
+            isOpen={showDailyModal}
+            onClose={() => setShowDailyModal(false)}
+            dailyDate={dailyDate}
+            onDailyDateChange={setDailyDate}
+            useDefaultDate={useDefaultDate}
+            onUseDefaultDateChange={setUseDefaultDate}
+            isGenerating={isGenerating}
+            onGenerate={handleGenerateDaily}
+          />
+
+          <GenerateWeeklyReportModal
+            isOpen={showWeeklyModal}
+            onClose={() => setShowWeeklyModal(false)}
+            weeklyStart={weeklyStart}
+            weeklyEnd={weeklyEnd}
+            onWeeklyStartChange={setWeeklyStart}
+            onWeeklyEndChange={setWeeklyEnd}
+            isGenerating={isGenerating}
+            onGenerate={handleGenerateWeekly}
+          />
+        </div>
       </IonContent>
     </IonPage>
   );

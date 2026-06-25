@@ -75,17 +75,21 @@ export const useFechamentoControl = (): FechamentoStatus & { verificarStatus: ()
   const verificarStatus = async (forcarAPI = false) => {
     try {
       const currentUser = getCurrentUser();
-      
+
+      // Primeiro, verifica o closedDay diretamente do localStorage (mais confiável após login)
+      const closedDayStr = localStorage.getItem('closedDay');
+      const closedDayFromStorage = closedDayStr !== null ? JSON.parse(closedDayStr) : null;
+
       if (currentUser && currentUser.role === 'ROUTE') {
         if (forcarAPI) {
           // Força verificação na API
           setVerificando(true);
           setCarregando(true);
-          
+
           const isDayClosed = await verificarStatusNaAPI();
-          
+
           console.log('Verificação manual concluída:', { isDayClosed, estadoAtual: diaFechado });
-          
+
           // Só atualiza o estado se realmente mudou
           if (isDayClosed !== diaFechado) {
             console.log('Status mudou, atualizando interface');
@@ -96,8 +100,9 @@ export const useFechamentoControl = (): FechamentoStatus & { verificarStatus: ()
             console.log('Status não mudou, mantendo interface');
           }
         } else {
-          // Usa o status do localStorage
-          const isDayClosed = currentUser.closedDay === true;
+          // Usa o status do localStorage (closedDay tem prioridade)
+          const isDayClosed = closedDayFromStorage === true || currentUser.closedDay === true;
+          console.log('Verificando status do dia - closedDay do storage:', closedDayFromStorage, 'closedDay do user:', currentUser.closedDay, 'resultado:', isDayClosed);
           atualizarEstado(isDayClosed);
         }
       } else {

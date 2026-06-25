@@ -1,24 +1,14 @@
 import React from 'react';
 import {
   IonModal,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonButton,
   IonContent,
-  IonCard,
-  IonCardContent,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonItem,
-  IonLabel,
   IonProgressBar
 } from '@ionic/react';
 import { useTranslation } from 'react-i18next';
 import { Credit } from '../../../../services/creditApi';
 import { Client } from '../../../../services/clientApi';
+import GreenHeader from '../../../../components/ui/GreenHeader';
+import InfoRow from '../../../../components/ui/InfoRow';
 
 interface ClientCreditsModalProps {
   isOpen: boolean;
@@ -45,92 +35,102 @@ const ClientCreditsModal: React.FC<ClientCreditsModalProps> = ({
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onDidDismiss}>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>{t('pages.clients.credits')} - {selectedClient?.name}</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={onDidDismiss}>{t('common.close')}</IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
+      <GreenHeader
+        title={`${t('pages.clients.credits')} - ${selectedClient?.name}`}
+        onClose={onDidDismiss}
+      />
       <IonContent>
-        <div style={{ padding: '16px' }}>
+        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
           {clientCredits.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p>{t('pages.clients.noCreditsFound')}</p>
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <p style={{ color: '#666' }}>{t('pages.clients.noCreditsFound')}</p>
             </div>
           ) : (
             clientCredits.map((credit) => {
               const progress = calculateProgress(credit);
               return (
-                <IonCard
+                <div
                   key={credit.id}
-                  style={{
-                    marginBottom: '16px',
-                    borderRadius: '12px'
-                  }}
                   onClick={() => onViewCredit(credit)}
+                  style={{
+                    backgroundColor: '#fff',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    marginBottom: '12px',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    cursor: 'pointer'
+                  }}
                 >
-                  <IonCardContent>
-                    <IonGrid>
-                      <IonRow>
-                        <IonCol size="12">
-                          <div style={{ padding: '8px 0', marginBottom: '16px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                              <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#333' }}>{t('pages.clients.paymentProgress')}</span>
-                              <span style={{ fontSize: '18px', fontWeight: 'bold', color: progress.percentage >= 100 ? '#28a745' : '#007bff' }}>
-                                {progress.percentage.toFixed(1)}%
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                              <span style={{ fontSize: '14px', color: '#666' }}>
-                                {formatCurrency(progress.paidValue)}
-                              </span>
-                              <span style={{ fontSize: '14px', color: '#666' }}>
-                                {formatCurrency(progress.totalValue - progress.paidValue)}
-                              </span>
-                            </div>
-                            <IonProgressBar
-                              value={progress.percentage / 100}
-                              color={progress.percentage >= 100 ? 'success' : 'primary'}
-                              style={{ height: '12px', borderRadius: '6px' }}
-                            />
-                          </div>
-                        </IonCol>
-                      </IonRow>
-                      <IonRow>
-                        <IonCol size="12">
-                          <IonItem>
-                            <IonLabel>
-                              <h3>{t('pages.clients.debtStartDate')}: {formatDate(credit.startDate)}</h3>
-                            </IonLabel>
-                          </IonItem>
-                        </IonCol>
-                        <IonCol size="12">
-                          <IonItem>
-                            <IonLabel>
-                              <h3>{t('pages.clients.loanAmount')}: {formatCurrency(credit.initialValue)}</h3>
-                            </IonLabel>
-                          </IonItem>
-                        </IonCol>
-                        <IonCol size="12">
-                          <IonItem>
-                            <IonLabel>
-                              <h3>{t('pages.clients.totalCredit')}: {formatCurrency(progress.totalValue)}</h3>
-                            </IonLabel>
-                          </IonItem>
-                        </IonCol>
-                        <IonCol size="12">
-                          <IonItem>
-                            <IonLabel>
-                              <h3>{t('pages.clients.totalAmount')}: {formatCurrency(credit.totalDebt)}</h3>
-                            </IonLabel>
-                          </IonItem>
-                        </IonCol>
-                      </IonRow>
-                    </IonGrid>
-                  </IonCardContent>
-                </IonCard>
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '4px',
+                    height: '100%',
+                    backgroundColor: '#098947',
+                    borderRadius: '16px 0 0 16px'
+                  }} />
+
+                  <div style={{ paddingLeft: '8px' }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '14px'
+                    }}>
+                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#262626' }}>
+                        {t('pages.clients.paymentProgress')}
+                      </span>
+                      <span style={{
+                        fontSize: '16px',
+                        fontWeight: 700,
+                        color: progress.percentage >= 100 ? '#28a745' : '#098947'
+                      }}>
+                        {progress.percentage.toFixed(1)}%
+                      </span>
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '10px'
+                    }}>
+                      <span style={{ fontSize: '13px', color: '#555' }}>
+                        {formatCurrency(progress.paidValue)}
+                      </span>
+                      <span style={{ fontSize: '13px', color: '#555' }}>
+                        {formatCurrency(progress.totalValue - progress.paidValue)}
+                      </span>
+                    </div>
+
+                    <IonProgressBar
+                      value={progress.percentage / 100}
+                      color={progress.percentage >= 100 ? 'success' : 'primary'}
+                      style={{ height: '10px', borderRadius: '5px', marginBottom: '16px' }}
+                    />
+
+                    <InfoRow
+                      label={t('pages.clients.debtStartDate')}
+                      value={formatDate(credit.startDate)}
+                    />
+                    <InfoRow
+                      label={t('pages.clients.loanAmount')}
+                      value={formatCurrency(credit.initialValue)}
+                    />
+                    <InfoRow
+                      label={t('pages.clients.totalCredit')}
+                      value={formatCurrency(progress.totalValue)}
+                    />
+                    <InfoRow
+                      label={t('pages.clients.totalAmount')}
+                      value={formatCurrency(credit.totalDebt)}
+                      showBorder={false}
+                    />
+                  </div>
+                </div>
               );
             })
           )}

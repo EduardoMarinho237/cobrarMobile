@@ -5,44 +5,48 @@ import {
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
   IonButton,
   IonItem,
   IonLabel,
   IonInput,
-  IonSelect,
-  IonSelectOption,
   IonModal,
-  IonButtons,
   IonIcon,
   IonAlert,
   IonRefresher,
   IonRefresherContent,
-  IonGrid,
-  IonRow,
-  IonCol,
   IonSpinner
 } from '@ionic/react';
-import { add, trash, create, eye, wallet, refresh } from 'ionicons/icons';
+import SelectInput from '../../components/ui/SelectInput';
+import { addCircle, trash, create, eye, walletOutline } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { formatToBrazilTime } from '../../utils/dateFormat';
-import { 
-  Expense, 
-  CreateExpenseRequest, 
+import {
+  Expense,
+  CreateExpenseRequest,
   UpdateExpenseRequest,
-  getExpensesPaginated, 
-  createExpense, 
-  updateExpense, 
-  deleteExpense 
+  getExpensesPaginated,
+  createExpense,
+  updateExpense,
+  deleteExpense
 } from '../../services/expenseApi';
 import { getExpenseCategories, getExpenseTypes, ExpenseCategory, ExpenseType } from '../../services/expenseApi';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useInView } from 'react-intersection-observer';
+import GreenHeader from '../../components/ui/GreenHeader';
+import PrimaryButton from '../../components/ui/PrimaryButton';
+import InfoRow from '../../components/ui/InfoRow';
+import ActionButton from '../../components/ui/ActionButton';
+
+const inputStyle = {
+  '--background': '#f5f5f5',
+  '--border-radius': '12px',
+  '--padding-start': '16px',
+  '--inner-padding-end': '16px',
+  '--min-height': '52px',
+  marginBottom: '8px',
+} as any;
 
 const Expenses: React.FC = () => {
   const { t } = useTranslation();
@@ -50,6 +54,7 @@ const Expenses: React.FC = () => {
   const [types, setTypes] = useState<ExpenseType[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
@@ -81,23 +86,20 @@ const Expenses: React.FC = () => {
     }
   }, [inView, hasMore, isLoading, isLoadingMore, loadMore]);
 
-  // Form states
-  const [newExpense, setNewExpense] = useState<CreateExpenseRequest>({ 
+  const [newExpense, setNewExpense] = useState<CreateExpenseRequest>({
     value: 0,
     expenseTypeId: 0,
     description: ''
   });
-  const [editExpense, setEditExpense] = useState<UpdateExpenseRequest>({ 
+  const [editExpense, setEditExpense] = useState<UpdateExpenseRequest>({
     value: 0,
     expenseTypeId: 0,
     description: ''
   });
 
-  // States para selects aninhados
   const [selectedCategory, setSelectedCategory] = useState<number>(0);
   const [editSelectedCategory, setEditSelectedCategory] = useState<number>(0);
 
-  // Keys para forçar remontagem dos IonInputs ao abrir modais (evita cursor jumping)
   const [createFormKey, setCreateFormKey] = useState(0);
   const [editFormKey, setEditFormKey] = useState(0);
 
@@ -110,11 +112,8 @@ const Expenses: React.FC = () => {
       const [categoriesResponse] = await Promise.all([
         getExpenseCategories()
       ]);
-      
-      // Extrair categorias do response.data
+
       const categoriesData = Array.isArray(categoriesResponse) ? categoriesResponse : categoriesResponse.data || [];
-      
-      // Ordenar categorias por nome
       const sortedCategories = categoriesData.sort((a: ExpenseCategory, b: ExpenseCategory) => a.name.localeCompare(b.name));
       setCategories(sortedCategories);
     } catch (error) {
@@ -131,7 +130,6 @@ const Expenses: React.FC = () => {
 
     try {
       const typesResponse = await getExpenseTypes(categoryId);
-      // Extrair tipos do response.data se necessário
       const typesData = Array.isArray(typesResponse) ? typesResponse : typesResponse.data || [];
       setTypes(typesData);
     } catch (error) {
@@ -160,7 +158,7 @@ const Expenses: React.FC = () => {
       if (response.success) {
         showToast(t('pages.expenses.createdSuccess'), 'success');
         setShowCreateModal(false);
-        setNewExpense({ 
+        setNewExpense({
           value: 0,
           expenseTypeId: 0,
           description: ''
@@ -194,7 +192,7 @@ const Expenses: React.FC = () => {
       if (response.success) {
         showToast(t('pages.expenses.updatedSuccess'), 'success');
         setShowEditModal(false);
-        setEditExpense({ 
+        setEditExpense({
           value: 0,
           expenseTypeId: 0,
           description: ''
@@ -217,7 +215,7 @@ const Expenses: React.FC = () => {
     deleteExpense(selectedExpense.id)
       .then(response => {
         showToast(response.message || t('pages.expenses.deletedSuccess'), response.success ? 'success' : 'danger');
-        
+
         if (response.success) {
           setShowDeleteAlert(false);
           setSelectedExpense(null);
@@ -231,13 +229,18 @@ const Expenses: React.FC = () => {
   };
 
   const openEditModal = async (expense: Expense) => {
+    setEditExpense({
+      value: expense.value,
+      expenseTypeId: expense.expenseTypeId,
+      description: expense.description || ''
+    });
+
     setSelectedExpense(expense);
-    
-    // Encontrar a categoria do tipo de despesa
+
     try {
       const categoriesResponse = await getExpenseCategories();
       const categoriesData = Array.isArray(categoriesResponse) ? categoriesResponse : categoriesResponse.data || [];
-      
+
       for (const category of categoriesData) {
         const typesResponse = await getExpenseTypes(category.id);
         const typesData = Array.isArray(typesResponse) ? typesResponse : typesResponse.data || [];
@@ -252,146 +255,96 @@ const Expenses: React.FC = () => {
       console.error('Erro ao buscar categoria:', error);
     }
 
-    setEditExpense({ 
-      value: expense.value,
-      expenseTypeId: expense.expenseTypeId,
-      description: expense.description
-    });
     setEditFormKey(prev => prev + 1);
     setShowEditModal(true);
   };
-
 
   const formatDateTime = (dateString: string) => {
     return formatToBrazilTime(dateString);
   };
 
-  const getCategoryName = (typeId: number) => {
-    // Em um app real, faria uma busca mais eficiente
-    return 'Categoria';
-  };
-
   const handleCategoryChange = (categoryId: number) => {
     setSelectedCategory(categoryId);
-    setNewExpense({ ...newExpense, expenseTypeId: 0 }); // Resetar tipo quando mudar categoria
+    setNewExpense({ ...newExpense, expenseTypeId: 0 });
     loadTypesByCategory(categoryId);
   };
 
   const handleEditCategoryChange = (categoryId: number) => {
     setEditSelectedCategory(categoryId);
-    setEditExpense({ ...editExpense, expenseTypeId: 0 }); // Resetar tipo quando mudar categoria
+    setEditExpense({ ...editExpense, expenseTypeId: 0 });
     loadTypesByCategory(categoryId);
   };
 
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
-          <IonTitle>{t('pages.expenses.title')}</IonTitle>
+        <IonToolbar style={{ '--background': '#098947' } as any}>
+          <IonTitle style={{ color: '#fff', fontWeight: 700, fontFamily: "'League Spartan', sans-serif" }}>
+            {t('pages.expenses.title')}
+          </IonTitle>
         </IonToolbar>
       </IonHeader>
+
       <IonContent fullscreen>
         <IonRefresher slot="fixed" onIonRefresh={loadData}>
-          <IonRefresherContent></IonRefresherContent>
+          <IonRefresherContent />
         </IonRefresher>
 
-        <div style={{ padding: '16px' }}>
-          <IonButton 
-            expand="block" 
-            shape="round"
+        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+          <PrimaryButton
             onClick={() => {
               setNewExpense({ value: 0, expenseTypeId: 0, description: '' });
               setSelectedCategory(0);
               setCreateFormKey(prev => prev + 1);
               setShowCreateModal(true);
             }}
-            style={{ marginBottom: '16px' }}
-          >
-            <IonIcon slot="start" icon={add} />
-            {t('pages.expenses.addExpense')}
-          </IonButton>
+            label={t('pages.expenses.addExpense')}
+            icon={addCircle}
+          />
 
           {isLoading ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '16px' }}>
               <IonSpinner name="dots" />
-              <p style={{ color: '#666', marginTop: '16px' }}>{t('pages.expenses.loadingExpenses')}</p>
+              <p style={{ color: '#666', fontSize: '14px' }}>{t('pages.expenses.loadingExpenses')}</p>
             </div>
           ) : expenses.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p>{t('pages.expenses.noExpensesRegistered')}</p>
+            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+              <p style={{ color: '#999', margin: 0 }}>{t('pages.expenses.noExpensesRegistered')}</p>
             </div>
           ) : (
             <>
               {expenses.map((expense) => (
-                <IonCard 
-                  key={expense.id} 
-                  style={{ 
-                    marginBottom: '16px',
-                    borderRadius: '12px'
-                  }}
-                >
-                  <IonCardHeader>
-                    {expense.expenseTypeName}
-                  </IonCardHeader>
-                  <IonCardContent>
-                    <IonGrid>
-                      <IonRow>
-                        <IonCol size="12">
-                          <IonItem>
-                            <IonLabel>
-                              <h3>{t('pages.expenses.value')}: {formatCurrencyWithSymbol(expense.value)}</h3>
-                            </IonLabel>
-                          </IonItem>
-                        </IonCol>
-                        <IonCol size="12">
-                          <IonItem>
-                            <IonLabel>
-                              <h3>{t('pages.expenses.type')}: {expense.expenseTypeName}</h3>
-                            </IonLabel>
-                          </IonItem>
-                        </IonCol>
-                        <IonCol size="12">
-                          <IonItem>
-                            <IonLabel>
-                              <h3>{t('pages.expenses.description')}: {expense.description || t('pages.expenses.noDescription')}</h3>
-                            </IonLabel>
-                          </IonItem>
-                        </IonCol>
-                        <IonCol size="12">
-                          <IonItem>
-                            <IonLabel>
-                              <h3>{t('pages.expenses.date')}: {formatDateTime(expense.createdAt)}</h3>
-                            </IonLabel>
-                          </IonItem>
-                        </IonCol>
-                      </IonRow>
-                      <IonRow>
-                        <IonCol size="6">
-                          <IonButton
-                            fill="clear"
-                            onClick={() => openEditModal(expense)}
-                          >
-                            <IonIcon icon={create} />
-                          </IonButton>
-                        </IonCol>
-                        <IonCol size="6">
-                          <IonButton
-                            fill="clear"
-                            color="danger"
-                            onClick={() => {
-                              setSelectedExpense(expense);
-                              setShowDeleteAlert(true);
-                            }}
-                          >
-                            <IonIcon icon={trash} />
-                          </IonButton>
-                        </IonCol>
-                      </IonRow>
-                    </IonGrid>
-                  </IonCardContent>
-                </IonCard>
+                <div key={expense.id} style={{
+                  backgroundColor: '#fff', borderRadius: '16px', padding: '20px', marginBottom: '12px',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden'
+                }}>
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, width: '4px', height: '100%',
+                    backgroundColor: '#098947', borderRadius: '16px 0 0 16px'
+                  }} />
+                  <div style={{ paddingLeft: '8px' }}>
+                    <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#262626', marginBottom: '14px' }}>
+                      {expense.expenseTypeName}
+                    </h2>
+                    <InfoRow label={t('pages.expenses.value')} value={formatCurrencyWithSymbol(expense.value)} valueColor="#dc3545" />
+                    <InfoRow label={t('pages.expenses.description')} value={expense.description || t('pages.expenses.noDescription')} showBorder={false} />
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                      <div style={{ flex: '1 1 45%', minWidth: 0 }}>
+                        <ActionButton icon={eye} label={t('common.show')} onClick={() => { setSelectedExpense(expense); setShowViewModal(true); }} />
+                      </div>
+                      <div style={{ flex: '1 1 45%', minWidth: 0 }}>
+                        <ActionButton icon={create} label={t('common.edit')} onClick={() => openEditModal(expense)} />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                      <div style={{ flex: '1 1 45%', minWidth: 0 }}>
+                        <ActionButton icon={trash} label={t('common.delete')} backgroundColor="#fff5f5" color="#dc3545"
+                          onClick={() => { setSelectedExpense(expense); setShowDeleteAlert(true); }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
-              {/* Sentinel para infinite scroll */}
               <div ref={sentinelRef} style={{ height: '40px', textAlign: 'center', padding: '10px' }}>
                 {isLoadingMore && <IonSpinner name="dots" />}
               </div>
@@ -400,154 +353,112 @@ const Expenses: React.FC = () => {
         </div>
 
         {/* Modal Criar Despesa */}
-        <IonModal isOpen={showCreateModal} onDidDismiss={() => setShowCreateModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('pages.expenses.addExpense')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowCreateModal(false)}>{t('common.close')}</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+        <IonModal isOpen={showCreateModal} onDidDismiss={() => { setShowCreateModal(false); setTypes([]); }}>
+          <GreenHeader title={t('pages.expenses.addExpense')} onClose={() => { setShowCreateModal(false); setTypes([]); }} />
           <IonContent>
-            <div style={{ padding: '16px' }}>
-              <IonItem>
-                <IonSelect
-                  label={t('pages.expenses.category')}
-                  labelPlacement="floating"
-                  value={selectedCategory}
-                  onIonChange={(e) => handleCategoryChange(e.detail.value as number)}
-                >
-                  {categories.map((category) => (
-                    <IonSelectOption key={category.id} value={category.id}>
-                      {category.name}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
-              <IonItem>
-                <IonSelect
-                  label={t('pages.expenses.type')}
-                  labelPlacement="floating"
-                  value={newExpense.expenseTypeId}
-                  onIonChange={(e) => setNewExpense({ ...newExpense, expenseTypeId: e.detail.value as number })}
-                  disabled={!selectedCategory}
-                >
-                  {types.map((type) => (
-                    <IonSelectOption key={type.id} value={type.id}>
-                      {type.name}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
-              <IonItem>
-                <IonInput
-                  label={t('pages.expenses.value')}
-                  labelPlacement="floating"
-                  placeholder={t('pages.expenses.valuePlaceholder')}
-                  type="number"
-                  key={`create-val-${createFormKey}`}
-                  onIonChange={(e: any) => {
-                    const val = e.detail.value;
-                    setNewExpense(prev => ({ ...prev, value: val === '' ? 0 : Number(val) }));
-                  }}
-                />
-              </IonItem>
-              <IonItem>
-                <IonInput
-                  label={t('pages.expenses.description')}
-                  labelPlacement="floating"
-                  placeholder={t('pages.expenses.descriptionPlaceholder')}
-                  key={`create-desc-${createFormKey}`}
-                  onIonChange={(e: any) => setNewExpense(prev => ({ ...prev, description: e.detail.value || '' }))}
-                />
-              </IonItem>
-              <IonButton 
-                expand="block" 
-                shape="round"
-                onClick={handleCreateExpense}
-                style={{ marginTop: '16px' }}
-              >
-                {t('pages.expenses.create')}
-              </IonButton>
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+              <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#098947', borderRadius: '16px 0 0 16px' }} />
+                <div style={{ paddingLeft: '8px' }}>
+                  <SelectInput
+                    label={t('pages.expenses.category')}
+                    value={selectedCategory}
+                    options={categories.map(c => ({ id: c.id, name: c.name }))}
+                    onChange={(val) => handleCategoryChange(val)}
+                    placeholder={t('pages.expenses.select')}
+                  />
+                  <SelectInput
+                    label={t('pages.expenses.type')}
+                    value={newExpense.expenseTypeId}
+                    options={types.map(t => ({ id: t.id, name: t.name }))}
+                    onChange={(val) => setNewExpense({ ...newExpense, expenseTypeId: val })}
+                    disabled={!selectedCategory}
+                    placeholder={t('pages.expenses.select')}
+                  />
+                  <IonItem style={inputStyle}>
+                    <IonInput label={t('pages.expenses.value')} labelPlacement="floating" placeholder={t('pages.expenses.valuePlaceholder')}
+                      type="number"
+                      value={newExpense.value || ''}
+                      onIonInput={(e: any) => {
+                        const val = e.target.value;
+                        setNewExpense(prev => ({ ...prev, value: val === '' ? 0 : Number(val) }));
+                      }} />
+                  </IonItem>
+                  <IonItem style={{ ...inputStyle, marginBottom: '4px' }}>
+                    <IonInput label={t('pages.expenses.description')} labelPlacement="floating" placeholder={t('pages.expenses.descriptionPlaceholder')}
+                      value={newExpense.description}
+                      onIonInput={(e: any) => setNewExpense(prev => ({ ...prev, description: e.target.value || '' }))} />
+                  </IonItem>
+                  <PrimaryButton onClick={handleCreateExpense} label={t('pages.expenses.create')} style={{ marginTop: '4px' }} />
+                </div>
+              </div>
             </div>
           </IonContent>
         </IonModal>
 
         {/* Modal Editar Despesa */}
-        <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('pages.expenses.editExpense')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowEditModal(false)}>{t('common.close')}</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+        <IonModal isOpen={showEditModal} onDidDismiss={() => { setShowEditModal(false); setSelectedExpense(null); setTypes([]); }}>
+          <GreenHeader title={t('pages.expenses.editExpense')} onClose={() => { setShowEditModal(false); setSelectedExpense(null); setTypes([]); }} />
           <IonContent>
-            <div style={{ padding: '16px' }}>
-              <IonItem>
-                <IonSelect
-                  label={t('pages.expenses.category')}
-                  labelPlacement="floating"
-                  value={editSelectedCategory}
-                  onIonChange={(e) => handleEditCategoryChange(e.detail.value as number)}
-                >
-                  {categories.map((category) => (
-                    <IonSelectOption key={category.id} value={category.id}>
-                      {category.name}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
-              <IonItem>
-                <IonSelect
-                  label={t('pages.expenses.type')}
-                  labelPlacement="floating"
-                  value={editExpense.expenseTypeId}
-                  onIonChange={(e) => setEditExpense({ ...editExpense, expenseTypeId: e.detail.value as number })}
-                  disabled={!editSelectedCategory}
-                >
-                  {types.map((type) => (
-                    <IonSelectOption key={type.id} value={type.id}>
-                      {type.name}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
-              <IonItem>
-                <IonInput
-                  label={t('pages.expenses.value')}
-                  labelPlacement="floating"
-                  placeholder={t('pages.expenses.valuePlaceholder')}
-                  type="number"
-                  key={`edit-val-${editFormKey}`}
-                  defaultValue={selectedExpense?.value ?? editExpense.value}
-                  onIonChange={(e: any) => {
-                    const val = e.detail.value;
-                    setEditExpense(prev => ({ ...prev, value: val === '' ? 0 : Number(val) }));
-                  }}
-                />
-              </IonItem>
-              <IonItem>
-                <IonInput
-                  label={t('pages.expenses.description')}
-                  labelPlacement="floating"
-                  placeholder={t('pages.expenses.descriptionPlaceholder')}
-                  key={`edit-desc-${editFormKey}`}
-                  defaultValue={selectedExpense?.description ?? editExpense.description}
-                  onIonChange={(e: any) => setEditExpense(prev => ({ ...prev, description: e.detail.value || '' }))}
-                />
-              </IonItem>
-              <IonButton 
-                expand="block" 
-                shape="round"
-                onClick={handleEditExpense}
-                style={{ marginTop: '16px' }}
-              >
-                {t('pages.expenses.update')}
-              </IonButton>
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+              <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#098947', borderRadius: '16px 0 0 16px' }} />
+                <div style={{ paddingLeft: '8px' }}>
+                  <SelectInput
+                    label={t('pages.expenses.category')}
+                    value={editSelectedCategory}
+                    options={categories.map(c => ({ id: c.id, name: c.name }))}
+                    onChange={(val) => handleEditCategoryChange(val)}
+                    placeholder={t('pages.expenses.select')}
+                  />
+                  <SelectInput
+                    label={t('pages.expenses.type')}
+                    value={editExpense.expenseTypeId}
+                    options={types.map(t => ({ id: t.id, name: t.name }))}
+                    onChange={(val) => setEditExpense({ ...editExpense, expenseTypeId: val })}
+                    disabled={!editSelectedCategory}
+                    placeholder={t('pages.expenses.select')}
+                  />
+                  <IonItem style={inputStyle}>
+                    <IonInput label={t('pages.expenses.value')} labelPlacement="floating" placeholder={t('pages.expenses.valuePlaceholder')}
+                      type="number"
+                      value={editExpense.value}
+                      onIonInput={(e: any) => {
+                        const val = e.target.value;
+                        setEditExpense(prev => ({ ...prev, value: val === '' ? 0 : Number(val) }));
+                      }} />
+                  </IonItem>
+                  <IonItem style={{ ...inputStyle, marginBottom: '4px' }}>
+                    <IonInput label={t('pages.expenses.description')} labelPlacement="floating" placeholder={t('pages.expenses.descriptionPlaceholder')}
+                      value={editExpense.description}
+                      onIonInput={(e: any) => setEditExpense(prev => ({ ...prev, description: e.target.value || '' }))} />
+                  </IonItem>
+                  <PrimaryButton onClick={handleEditExpense} label={t('pages.expenses.update')} style={{ marginTop: '4px' }} />
+                </div>
+              </div>
             </div>
+          </IonContent>
+        </IonModal>
+
+        {/* Modal Ver Despesa */}
+        <IonModal isOpen={showViewModal} onDidDismiss={() => { setShowViewModal(false); setSelectedExpense(null); }}>
+          <GreenHeader title={t('pages.expenses.expenseDetails')} onClose={() => { setShowViewModal(false); setSelectedExpense(null); }} />
+          <IonContent>
+            {selectedExpense && (
+              <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+                <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#098947', borderRadius: '16px 0 0 16px' }} />
+                  <div style={{ paddingLeft: '8px' }}>
+                    <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#262626', marginBottom: '14px' }}>
+                      {selectedExpense.expenseTypeName}
+                    </h2>
+                    <InfoRow label={t('pages.expenses.value')} value={formatCurrencyWithSymbol(selectedExpense.value)} valueColor="#dc3545" />
+                    <InfoRow label={t('pages.expenses.description')} value={selectedExpense.description || t('pages.expenses.noDescription')} />
+                    <InfoRow label={t('pages.expenses.date')} value={formatDateTime(selectedExpense.createdAt)} showBorder={false} />
+                  </div>
+                </div>
+              </div>
+            )}
           </IonContent>
         </IonModal>
 
@@ -558,18 +469,11 @@ const Expenses: React.FC = () => {
           header={t('pages.expenses.confirm')}
           message={t('pages.expenses.confirmDeleteMessage').replace('{expenseTypeName}', selectedExpense?.expenseTypeName || '').replace('{value}', selectedExpense ? formatCurrencyWithSymbol(selectedExpense.value) : '')}
           buttons={[
-            {
-              text: t('common.cancel'),
-              role: 'cancel'
-            },
-            {
-              text: t('pages.expenses.confirm'),
-              handler: handleDeleteExpense
-            }
+            { text: t('common.cancel'), role: 'cancel' },
+            { text: t('pages.expenses.confirm'), role: 'destructive', handler: handleDeleteExpense }
           ]}
         />
 
-        {/* Toast */}
         <Toast
           isOpen={toast.isOpen}
           message={toast.message}

@@ -27,7 +27,8 @@ import {
   IonSpinner,
   IonProgressBar
 } from '@ionic/react';
-import { add, trash } from 'ionicons/icons';
+import SelectInput from '../../components/ui/SelectInput';
+import { addCircle, trash } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { formatToBrazilTime } from '../../utils/dateFormat';
 import { todayFormatted, nextBusinessDayFormatted, isSunday } from '../../utils/sundayUtil';
@@ -195,7 +196,7 @@ const Credits: React.FC = () => {
             onClick={() => { setNewCredit({ ...newCredit, initialValue: 0, quantityDays: 1 }); setCreateFormKey(prev => prev + 1); setShowCreateModal(true); }}
             style={{ marginBottom: '16px' }}
           >
-            <IonIcon slot="start" icon={add} />
+            <IonIcon slot="start" icon={addCircle} />
             {t('pages.credits.addCredit')}
           </IonButton>
 
@@ -288,7 +289,7 @@ const Credits: React.FC = () => {
                         <div style={{ padding: '0 16px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <span style={{ fontSize: '14px', color: '#666' }}>{t('pages.credits.paymentProgress')}</span>
-                            <span style={{ fontSize: '14px', fontWeight: 'bold', color: progress.percentage >= 100 ? '#28a745' : '#007bff' }}>
+                            <span style={{ fontSize: '14px', fontWeight: 'bold', color: progress.percentage >= 100 ? '#28a745' : '#098947' }}>
                               {progress.percentage.toFixed(1)}%
                             </span>
                           </div>
@@ -341,21 +342,13 @@ const Credits: React.FC = () => {
           </IonHeader>
           <IonContent>
             <div style={{ padding: '16px' }}>
-              <IonItem>
-                <IonSelect
-                  label={t('pages.credits.clientRequired')}
-                  labelPlacement="floating"
-                  placeholder={t('pages.credits.selectClient')}
-                  value={newCredit.clientId}
-                  onIonChange={(e) => setNewCredit({ ...newCredit, clientId: e.detail.value as number })}
-                >
-                  {clients.map((client) => (
-                    <IonSelectOption key={client.id} value={client.id}>
-                      {client.name}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
+              <SelectInput
+                label={t('pages.credits.clientRequired')}
+                value={newCredit.clientId}
+                options={clients.map(c => ({ id: c.id, name: c.name }))}
+                onChange={(val) => setNewCredit({ ...newCredit, clientId: val })}
+                placeholder={t('pages.credits.selectClient')}
+              />
               <IonItem>
                 <IonInput
                   label={t('pages.credits.initialValueRequired')}
@@ -406,13 +399,21 @@ const Credits: React.FC = () => {
                   }}
                 />
               </IonItem>
-              <IonItem>
+              <IonItem style={{
+                '--background': '#f5f5f5',
+                '--border-radius': '12px',
+                '--padding-start': '16px',
+                '--inner-padding-end': '16px',
+                '--min-height': '52px',
+                marginBottom: '8px'
+              }}>
+                <IonLabel style={{ fontWeight: 600, fontSize: '13px', color: '#555', minWidth: '80px' }}>
+                  {t('pages.credits.dueTypeRequired')}
+                </IonLabel>
                 <IonSelect
-                  label={t('pages.credits.dueTypeRequired')}
-                  labelPlacement="floating"
-                  placeholder={t('pages.credits.selectDueType')}
                   value={newCredit.overdue}
                   onIonChange={(e) => setNewCredit({ ...newCredit, overdue: e.detail.value as 'CAPITALIZE_DEBT' | 'EXTEND_TERM' })}
+                  interface="popover"
                 >
                   <IonSelectOption value="CAPITALIZE_DEBT">{t('pages.credits.capitalizeDebt')}</IonSelectOption>
                   <IonSelectOption value="EXTEND_TERM">{t('pages.credits.extendTerm')}</IonSelectOption>

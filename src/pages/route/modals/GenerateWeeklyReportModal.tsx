@@ -1,22 +1,15 @@
 import React from 'react';
 import {
   IonModal,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonButton,
   IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
   IonItem,
   IonLabel,
   IonInput,
-  IonSpinner,
 } from '@ionic/react';
 import { useTranslation } from 'react-i18next';
+import GreenHeader from '../../../components/ui/GreenHeader';
+import ModernCard from '../../../components/ui/ModernCard';
+import PrimaryButton from '../../../components/ui/PrimaryButton';
 
 interface GenerateWeeklyReportModalProps {
   isOpen: boolean;
@@ -83,23 +76,25 @@ const GenerateWeeklyReportModal: React.FC<GenerateWeeklyReportModalProps> = ({
 
   const canGenerate = mondayOk && saturdayOk && endBeforeToday && sameWeek && orderOk;
 
+  const itemStyle = {
+    '--background': '#f5f5f5',
+    '--border-radius': '12px',
+    '--padding-start': '16px',
+    '--inner-padding-end': '16px',
+    '--min-height': '52px',
+    marginBottom: '8px',
+  } as any;
+
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose}>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>{t('reports.weeklyByRoute')}</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={onClose}>{t('common.cancel')}</IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent className="ion-padding">
-        <IonCard>
-          <IonCardHeader>
-            <IonCardTitle style={{ fontSize: '16px' }}>{t('reports.selectPeriod')}</IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <IonItem>
+      <GreenHeader
+        title={t('reports.weeklyByRoute')}
+        onClose={onClose}
+      />
+      <IonContent>
+        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+          <ModernCard headerTitle={t('reports.selectPeriod')}>
+            <IonItem style={itemStyle}>
               <IonLabel position="stacked">{t('reports.periodStart')}</IonLabel>
               <IonInput
                 type="date"
@@ -108,12 +103,12 @@ const GenerateWeeklyReportModal: React.FC<GenerateWeeklyReportModalProps> = ({
               />
             </IonItem>
             {!mondayOk && weeklyStart && (
-              <p style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
+              <p style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', marginLeft: '4px' }}>
                 {t('reports.errorMondayStart')}
               </p>
             )}
 
-            <IonItem style={{ marginTop: '8px' }}>
+            <IonItem style={{ ...itemStyle, marginTop: '8px' }}>
               <IonLabel position="stacked">{t('reports.periodEnd')}</IonLabel>
               <IonInput
                 type="date"
@@ -122,39 +117,33 @@ const GenerateWeeklyReportModal: React.FC<GenerateWeeklyReportModalProps> = ({
               />
             </IonItem>
             {!saturdayOk && weeklyEnd && (
-              <p style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
+              <p style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', marginLeft: '4px' }}>
                 {t('reports.errorSaturdayEnd')}
               </p>
             )}
             {weeklyStart && weeklyEnd && !orderOk && (
-              <p style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
+              <p style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', marginLeft: '4px' }}>
                 {t('reports.errorStartAfterEnd')}
               </p>
             )}
             {weeklyStart && weeklyEnd && orderOk && !sameWeek && mondayOk && saturdayOk && (
-              <p style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
+              <p style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', marginLeft: '4px' }}>
                 {t('reports.errorNotSameWeek')}
               </p>
             )}
             {weeklyEnd && !endBeforeToday && (
-              <p style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
+              <p style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', marginLeft: '4px' }}>
                 {t('reports.errorEndFuture')}
               </p>
             )}
-          </IonCardContent>
-        </IonCard>
+          </ModernCard>
 
-        <IonButton
-          expand="block"
-          shape="round"
-          color="primary"
-          onClick={onGenerate}
-          disabled={isGenerating || !canGenerate}
-          style={{ marginTop: '16px' }}
-        >
-          {isGenerating ? <IonSpinner name="dots" slot="start" /> : null}
-          {isGenerating ? t('reports.generating') : t('reports.generate')}
-        </IonButton>
+          <PrimaryButton
+            onClick={onGenerate}
+            label={isGenerating ? t('reports.generating') : t('reports.generate')}
+            disabled={isGenerating || !canGenerate}
+          />
+        </div>
       </IonContent>
     </IonModal>
   );

@@ -1,32 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useHistory } from 'react-router-dom';
 import {
   IonContent,
   IonPage,
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonButton,
-  IonItem,
-  IonLabel,
-  IonSelect,
-  IonSelectOption,
   IonButtons,
-  IonBackButton,
-  IonGrid,
-  IonRow,
-  IonCol,
   IonRefresher,
   IonRefresherContent,
   IonModal,
   IonDatetime,
-  IonIcon
+  IonIcon,
+  IonButton,
+  IonItem,
+  IonLabel,
+  IonSelect,
+  IonSelectOption
 } from '@ionic/react';
-import { refresh } from 'ionicons/icons';
+import { refresh, calendar, close } from 'ionicons/icons';
 import {
   getCategorias,
   getDetalhesGastos,
@@ -35,9 +27,16 @@ import {
   DetalhesRequest
 } from '../../services/gastoApi';
 import Toast from '../../components/Toast';
+import { useTranslation } from 'react-i18next';
+import GreenHeader from '../../components/ui/GreenHeader';
+import PrimaryButton from '../../components/ui/PrimaryButton';
+import ModernCard from '../../components/ui/ModernCard';
+import InfoRow from '../../components/ui/InfoRow';
 
 const DetalhesGastos: React.FC = () => {
+  const { t } = useTranslation();
   const { categoriaId } = useParams<{ categoriaId: string }>();
+  const history = useHistory();
 
   const [categoria, setCategoria] = useState<CategoriaGasto | null>(null);
   const [detalhes, setDetalhes] = useState<CategoriaDetalhesResponse | null>(null);
@@ -64,7 +63,7 @@ const DetalhesGastos: React.FC = () => {
       const cat = data.find((c: CategoriaGasto) => c.id === Number(categoriaId));
       setCategoria(cat || null);
     } catch {
-      showToast('Erro ao carregar categoria', 'danger');
+      showToast(t('pages.expensesDetails.errorLoadingCategory'), 'danger');
     }
   };
 
@@ -78,7 +77,7 @@ const DetalhesGastos: React.FC = () => {
           request.dateFrom = new Date(dataInicio).toISOString();
           request.dateTo = new Date(dataFim).toISOString();
         } else {
-          showToast('Selecione um período personalizado válido', 'danger');
+          showToast(t('pages.expensesDetails.errorSelectValidPeriod'), 'danger');
           return;
         }
       } else {
@@ -88,7 +87,7 @@ const DetalhesGastos: React.FC = () => {
       const data = await getDetalhesGastos(Number(categoriaId), request);
       setDetalhes(data);
     } catch {
-      showToast('Erro ao carregar detalhes', 'danger');
+      showToast(t('pages.expensesDetails.errorLoadingDetails'), 'danger');
     } finally {
       setIsLoading(false);
     }
@@ -115,14 +114,14 @@ const DetalhesGastos: React.FC = () => {
       const fim = new Date(dataFim);
       
       if (inicio >= fim) {
-        showToast('A data inicial deve ser anterior à data final', 'danger');
+        showToast(t('pages.expensesDetails.errorStartBeforeEnd'), 'danger');
         return;
       }
       
       setShowCalendarModal(false);
       loadDetalhes();
     } else {
-      showToast('Preencha ambas as datas', 'danger');
+      showToast(t('pages.expensesDetails.errorFillBothDates'), 'danger');
     }
   };
 
@@ -135,11 +134,13 @@ const DetalhesGastos: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonBackButton defaultHref="/manager/gastos" />
+        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+          <IonTitle>{t('pages.expensesDetails.title')}</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={() => history.push('/manager/gastos')} style={{ color: '#fff' }}>
+              <IonIcon icon={close} />
+            </IonButton>
           </IonButtons>
-          <IonTitle>Detalhes de Gastos</IonTitle>
         </IonToolbar>
       </IonHeader>
 
@@ -154,149 +155,162 @@ const DetalhesGastos: React.FC = () => {
           <IonRefresherContent />
         </IonRefresher>
 
-        <div style={{ padding: '16px' }}>
-          <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
-            <IonCardHeader>
-              <IonCardTitle>Selecione o período</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <IonItem>
-                <IonLabel position="stacked">Período</IonLabel>
+        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+          <ModernCard headerTitle={t('pages.expensesDetails.selectPeriod')} headerIcon={calendar}>
+            <div style={{ marginBottom: '12px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#555', display: 'block', marginBottom: '6px' }}>
+                {t('pages.expensesDetails.period')}
+              </span>
+              <IonItem style={{
+                '--background': '#f5f5f5',
+                '--border-radius': '12px',
+                '--padding-start': '16px',
+                '--inner-padding-end': '16px',
+                '--min-height': '52px',
+                marginBottom: '8px'
+              }}>
+                <IonLabel style={{ fontWeight: 600, fontSize: '13px', color: '#555', minWidth: '80px' }}>
+                  {t('pages.expensesDetails.period')}
+                </IonLabel>
                 <IonSelect
                   value={periodo}
-                  placeholder="Selecione um período"
+                  placeholder={t('pages.expensesDetails.selectPeriodPlaceholder')}
                   onIonChange={e => handlePeriodoChange(e.detail.value)}
+                  interface="popover"
                 >
-                  <IonSelectOption value="TODAY">Hoje</IonSelectOption>
-                  <IonSelectOption value="LAST_7_DAYS">Últimos 7 dias</IonSelectOption>
-                  <IonSelectOption value="LAST_30_DAYS">Últimos 30 dias</IonSelectOption>
-                  <IonSelectOption value="LAST_60_DAYS">Últimos 60 dias</IonSelectOption>
-                  <IonSelectOption value="LAST_90_DAYS">Últimos 90 dias</IonSelectOption>
-                  <IonSelectOption value="ALL_TIME">Todo o período</IonSelectOption>
-                  <IonSelectOption value="custom">Período personalizado</IonSelectOption>
+                  <IonSelectOption value="TODAY">{t('pages.expensesDetails.today')}</IonSelectOption>
+                  <IonSelectOption value="LAST_7_DAYS">{t('pages.expensesDetails.last7Days')}</IonSelectOption>
+                  <IonSelectOption value="LAST_30_DAYS">{t('pages.expensesDetails.last30Days')}</IonSelectOption>
+                  <IonSelectOption value="LAST_60_DAYS">{t('pages.expensesDetails.last60Days')}</IonSelectOption>
+                  <IonSelectOption value="LAST_90_DAYS">{t('pages.expensesDetails.last90Days')}</IonSelectOption>
+                  <IonSelectOption value="ALL_TIME">{t('pages.expensesDetails.allTime')}</IonSelectOption>
+                  <IonSelectOption value="custom">{t('pages.expensesDetails.customPeriod')}</IonSelectOption>
                 </IonSelect>
               </IonItem>
-              <IonButton
-                expand="block"
-                fill="outline"
-                onClick={loadDetalhes}
-                disabled={isLoading}
-                style={{ marginTop: '12px' }}
-              >
-                <IonIcon slot="start" icon={refresh} />
-                Filtrar
-              </IonButton>
-            </IonCardContent>
-          </IonCard>
+            </div>
+            <PrimaryButton
+              onClick={loadDetalhes}
+              label={t('pages.expensesDetails.filter')}
+              icon={refresh}
+              disabled={isLoading}
+            />
+          </ModernCard>
 
           {categoria && (
-            <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
-              <IonCardHeader>
-                <IonCardTitle>{categoria.name}</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonItem>
-                  <IonLabel>
-                    <h3>Total de Gastos</h3>
-                    <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#dc3545' }}>
-                      {formatCurrency(detalhes?.totalAmount || 0)}
-                    </p>
-                  </IonLabel>
-                </IonItem>
-              </IonCardContent>
-            </IonCard>
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '16px',
+              marginBottom: '16px',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                backgroundColor: '#098947',
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>
+                  {categoria.name}
+                </span>
+              </div>
+              <div style={{ padding: '16px 20px' }}>
+                <InfoRow
+                  label={t('pages.expensesDetails.totalExpenses')}
+                  value={formatCurrency(detalhes?.totalAmount || 0)}
+                  valueColor="#dc3545"
+                />
+              </div>
+            </div>
           )}
 
           {isLoading ? (
             <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p>Carregando...</p>
+              <p style={{ color: '#999', fontSize: '14px' }}>{t('pages.expensesDetails.loading')}</p>
             </div>
           ) : detalhes?.expenseTypes?.length ? (
             detalhes.expenseTypes.map((expenseType: any, index: number) => (
-              <IonCard key={index} style={{ marginBottom: '12px', borderRadius: '12px' }}>
-                <IonCardHeader>
-                  <IonCardTitle>{expenseType.typeName}</IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <IonGrid>
-                    <IonRow>
-                      <IonCol>
-                        <IonItem>
-                          <IonLabel>
-                            <h3>Quantidade</h3>
-                            <p>{expenseType.expenseCount}</p>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                      <IonCol>
-                        <IonItem>
-                          <IonLabel>
-                            <h3>Valor Total</h3>
-                            <p>{formatCurrency(expenseType.totalAmount)}</p>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                    </IonRow>
-                    <IonRow>
-                      <IonCol>
-                        <IonItem>
-                          <IonLabel>
-                            <h3>Valor Médio</h3>
-                            <p>{formatCurrency(expenseType.totalAmount / expenseType.expenseCount)}</p>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                    </IonRow>
-                  </IonGrid>
-                </IonCardContent>
-              </IonCard>
+              <div key={index} style={{
+                backgroundColor: '#fff',
+                borderRadius: '16px',
+                marginBottom: '12px',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  padding: '16px 20px',
+                  borderBottom: '1px solid #f0f0f0'
+                }}>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#262626' }}>
+                    {expenseType.typeName}
+                  </h3>
+                </div>
+                <div style={{ padding: '12px 20px' }}>
+                  <InfoRow
+                    label={t('pages.expensesDetails.quantity')}
+                    value={expenseType.expenseCount.toString()}
+                  />
+                  <InfoRow
+                    label={t('pages.expensesDetails.totalValue')}
+                    value={formatCurrency(expenseType.totalAmount)}
+                    valueColor="#dc3545"
+                  />
+                  <InfoRow
+                    label={t('pages.expensesDetails.averageValue')}
+                    value={formatCurrency(expenseType.totalAmount / expenseType.expenseCount)}
+                    showBorder={false}
+                  />
+                </div>
+              </div>
             ))
           ) : (
-            <IonCard style={{ borderRadius: '12px' }}>
-              <IonCardContent>
-                <p style={{ textAlign: 'center' }}>
-                  Nenhum gasto encontrado no período selecionado
-                </p>
-              </IonCardContent>
-            </IonCard>
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '16px',
+              padding: '40px 20px',
+              textAlign: 'center',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+            }}>
+              <p style={{ color: '#999', margin: 0, fontSize: '14px' }}>
+                {t('pages.expensesDetails.noExpensesFound')}
+              </p>
+            </div>
           )}
         </div>
 
         <IonModal isOpen={showCalendarModal} onDidDismiss={() => setShowCalendarModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>Período Personalizado</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowCalendarModal(false)}>Fechar</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <GreenHeader
+            title={t('pages.expensesDetails.customPeriodTitle')}
+            onClose={() => setShowCalendarModal(false)}
+          />
           <IonContent>
-            <div style={{ padding: '16px' }}>
-              <IonItem>
-                <IonLabel position="stacked">Data Início</IonLabel>
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+              <div style={{ marginBottom: '16px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#555', display: 'block', marginBottom: '6px' }}>
+                  {t('pages.expensesDetails.startDate')}
+                </span>
                 <IonDatetime
                   presentation="date"
                   value={dataInicio}
                   onIonChange={e => setDataInicio(e.detail.value as string)}
                 />
-              </IonItem>
-              <IonItem>
-                <IonLabel position="stacked">Data Fim</IonLabel>
+              </div>
+              <div style={{ marginBottom: '16px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#555', display: 'block', marginBottom: '6px' }}>
+                  {t('pages.expensesDetails.endDate')}
+                </span>
                 <IonDatetime
                   presentation="date"
                   value={dataFim}
                   onIonChange={e => setDataFim(e.detail.value as string)}
                 />
-              </IonItem>
-              <IonButton
-                expand="block"
+              </div>
+              <PrimaryButton
                 onClick={handleCustomPeriodApply}
+                label={t('pages.expensesDetails.applyPeriod')}
                 disabled={!dataInicio || !dataFim}
-                style={{ marginTop: '16px' }}
-              >
-                Aplicar Período
-              </IonButton>
+              />
             </div>
           </IonContent>
         </IonModal>

@@ -22,6 +22,8 @@ export interface ReportData {
   dailyRouteSummary?: DailyRouteSummary;
   collectionRows?: CollectionRow[];
   newCreditRows?: NewCreditRow[];
+  overdueClients?: OverdueClientRow[];
+  weeklyOverdueClients?: OverdueClientRow[];
 }
 
 export interface DailySummary {
@@ -68,6 +70,7 @@ export interface DetailedDay {
   expenses: ExpenseItem[];
   transactions: TransactionItem[];
   dailyTotal: DailyTotal;
+  overdueClients?: OverdueClientRow[];
 }
 
 export interface CreditItem {
@@ -164,6 +167,21 @@ export interface NewCreditRow {
   capital: number;
   tax: number;
   balance: number;
+}
+
+export interface OverdueClientRow {
+  clientName: string;
+  clientShop: string;
+  creditId: number;
+  initialValue: number;
+  tax: number;
+  quantityDays: number;
+  startDate: string;
+  finalDate: string;
+  expectedPayment: number;
+  amountPaid: number;
+  remainingDebt: number;
+  overdue: boolean;
 }
 
 export interface GenerateReportRequest {

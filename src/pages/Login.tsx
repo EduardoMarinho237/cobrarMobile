@@ -23,6 +23,7 @@ const Login: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -82,8 +83,21 @@ const Login: React.FC = () => {
             break;
           }
           case 'ROUTE':
-            console.log('Redirecionando para /route/config');
-            window.location.href = '/route/config';
+            // Verificar closedDay do userData E do localStorage
+            const closedDayFromResponse = userData.closedDay === true;
+            const closedDayStr = localStorage.getItem('closedDay');
+            const closedDayFromStorage = closedDayStr === 'true';
+            const isClosedDay = closedDayFromResponse || closedDayFromStorage;
+
+            console.log('ROUTE login - closedDay from response:', closedDayFromResponse, 'from storage:', closedDayFromStorage);
+
+            if (isClosedDay) {
+              console.log('Dia fechado, redirecionando para /route/fechamento');
+              window.location.href = '/route/fechamento';
+            } else {
+              console.log('Redirecionando para /route/config');
+              window.location.href = '/route/config';
+            }
             break;
           default:
             console.log('Role não reconhecido:', userData.role, 'voltando para login');
@@ -106,47 +120,109 @@ const Login: React.FC = () => {
       <IonContent fullscreen className="ion-no-padding">
         <div style={{
           minHeight: '100vh',
-          width: '100vw',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: '20px',
-          margin: 0,
-          boxSizing: 'border-box'
+          backgroundColor: '#f0f0f0',
+          position: 'relative',
+          zIndex: 2
         }}>
+          {/* Happy people decorative image */}
+          <img
+            src="/images/happy-business-people.png"
+            alt="Satisfied customers"
+            style={{
+              position: 'absolute',
+              bottom: '-25px',
+              right: '-70px',
+width: '380px',
+              height: 'auto',
+              pointerEvents: 'none',
+              opacity: 0.85,
+              zIndex: 0
+            }}
+          />
+          {/* Top green section with branding */}
           <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            borderRadius: '20px',
-            padding: '40px 30px',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-            width: '100%',
-            maxWidth: '400px',
-            textAlign: 'center'
+            background: '#098947',
+            padding: '60px 28px 80px 28px',
+            borderBottomLeftRadius: '40px',
+            borderBottomRightRadius: '40px',
+            position: 'relative',
+            overflow: 'hidden'
           }}>
-            <h1 style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              fontSize: '32px',
-              fontWeight: 'bold',
-              margin: '0 0 10px 0',
-              fontFamily: 'Arial, sans-serif'
+            {/* Decorative circles */}
+            <div style={{
+              position: 'absolute',
+              top: '-50px',
+              right: '-40px',
+              width: '180px',
+              height: '180px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.07)'
+            }} />
+            <div style={{
+              position: 'absolute',
+              bottom: '-30px',
+              left: '-30px',
+              width: '120px',
+              height: '120px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.05)'
+            }} />
+            <div style={{
+              position: 'absolute',
+              top: '30px',
+              right: '100px',
+              width: '50px',
+              height: '50px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.06)'
+            }} />
+
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <h1 style={{
+                color: '#fff',
+                fontSize: '44px',
+                fontWeight: 'bold',
+                margin: '0 0 6px 0',
+                fontFamily: "'League Spartan', sans-serif",
+                letterSpacing: '-2px'
+              }}>
+                abonopay
+              </h1>
+              <p style={{
+                color: 'rgba(255,255,255,0.85)',
+                fontSize: '14px',
+                margin: 0,
+                fontFamily: "'Futura', 'Century Gothic', 'Apple Gothic', sans-serif",
+                fontWeight: 500
+              }}>
+                abono en la deuda, crecimiento en el bolsillo
+              </p>
+            </div>
+          </div>
+
+          {/* Form card */}
+          <div style={{
+            margin: '-50px 20px 0 20px',
+            backgroundColor: '#fff',
+            borderRadius: '24px',
+            padding: '32px 24px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
+            position: 'relative',
+            zIndex: 1
+          }}>
+            {/* Username input */}
+            <IonItem style={{
+              marginBottom: '16px',
+              '--background': '#f5f5f5',
+              '--border-radius': '14px',
+              '--padding-start': '20px',
+              '--inner-padding-end': '20px',
+              '--min-height': '58px',
+              '--highlight-color-focused': '#098947',
+              '--highlight-color-valid': '#098947'
             }}>
-              CobranzasApp
-            </h1>
-            <p style={{
-              color: '#666',
-              fontSize: '16px',
-              margin: '0 0 40px 0',
-              fontFamily: 'Arial, sans-serif'
-            }}>
-              su app de gestión de préstamos
-            </p>
-            
-            <IonItem style={{ marginBottom: '20px', '--background': 'transparent' }}>
               <IonInput
                 label={t('login.username')}
                 labelPlacement="floating"
@@ -155,55 +231,113 @@ const Login: React.FC = () => {
                 onIonInput={(e: any) => setUsername(e.detail.value!)}
               />
             </IonItem>
-            
-            <IonItem style={{ marginBottom: '30px', '--background': 'transparent' }}>
+
+            {/* Password input */}
+            <IonItem style={{
+              marginBottom: '12px',
+              '--background': '#f5f5f5',
+              '--border-radius': '14px',
+              '--padding-start': '20px',
+              '--inner-padding-end': '20px',
+              '--min-height': '58px',
+              '--highlight-color-focused': '#098947',
+              '--highlight-color-valid': '#098947'
+            }}>
               <IonInput
                 label={t('login.password')}
                 labelPlacement="floating"
                 placeholder={t('login.passwordPlaceholder')}
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onIonInput={(e: any) => setPassword(e.detail.value!)}
               />
             </IonItem>
-            
-            <IonItem style={{ marginBottom: '20px', '--background': 'transparent' }}>
+
+            {/* Show Password */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '16px',
+              paddingLeft: '4px'
+            }}>
+              <IonCheckbox
+                checked={showPassword}
+                onIonChange={(e) => setShowPassword(e.detail.checked)}
+                labelPlacement="end"
+                style={{
+                  '--checkbox-background-checked': '#098947',
+                  '--border-color-checked': '#098947',
+                  '--checkmark-color': '#fff',
+                  '--size': '22px'
+                }}
+              >
+                <span style={{ fontSize: '14px', color: '#666' }}>
+                  {t('login.showPassword')}
+                </span>
+              </IonCheckbox>
+            </div>
+
+            {/* Remember Me */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '32px',
+              paddingLeft: '4px'
+            }}>
               <IonCheckbox
                 checked={rememberMe}
                 onIonChange={(e) => setRememberMe(e.detail.checked)}
                 labelPlacement="end"
+                style={{
+                  '--checkbox-background-checked': '#098947',
+                  '--border-color-checked': '#098947',
+                  '--checkmark-color': '#fff',
+                  '--size': '22px'
+                }}
               >
-                {t('login.rememberMe')}
+                <span style={{ fontSize: '14px', color: '#666' }}>
+                  {t('login.rememberMe')}
+                </span>
               </IonCheckbox>
-            </IonItem>
+            </div>
 
+            {/* Login Button */}
             <IonButton
               expand="block"
-              style={{ 
-                marginBottom: '20px',
-                '--background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                '--background-hover': 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)'
+              style={{
+                '--background': '#098947',
+                '--background-hover': '#067a3a',
+                '--border-radius': '14px',
+                '--font-weight': 'bold',
+                '--padding-top': '16px',
+                '--padding-bottom': '16px',
+                fontSize: '16px',
+                textTransform: 'none'
               }}
               onClick={handleLogin}
+              disabled={isLoading}
             >
-              {t('login.loginButton')}
+              {isLoading ? t('login.loggingIn') : t('login.loginButton')}
             </IonButton>
-            
           </div>
-          
-          {/* NOTE: Language selector temporarily disabled - only Spanish (es-CO) is available now
+
+          {/* Footer */}
           <div style={{
-            marginTop: '30px',
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            padding: '15px 25px',
-            borderRadius: '12px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+            padding: '24px 20px 24px 44px',
+            textAlign: 'left'
           }}>
-            <LanguageSelector />
+            <p style={{
+              fontSize: '12px',
+              color: '#aaa',
+              margin: 0,
+              fontFamily: "'Futura', 'Century Gothic', 'Apple Gothic', sans-serif",
+              fontWeight: 500
+            }}>
+              abonopay · v{import.meta.env.VITE_APP_VERSION}
+            </p>
           </div>
-          */}
         </div>
-        
+
         <IonAlert
           isOpen={showAlert}
           onDidDismiss={() => setShowAlert(false)}

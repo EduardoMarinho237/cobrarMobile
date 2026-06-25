@@ -8,10 +8,10 @@ import ManagerTabs from './pages/ManagerTabs';
 import RouteTabs from './pages/RouteTabs';
 import EditarCategoria from './pages/manager/EditarCategoria';
 import DetalhesGastos from './pages/manager/DetalhesGastos';
-import SundayBlocked from './pages/route/SundayBlocked';
-import { getCurrentUser, setAppUpdateCallback, checkToken, clearSessionData, setAppUpdateBlocked } from './services/api';
+import BlockedScreen, { BlockedType } from './components/ui/BlockedScreen';
+import { getCurrentUser, setAppUpdateCallback, checkToken, clearSessionData, setAppUpdateBlocked, logout } from './services/api';
 import { isSunday } from './utils/sundayUtil';
-import AppUpdateScreen from './components/AppUpdateScreen';
+import { useTranslation } from 'react-i18next';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -34,10 +34,15 @@ import './theme/variables.css';
 setupIonicReact();
 
 const App: React.FC = () => {
+  const { t } = useTranslation();
   const [showUpdateAlert, setShowUpdateAlert] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
   const [sessionChecked, setSessionChecked] = useState(false);
+
+  // BLOCKED SCREEN STATE (Sunday, ClosedDay)
+  const [showBlockedAlert, setShowBlockedAlert] = useState(false);
+  const [blockedType, setBlockedType] = useState<BlockedType>('sunday');
 
   // 🔵 TOAST GLOBAL STATE (ADICIONADO)
   const [showToast, setShowToast] = useState(false);
@@ -53,9 +58,16 @@ const App: React.FC = () => {
 
       const isValid = await checkToken();
       if (!isValid) {
-        clearSessionData();
-        if (window.location.pathname !== '/login') {
-          window.location.replace('/login');
+        // Verificar se o erro é por dia fechado - se sim, não fazer logout
+        const closedDayStr = localStorage.getItem('closedDay');
+        const isClosedDay = closedDayStr === 'true';
+        if (!isClosedDay) {
+          clearSessionData();
+          if (window.location.pathname !== '/login') {
+            window.location.replace('/login');
+          }
+        } else {
+          console.log('Dia fechado detectado, mantendo sessão para acesso à tela de fechamento');
         }
       }
       setSessionChecked(true);
@@ -64,13 +76,38 @@ const App: React.FC = () => {
     validateSession();
   }, []);
 
+  // Verificar Sunday e ClosedDay para mostrar BlockedScreen
+  useEffect(() => {
+    if (!sessionChecked) return;
+
+    const user = getCurrentUser();
+    if (!user) return;
+
+    const isDevMode = !!import.meta.env.VITE_DEV_MODE;
+
+    // Verificar se é domingo e não é dev mode
+    if (user.role === 'MANAGER' && isSunday() && !isDevMode) {
+      setBlockedType('sunday');
+      setShowBlockedAlert(true);
+      return;
+    }
+
+    // Verificar se dia está fechado
+    const closedDayStr = localStorage.getItem('closedDay');
+    const isClosedDay = closedDayStr === 'true' || user.closedDay === true;
+    if (isClosedDay && user.role === 'ROUTE') {
+      setBlockedType('closedDay');
+      setShowBlockedAlert(true);
+      return;
+    }
+  }, [sessionChecked]);
+
   useEffect(() => {
     console.log('App - Registrando callback de atualização');
     setAppUpdateCallback((message: string, url: string) => {
       console.log('App - Callback de atualização chamado:', { message, url });
       setUpdateMessage(message);
       setDownloadUrl(url);
-      setAppUpdateBlocked(true);
       setShowUpdateAlert(true);
     });
   }, []);
@@ -86,9 +123,18 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const handleUpdateDismiss = () => {
-    setShowUpdateAlert(false);
-    setAppUpdateBlocked(false);
+  const handleBlockedLogout = async () => {
+    await logout();
+  };
+
+  const handleBlockedAction = () => {
+    if (blockedType === 'sunday') {
+      // Para domingo, recarrega a página para verificar se ainda é domingo
+      window.location.reload();
+    } else if (blockedType === 'closedDay') {
+      // Para dia fechado, recarrega para verificar se foi aberto
+      window.location.reload();
+    }
   };
 
   const checkAuth = () => {
@@ -100,13 +146,17 @@ const App: React.FC = () => {
     const user = getCurrentUser();
     if (!user) return '/login';
 
+    // Verificar se o dia está fechado
+    const closedDayStr = localStorage.getItem('closedDay');
+    const isClosedDay = closedDayStr === 'true' || user.closedDay === true;
+
     switch (user.role) {
       case 'ADMIN':
         return '/admin/managers';
       case 'MANAGER':
         return isSunday() ? '/manager/reports' : '/manager/routes';
       case 'ROUTE':
-        return '/route/config';
+        return isClosedDay ? '/route/fechamento' : '/route/config';
       default:
         return '/login';
     }
@@ -114,7 +164,7 @@ const App: React.FC = () => {
 
   const ProtectedRoute: React.FC<{ children: React.ReactNode; path?: string; exact?: boolean }> =
     ({ children, ...rest }) => {
-      if (!sessionChecked) {
+      if (!sessionChecked || showUpdateAlert || showBlockedAlert) {
         return null;
       }
 
@@ -141,10 +191,6 @@ const App: React.FC = () => {
       <IonReactRouter>
         <Route exact path="/login">
           <Login />
-        </Route>
-
-        <Route exact path="/sunday-blocked">
-          <SundayBlocked />
         </Route>
 
         <ProtectedRoute exact path="/admin">
@@ -241,10 +287,29 @@ const App: React.FC = () => {
 
       {/* TELA CHEIA DE UPDATE */}
       {showUpdateAlert && (
-        <AppUpdateScreen
+        <BlockedScreen
+          type="update"
+          title={t('pages.blockedScreen.titleUpdate')}
           message={updateMessage}
           downloadUrl={downloadUrl}
-          onDismiss={handleUpdateDismiss}
+          onAction={() => {
+            if (downloadUrl) {
+              window.open(downloadUrl, '_system');
+            }
+          }}
+          onLogout={logout}
+        />
+      )}
+
+      {/* TELA CHEIA DE BLOCKED (Sunday ou ClosedDay) */}
+      {showBlockedAlert && (
+        <BlockedScreen
+          type={blockedType}
+          title={blockedType === 'sunday' ? t('pages.blockedScreen.titleSunday') : t('pages.blockedScreen.titleClosedDay')}
+          message={blockedType === 'sunday' ? t('pages.blockedScreen.messageSunday') : t('pages.blockedScreen.messageClosedDay')}
+          subtitle={blockedType === 'sunday' ? t('pages.blockedScreen.subtitleSunday') : t('pages.blockedScreen.subtitleClosedDay')}
+          onAction={handleBlockedAction}
+          onLogout={handleBlockedLogout}
         />
       )}
 

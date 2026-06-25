@@ -6,18 +6,11 @@ const APP_VERSION = import.meta.env.VITE_APP_VERSION || '0.0.0';
 // Event emitter para app desatualizado
 let appUpdateCallback: ((message: string, downloadUrl: string) => void) | null = null;
 
-// Flag global para controlar se o modal já foi aberto
-let updateModalOpened = false;
-
 // Flag global para bloquear requisições durante tela de atualização
 let appUpdateBlocked = false;
 
 export const setAppUpdateCallback = (callback: (message: string, downloadUrl: string) => void) => {
   appUpdateCallback = callback;
-};
-
-export const resetUpdateModalFlag = () => {
-  updateModalOpened = false;
 };
 
 export const setAppUpdateBlocked = (blocked: boolean) => {
@@ -46,18 +39,6 @@ console.log('API_BASE_URL:', API_BASE_URL);
 
 export const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   console.log('apiRequest chamado - endpoint:', endpoint);
-
-  // Bloquear requisições durante tela de atualização (exceto logout)
-  const isLogoutEndpoint = endpoint === '/api/auth/logout';
-  const isPublicDownload = !endpoint.startsWith('/api');
-  if (appUpdateBlocked && !isLogoutEndpoint && !isPublicDownload) {
-    console.log('[apiRequest] Bloqueado - app em tela de atualização:', endpoint);
-    return {
-      success: false,
-      message: 'App desatualizado - atualização necessária',
-      blockedByUpdate: true,
-    };
-  }
 
   // Priorizar token da chave auth_token (padrão useAuth.ts)
   const token = localStorage.getItem('auth_token');
@@ -163,12 +144,9 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
       // Verificar se é erro de app desatualizado (needToUpdate: true)
       if (errorData && errorData.needToUpdate === true) {
         console.log('App desatualizado detectado:', errorData);
-        if (!updateModalOpened) {
-          const downloadUrl = errorData.data?.startsWith('http') ? errorData.data : `${API_BASE_URL}${errorData.data}`;
-          if (appUpdateCallback && errorData.message && downloadUrl) {
-            updateModalOpened = true;
-            appUpdateCallback(errorData.message, downloadUrl);
-          }
+        const downloadUrl = errorData.data?.startsWith('http') ? errorData.data : `${API_BASE_URL}${errorData.data}`;
+        if (appUpdateCallback && errorData.message && downloadUrl) {
+          appUpdateCallback(errorData.message, downloadUrl);
         }
         return errorData;
       }
@@ -233,12 +211,9 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
       // Verificar se resposta de sucesso tem needToUpdate
       if (parsed && parsed.needToUpdate === true) {
         console.log('App desatualizado detectado (sucesso):', parsed);
-        if (!updateModalOpened) {
-          const downloadUrl = parsed.data?.startsWith('http') ? parsed.data : `${API_BASE_URL}${parsed.data}`;
-          if (appUpdateCallback && parsed.message && downloadUrl) {
-            updateModalOpened = true;
-            appUpdateCallback(parsed.message, downloadUrl);
-          }
+        const downloadUrl = parsed.data?.startsWith('http') ? parsed.data : `${API_BASE_URL}${parsed.data}`;
+        if (appUpdateCallback && parsed.message && downloadUrl) {
+          appUpdateCallback(parsed.message, downloadUrl);
         }
         return parsed;
       }
@@ -343,9 +318,31 @@ export const checkToken = async (): Promise<boolean> => {
       method: 'GET',
     });
 
+    // Se a resposta indicar dia fechado (vários formatos possíveis), retorna true para permitir acesso
+    const isClosedDay =
+      response?.data === 'closed-day' ||
+      response?.data?.data === 'closed-day' ||
+      response?.data === 'closed' ||
+      response?.closedDay === true ||
+      response?.closed_day === true;
+
+    if (isClosedDay) {
+      console.log('checkToken: dia fechado detectado, permitindo acesso');
+      return true;
+    }
+
     return response?.success === true && response?.data?.valid === true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao validar token:', error);
+    // Se o erro for dia fechado, permite acesso
+    const isClosedDay =
+      error?.data === 'closed-day' ||
+      error?.data?.data === 'closed-day' ||
+      error?.closedDay === true;
+    if (isClosedDay) {
+      console.log('checkToken: dia fechado (catch), permitindo acesso');
+      return true;
+    }
     return false;
   }
 };

@@ -2,23 +2,17 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import {
   IonContent,
   IonPage,
-  IonButton,
-  IonIcon,
   IonAlert,
   IonRefresher,
   IonRefresherContent,
   IonSpinner,
   IonModal,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonItem,
-  IonLabel
 } from '@ionic/react';
-import { add } from 'ionicons/icons';
 import Toast from '../../components/Toast';
 import ListSearchHeader from '../../components/ListSearchHeader';
+import PrimaryButton from '../../components/ui/PrimaryButton';
+import GreenHeader from '../../components/ui/GreenHeader';
+import { addCircle } from 'ionicons/icons';
 import { matchesSearchQuery, collectSearchableValues } from '../../utils/listSearch';
 import { useTranslation } from 'react-i18next';
 
@@ -143,16 +137,12 @@ const Clients: React.FC = () => {
           <IonRefresherContent />
         </IonRefresher>
 
-        <div style={{ padding: '16px', paddingBottom: '80px' }}>
-          <IonButton
-            expand="block"
-            shape="round"
+        <div style={{ padding: '16px', paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 16px))' }}>
+          <PrimaryButton
             onClick={() => setShowCreateModal(true)}
-            style={{ marginBottom: '16px' }}
-          >
-            <IonIcon slot="start" icon={add} />
-            {t('pages.clients.addClient')}
-          </IonButton>
+            label={t('pages.clients.addClient')}
+            icon={addCircle}
+          />
 
           {isLoading || isLoadingAll ? (
             <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -201,21 +191,23 @@ const Clients: React.FC = () => {
             bottom: 0,
             left: 0,
             width: '100%',
-            backgroundColor: '#f8f9fa',
-            borderTop: '1px solid #dee2e6',
+            backgroundColor: '#fff',
+            borderTop: '1px solid #e8e8e8',
             padding: '12px 16px',
+            paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 12px))',
             zIndex: 100,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             boxSizing: 'border-box',
             cursor: 'pointer',
+            boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
           }}
         >
-          <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>
+          <span style={{ fontSize: '14px', color: '#555', fontWeight: 600 }}>
             {t('pages.clients.todayCredits')}
           </span>
-          <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#007bff' }}>
+          <span style={{ fontSize: '18px', fontWeight: 700, color: '#098947' }}>
             {formatCurrencyWithSymbol(todayTotal)}
           </span>
         </div>
@@ -282,33 +274,54 @@ const Clients: React.FC = () => {
 
       {/* Modal de Créditos de Hoje */}
       <IonModal isOpen={showTodayCreditsModal} onDidDismiss={() => setShowTodayCreditsModal(false)}>
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>{t('pages.clients.todayCredits')}</IonTitle>
-            <IonButtons slot="end">
-              <IonButton onClick={() => setShowTodayCreditsModal(false)}>{t('common.close')}</IonButton>
-            </IonButtons>
-          </IonToolbar>
-        </IonHeader>
+        <GreenHeader
+          title={t('pages.clients.todayCredits')}
+          onClose={() => setShowTodayCreditsModal(false)}
+        />
         <IonContent>
-          <div style={{ padding: '16px' }}>
+          <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
             {todayCredits.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px' }}>
                 <p style={{ color: '#666' }}>{t('pages.clients.noCreditsToday')}</p>
               </div>
             ) : (
               todayCredits.map((credit) => (
-                <IonItem key={credit.id} lines="full">
-                  <IonLabel>
-                    <h3 style={{ fontWeight: 'bold', color: '#333' }}>{credit.clientName}</h3>
-                    <p style={{ color: '#666', marginTop: '4px' }}>
-                      {t('pages.clients.loanAmount')}: <strong style={{ color: '#007bff' }}>{formatCurrencyWithSymbol(credit.initialValue)}</strong>
-                    </p>
-                    <p style={{ color: '#666' }}>
-                      {t('pages.clients.totalAmount')}: <strong>{formatCurrencyWithSymbol(credit.totalDebt)}</strong>
-                    </p>
-                  </IonLabel>
-                </IonItem>
+                <div key={credit.id} style={{
+                  backgroundColor: '#fff',
+                  borderRadius: '12px',
+                  padding: '14px 16px',
+                  marginBottom: '10px',
+                  boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '4px',
+                    height: '100%',
+                    backgroundColor: '#098947',
+                    borderRadius: '12px 0 0 12px'
+                  }} />
+                  <div style={{ paddingLeft: '8px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '15px', color: '#262626', marginBottom: '10px' }}>
+                      {credit.clientName}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '13px', color: '#555' }}>{t('pages.clients.loanAmount')}</span>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#098947' }}>
+                        {formatCurrencyWithSymbol(credit.initialValue)}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '13px', color: '#555' }}>{t('pages.clients.totalAmount')}</span>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#262626' }}>
+                        {formatCurrencyWithSymbol(credit.totalDebt)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               ))
             )}
           </div>

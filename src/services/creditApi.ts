@@ -259,6 +259,14 @@ export const createCredit = async (credit: CreateCreditRequest): Promise<ApiResp
       };
     }
 
+    if (response.success === false) {
+      return {
+        success: false,
+        message: response.message || 'Erro ao criar crédito',
+        data: null
+      };
+    }
+
     return {
       success: true,
       message: response.message || 'Crédito criado com sucesso',

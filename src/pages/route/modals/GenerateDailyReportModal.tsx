@@ -1,24 +1,17 @@
 import React from 'react';
 import {
   IonModal,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonButton,
   IonContent,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
   IonItem,
   IonLabel,
   IonInput,
-  IonSpinner,
   IonCheckbox,
 } from '@ionic/react';
 import { useTranslation } from 'react-i18next';
 import { formatDateToLocalISO } from '../../../utils/dateFormat';
+import GreenHeader from '../../../components/ui/GreenHeader';
+import ModernCard from '../../../components/ui/ModernCard';
+import PrimaryButton from '../../../components/ui/PrimaryButton';
 
 interface GenerateDailyReportModalProps {
   isOpen: boolean;
@@ -66,23 +59,25 @@ const GenerateDailyReportModal: React.FC<GenerateDailyReportModalProps> = ({
 
   const canGenerate = useDefaultDate || (dailyDate && !isFutureOrToday(dailyDate) && !isSunday(dailyDate));
 
+  const itemStyle = {
+    '--background': '#f5f5f5',
+    '--border-radius': '12px',
+    '--padding-start': '16px',
+    '--inner-padding-end': '16px',
+    '--min-height': '52px',
+    marginBottom: '8px',
+  } as any;
+
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose}>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>{t('reports.dailyByRoute')}</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={onClose}>{t('common.cancel')}</IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent className="ion-padding">
-        <IonCard>
-          <IonCardHeader>
-            <IonCardTitle style={{ fontSize: '16px' }}>{t('reports.selectDate')}</IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <IonItem>
+      <GreenHeader
+        title={t('reports.dailyByRoute')}
+        onClose={onClose}
+      />
+      <IonContent>
+        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+          <ModernCard headerTitle={t('reports.selectDate')}>
+            <IonItem style={itemStyle}>
               <IonLabel>{t('reports.yesterday')} ({getYesterdayLabel()})</IonLabel>
               <IonCheckbox
                 slot="end"
@@ -90,7 +85,7 @@ const GenerateDailyReportModal: React.FC<GenerateDailyReportModalProps> = ({
                 onIonChange={() => onUseDefaultDateChange(true)}
               />
             </IonItem>
-            <IonItem>
+            <IonItem style={itemStyle}>
               <IonLabel>{t('reports.chooseDate')}</IonLabel>
               <IonCheckbox
                 slot="end"
@@ -99,7 +94,7 @@ const GenerateDailyReportModal: React.FC<GenerateDailyReportModalProps> = ({
               />
             </IonItem>
             {!useDefaultDate && (
-              <IonItem style={{ marginTop: '8px' }}>
+              <IonItem style={{ ...itemStyle, marginTop: '8px' }}>
                 <IonLabel position="stacked">{t('reports.date')}</IonLabel>
                 <IonInput
                   type="date"
@@ -109,29 +104,23 @@ const GenerateDailyReportModal: React.FC<GenerateDailyReportModalProps> = ({
               </IonItem>
             )}
             {!useDefaultDate && isFutureOrToday(dailyDate) && (
-              <p style={{ color: 'red', fontSize: '12px', marginTop: '8px' }}>
+              <p style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', marginLeft: '4px' }}>
                 {t('reports.errorFuture')}
               </p>
             )}
             {!useDefaultDate && isSunday(dailyDate) && (
-              <p style={{ color: 'red', fontSize: '12px', marginTop: '8px' }}>
+              <p style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', marginLeft: '4px' }}>
                 {t('reports.errorSunday')}
               </p>
             )}
-          </IonCardContent>
-        </IonCard>
+          </ModernCard>
 
-        <IonButton
-          expand="block"
-          shape="round"
-          color="primary"
-          onClick={onGenerate}
-          disabled={isGenerating || !canGenerate}
-          style={{ marginTop: '16px' }}
-        >
-          {isGenerating ? <IonSpinner name="dots" slot="start" /> : null}
-          {isGenerating ? t('reports.generating') : t('reports.generate')}
-        </IonButton>
+          <PrimaryButton
+            onClick={onGenerate}
+            label={isGenerating ? t('reports.generating') : t('reports.generate')}
+            disabled={isGenerating || !canGenerate}
+          />
+        </div>
       </IonContent>
     </IonModal>
   );

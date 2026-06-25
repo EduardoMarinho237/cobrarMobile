@@ -36,7 +36,7 @@ const ListSearchHeader: React.FC<ListSearchHeaderProps> = ({
 
   return (
     <IonHeader>
-      <IonToolbar>
+      <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
         {showSearch ? (
           <IonSearchbar
             onIonInput={(e) => onSearchQueryChange(e.detail.value ?? '')}
@@ -50,7 +50,7 @@ const ListSearchHeader: React.FC<ListSearchHeaderProps> = ({
           <>
             <IonTitle>{title}</IonTitle>
             <IonButtons slot="end">
-              <IonButton onClick={openSearch} aria-label={t('common.search')}>
+              <IonButton onClick={openSearch} aria-label={t('common.search')} style={{ color: '#fff' }}>
                 <IonIcon slot="icon-only" icon={searchOutline} />
               </IonButton>
             </IonButtons>

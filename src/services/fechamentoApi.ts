@@ -6,6 +6,7 @@ export interface FechamentoData {
   expectativaArrecadacao: number;
   arrecadacaoDia: number;
   clientesCobrados: number;
+  activeClientsCount: number;
   gastosDia: number;
   caixaInicial: number;
   totalEmprestado: number;
@@ -34,6 +35,7 @@ export interface DailyScheduleResponse {
     collectedToday: number;
     remainingToCollect: number;
     clientsPaid: number;
+    activeClientsCount: number;
   };
 }
 
@@ -88,7 +90,9 @@ export const getFechamentoData = async (): Promise<FechamentoData> => {
     
     // 4. Obter clientes cobrados (clientes distintos que pagaram hoje)
     const clientesCobrados = scheduleResponse?.data?.clientsPaid || 0;
+    const activeClientsCount = scheduleResponse?.data?.activeClientsCount || 0;
     console.log('Clientes cobrados (API):', clientesCobrados);
+    console.log('Clientes com crédito ativo (API):', activeClientsCount);
 
     // 5. Buscar saldo inicial do dia
     const caixaInicial = await getMyInitialBalance();
@@ -123,6 +127,7 @@ export const getFechamentoData = async (): Promise<FechamentoData> => {
       expectativaArrecadacao: scheduleResponse?.data?.dailyExpectation || 0,
       arrecadacaoDia: scheduleResponse?.data?.collectedToday || 0,
       clientesCobrados,
+      activeClientsCount,
       gastosDia: totalGastosDia,
       caixaInicial,
       totalEmprestado,
@@ -141,6 +146,7 @@ export const getFechamentoData = async (): Promise<FechamentoData> => {
       expectativaArrecadacao: 0,
       arrecadacaoDia: 0,
       clientesCobrados: 0,
+      activeClientsCount: 0,
       gastosDia: 0,
       caixaInicial: 0,
       totalEmprestado: 0,

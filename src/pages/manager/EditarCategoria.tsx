@@ -6,28 +6,20 @@ import {
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonButton,
-  IonItem,
-  IonLabel,
-  IonInput,
   IonModal,
   IonButtons,
+  IonButton,
   IonIcon,
   IonAlert,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonBackButton,
   IonRefresher,
   IonRefresherContent,
   IonRadioGroup,
-  IonRadio
+  IonRadio,
+  IonLabel,
+  IonItem,
+  IonSpinner
 } from '@ionic/react';
-import { add, trash, create, arrowBack, refresh } from 'ionicons/icons';
+import { addCircle, trash, create, arrowForward, close } from 'ionicons/icons';
 import { 
   getCategorias, 
   updateCategoria, 
@@ -41,6 +33,10 @@ import {
 } from '../../services/gastoApi';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
+import PrimaryButton from '../../components/ui/PrimaryButton';
+import StyledInput from '../../components/ui/StyledInput';
+import ActionButton from '../../components/ui/ActionButton';
+import GreenHeader from '../../components/ui/GreenHeader';
 
 const EditarCategoria: React.FC = () => {
   const { t } = useTranslation();
@@ -48,6 +44,7 @@ const EditarCategoria: React.FC = () => {
   const history = useHistory();
   const [categoria, setCategoria] = useState<CategoriaGasto | null>(null);
   const [tipos, setTipos] = useState<TipoGasto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
@@ -66,11 +63,10 @@ const EditarCategoria: React.FC = () => {
   }, [categoriaId]);
 
   const loadCategoria = async () => {
+    setIsLoading(true);
     try {
-      // Carrega apenas o nome da categoria para edição
       const categoriasResponse = await getCategorias();
       
-      // Trata a resposta da API que pode ter estrutura {success, data}
       let categorias = categoriasResponse;
       if (categoriasResponse && typeof categoriasResponse === 'object' && 'success' in categoriasResponse && 'data' in categoriasResponse) {
         categorias = categoriasResponse.data;
@@ -82,11 +78,11 @@ const EditarCategoria: React.FC = () => {
         setEditNome(cat.name);
       }
       
-      // Carrega os tipos da categoria
       await loadTipos();
     } catch (error) {
       console.error('Erro ao carregar categoria:', error);
-      // Removido toast instantâneo ao carregar página
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -94,7 +90,6 @@ const EditarCategoria: React.FC = () => {
     try {
       const response = await getTiposGastos(parseInt(categoriaId!));
       
-      // Se a resposta tiver a estrutura { success, data }, extrai os dados
       let data = response;
       if (response && typeof response === 'object' && 'success' in response && response.success && 'data' in response) {
         data = response.data;
@@ -128,7 +123,6 @@ const EditarCategoria: React.FC = () => {
     try {
       const response = await updateCategoria(parseInt(categoriaId!), editNome);
       
-      // Usa a mensagem da API
       showToast(response.message || t('pages.expensesEdit.categoryUpdatedSuccess'), response.success ? 'success' : 'danger');
       
       if (response.success) {
@@ -148,7 +142,6 @@ const EditarCategoria: React.FC = () => {
     try {
       const response = await createTipoGasto(newTipo.nome, parseInt(categoriaId!));
       
-      // Usa a mensagem da API
       showToast(response.message || t('pages.expensesEdit.expenseTypeCreatedSuccess'), response.success ? 'success' : 'danger');
       
       if (response.success) {
@@ -190,7 +183,6 @@ const EditarCategoria: React.FC = () => {
 
     deleteTipoGasto(selectedTipo.id)
       .then(response => {
-        // Usa a mensagem da API
         showToast(response.message || t('pages.expensesEdit.expenseTypeDeletedSuccess'), response.success ? 'success' : 'danger');
         
         if (response.success) {
@@ -214,44 +206,28 @@ const EditarCategoria: React.FC = () => {
   const handleConfirmMigrateTipo = () => {
     if (!selectedTipo || !migrateParaId) return;
 
-    console.log('Iniciando migração de tipo:', { 
-      sourceId: selectedTipo.id, 
-      targetId: migrateParaId,
-      sourceName: selectedTipo.name
-    });
-
     deleteTipoGasto(selectedTipo.id, migrateParaId)
       .then(response => {
-        console.log('Resposta da migração de tipo:', response);
-        
-        // Usa a mensagem da API
         showToast(response.message || t('pages.expensesEdit.expenseTypeMigratedSuccess'), response.success ? 'success' : 'danger');
         
-        // Sempre volta para a listagem, mesmo com erro
         setShowMigrateModal(false);
         setSelectedTipo(null);
         setMigrateParaId(null);
         loadTipos();
         
-        // Se a migração for bem-sucedida e não houver mais tipos, volta para a listagem de categorias
         if (response.success) {
-          // Usa setTimeout para garantir que o estado foi atualizado
           setTimeout(() => {
             const tiposRestantes = tipos.filter(tipo => tipo.id !== selectedTipo.id);
-            console.log('Tipos restantes após migração:', tiposRestantes.length);
             if (tiposRestantes.length === 0) {
-              // Não há mais tipos, volta para a listagem de categorias
-              console.log('Voltando para listagem de categorias...');
               window.location.href = '/manager/gastos';
             }
-          }, 500); // Pequeno delay para garantir atualização do estado
+          }, 500);
         }
       })
       .catch((error) => {
         console.error('Erro ao migrar tipo de gasto:', error);
         showToast(t('pages.expensesEdit.connectionError'), 'danger');
         
-        // Mesmo com erro, volta para a listagem
         setShowMigrateModal(false);
         setSelectedTipo(null);
         setMigrateParaId(null);
@@ -267,8 +243,6 @@ const EditarCategoria: React.FC = () => {
 
   const openDeleteAlert = (tipo: TipoGasto) => {
     setSelectedTipo(tipo);
-    // Simulando que sempre há gastos para mostrar a opção de migrar
-    // Em um caso real, você verificaria se há gastos associados
     setShowDeleteAlert(true);
   };
 
@@ -276,7 +250,6 @@ const EditarCategoria: React.FC = () => {
     loadCategoria();
     loadTipos();
     
-    // Configurar o refresher
     const setupRefresher = () => {
       const refresher = document.getElementById('editarcategoria-refresher') as HTMLIonRefresherElement;
       if (refresher) {
@@ -287,162 +260,176 @@ const EditarCategoria: React.FC = () => {
       }
     };
 
-    // Usar setTimeout para garantir que o DOM esteja pronto
     setTimeout(setupRefresher, 100);
   }, [categoriaId]);
 
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonBackButton defaultHref="/manager/gastos" icon={arrowBack} text={t('common.back')} />
-          </IonButtons>
+        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
           <IonTitle>{t('pages.expensesEdit.title')}</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={() => history.push('/manager/gastos')} style={{ color: '#fff' }}>
+              <IonIcon icon={close} />
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
         <IonRefresher slot="fixed" id="editarcategoria-refresher">
           <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
-        <div style={{ padding: '16px' }}>
-          {/* Card da Categoria */}
-          <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
-            <IonCardHeader>
-              <IonCardTitle>{categoria?.name || t('pages.expensesEdit.title')}</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <IonItem>
-                <IonInput
-                  label={t('pages.expensesEdit.categoryName')}
-                  labelPlacement="floating"
-                  placeholder={t('pages.expensesEdit.categoryNamePlaceholder')}
-                  value={editNome || ''}
-                  onIonInput={(e: any) => {
-                    setEditNome(e.detail.value || '');
-                  }}
-                />
-              </IonItem>
-              <IonButton 
-                expand="block" 
-                shape="round"
-                onClick={handleUpdateCategoria}
-                style={{ marginTop: '16px' }}
-              >
-                {t('pages.expensesEdit.saveCategory')}
-              </IonButton>
-            </IonCardContent>
-          </IonCard>
-
-          {/* Tipos de Gastos */}
-          <IonCard style={{ borderRadius: '12px' }}>
-            <IonCardHeader>
-              <IonCardTitle>{t('pages.expensesEdit.expenseTypes')}</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <IonButton 
-                expand="block" 
-                shape="round" 
-                onClick={() => setShowCreateModal(true)}
-                style={{ marginBottom: '16px' }}
-              >
-                <IonIcon slot="start" icon={add} />
-                {t('pages.expensesEdit.addNewType')}
-              </IonButton>
-
-              {tipos.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px' }}>
-                  <p>{t('pages.expensesEdit.noTypesCreated')}</p>
+        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+          {isLoading ? (
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              minHeight: '200px',
+              gap: '16px'
+            }}>
+              <IonSpinner name="dots" />
+              <p style={{ color: '#999', fontSize: '14px' }}>{t('pages.expenses.loadingExpenses')}</p>
+            </div>
+          ) : (
+            <>
+              {/* Card da Categoria */}
+              <div style={{
+                backgroundColor: '#fff',
+                borderRadius: '16px',
+                marginBottom: '16px',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  backgroundColor: '#098947',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>
+                    {categoria?.name || t('pages.expensesEdit.title')}
+                  </span>
                 </div>
-              ) : (
-                tipos.map((tipo) => (
-                <IonItem key={tipo.id} style={{ marginBottom: '8px' }}>
-                  <IonLabel>
-                    <h3>{tipo.name}</h3>
-                  </IonLabel>
-                  <IonButton
-                    fill="clear"
-                    slot="end"
-                    onClick={() => openEditModal(tipo)}
-                  >
-                    <IonIcon icon={create} />
-                  </IonButton>
-                  <IonButton
-                    fill="clear"
-                    color="danger"
-                    slot="end"
-                    onClick={() => openDeleteAlert(tipo)}
-                  >
-                    <IonIcon icon={trash} />
-                  </IonButton>
-                </IonItem>
-              )))}
-            </IonCardContent>
-          </IonCard>
+                <div style={{ padding: '16px 20px' }}>
+                  <StyledInput
+                    label={t('pages.expensesEdit.categoryName')}
+                    placeholder={t('pages.expensesEdit.categoryNamePlaceholder')}
+                    value={editNome || ''}
+                    onIonInput={(e: any) => setEditNome(e.detail.value || '')}
+                  />
+                  <PrimaryButton
+                    onClick={handleUpdateCategoria}
+                    label={t('pages.expensesEdit.saveCategory')}
+                  />
+                </div>
+              </div>
+
+              {/* Tipos de Gastos */}
+              <div style={{
+                backgroundColor: '#fff',
+                borderRadius: '16px',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  padding: '16px 20px',
+                  borderBottom: '1px solid #f0f0f0'
+                }}>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#262626' }}>
+                    {t('pages.expensesEdit.expenseTypes')}
+                  </h3>
+                </div>
+                <div style={{ padding: '16px 20px' }}>
+                  <PrimaryButton
+                    onClick={() => setShowCreateModal(true)}
+                    label={t('pages.expensesEdit.addNewType')}
+                    icon={addCircle}
+                    style={{ marginBottom: '16px' }}
+                  />
+
+                  {tipos.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '20px' }}>
+                      <p style={{ color: '#999', margin: 0, fontSize: '14px' }}>{t('pages.expensesEdit.noTypesCreated')}</p>
+                    </div>
+                  ) : (
+                    tipos.map((tipo) => (
+                    <div key={tipo.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 0',
+                      borderBottom: '1px solid #f5f5f5'
+                    }}>
+                      <span style={{ fontSize: '14px', fontWeight: 600, color: '#333' }}>
+                        {tipo.name}
+                      </span>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <ActionButton
+                          icon={create}
+                          label=""
+                          onClick={() => openEditModal(tipo)}
+                          backgroundColor="#f0f7ff"
+                          color="#0066cc"
+                        />
+                        <ActionButton
+                          icon={trash}
+                          label=""
+                          onClick={() => openDeleteAlert(tipo)}
+                          backgroundColor="#fff0f0"
+                          color="#dc3545"
+                        />
+                      </div>
+                    </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Modal Criar Tipo */}
         <IonModal isOpen={showCreateModal} onDidDismiss={() => setShowCreateModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('pages.expensesEdit.newExpenseType')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowCreateModal(false)}>{t('common.close')}</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <GreenHeader
+            title={t('pages.expensesEdit.newExpenseType')}
+            onClose={() => setShowCreateModal(false)}
+          />
           <IonContent>
-            <div style={{ padding: '16px' }}>
-              <IonItem>
-                <IonInput
-                  label={t('pages.expensesEdit.typeName')}
-                  labelPlacement="floating"
-                  placeholder={t('pages.expensesEdit.typeNamePlaceholder')}
-                  value={newTipo.nome}
-                  onIonInput={(e: any) => setNewTipo({ ...newTipo, nome: e.detail.value! })}
-                />
-              </IonItem>
-              <IonButton 
-                expand="block" 
-                shape="round"
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+              <StyledInput
+                label={t('pages.expensesEdit.typeName')}
+                placeholder={t('pages.expensesEdit.typeNamePlaceholder')}
+                value={newTipo.nome}
+                onIonInput={(e: any) => setNewTipo({ ...newTipo, nome: e.detail.value! })}
+              />
+              <PrimaryButton
                 onClick={handleCreateTipo}
-                style={{ marginTop: '16px' }}
-              >
-                {t('pages.expensesEdit.create')}
-              </IonButton>
+                label={t('pages.expensesEdit.create')}
+              />
             </div>
           </IonContent>
         </IonModal>
 
         {/* Modal Editar Tipo */}
         <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('pages.expensesEdit.editExpenseType')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowEditModal(false)}>{t('common.close')}</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <GreenHeader
+            title={t('pages.expensesEdit.editExpenseType')}
+            onClose={() => setShowEditModal(false)}
+          />
           <IonContent>
-            <div style={{ padding: '16px' }}>
-              <IonItem>
-                <IonInput
-                  label={t('pages.expensesEdit.typeName')}
-                  labelPlacement="floating"
-                  placeholder={t('pages.expensesEdit.typeNamePlaceholder')}
-                  value={editTipo.nome}
-                  onIonInput={(e: any) => setEditTipo({ ...editTipo, nome: e.detail.value! })}
-                />
-              </IonItem>
-              <IonButton 
-                expand="block" 
-                shape="round"
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+              <StyledInput
+                label={t('pages.expensesEdit.typeName')}
+                placeholder={t('pages.expensesEdit.typeNamePlaceholder')}
+                value={editTipo.nome}
+                onIonInput={(e: any) => setEditTipo({ ...editTipo, nome: e.detail.value! })}
+              />
+              <PrimaryButton
                 onClick={handleUpdateTipo}
-                style={{ marginTop: '16px' }}
-              >
-                {t('pages.expensesEdit.save')}
-              </IonButton>
+                label={t('pages.expensesEdit.save')}
+              />
             </div>
           </IonContent>
         </IonModal>
@@ -472,59 +459,45 @@ const EditarCategoria: React.FC = () => {
 
         {/* Modal Migrar Tipo */}
         <IonModal isOpen={showMigrateModal} onDidDismiss={() => setShowMigrateModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('pages.expensesEdit.migrateExpenseType')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowMigrateModal(false)}>{t('common.cancel')}</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <GreenHeader
+            title={t('pages.expensesEdit.migrateExpenseType')}
+            onClose={() => setShowMigrateModal(false)}
+          />
           <IonContent>
-            <div style={{ padding: '16px' }}>
-              <IonItem>
-                <IonLabel>
-                  <h2>{t('pages.expensesEdit.chooseTypeToMigrate').replace('{typeName}', selectedTipo?.name || '')}</h2>
-                </IonLabel>
-              </IonItem>
-              
-              {/* Aviso sobre exclusão da categoria */}
-              <div style={{ 
-                backgroundColor: '#ffebee', 
-                border: '1px solid #f44336', 
-                borderRadius: '8px', 
-                padding: '12px', 
-                marginBottom: '16px' 
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+              <div style={{
+                backgroundColor: '#ffebee',
+                border: '1px solid #f44336',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: '16px'
               }}>
                 <p style={{ 
                   color: '#d32f2f', 
-                  fontSize: '14px', 
-                  margin: '0',
+                  fontSize: '13px', 
+                  margin: 0,
                   textAlign: 'center'
                 }}>
                   <strong>{t('common.attention')}:</strong> {t('pages.expensesEdit.migrateWarning').replace('{categoryName}', categoria?.name || '')}
                 </p>
               </div>
-              
+
               <IonRadioGroup value={migrateParaId} onIonChange={(e: any) => setMigrateParaId(e.detail.value)}>
                 {tipos.filter(tipo => tipo.id !== selectedTipo?.id).map((tipo) => (
-                  <IonItem key={tipo.id}>
+                  <IonItem key={tipo.id} style={{ '--border-radius': '12px', marginBottom: '4px' }}>
                     <IonRadio value={tipo.id} slot="start" />
                     <IonLabel>{tipo.name}</IonLabel>
                   </IonItem>
                 ))}
               </IonRadioGroup>
-              
-              <IonButton 
-                expand="block" 
-                shape="round"
+
+              <PrimaryButton
                 onClick={handleConfirmMigrateTipo}
+                label={t('pages.expensesEdit.migrate')}
+                icon={arrowForward}
                 disabled={!migrateParaId}
                 style={{ marginTop: '16px' }}
-              >
-                <IonIcon slot="start" icon={add} />
-                {t('pages.expensesEdit.migrate')}
-              </IonButton>
+              />
             </div>
           </IonContent>
         </IonModal>

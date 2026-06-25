@@ -1,16 +1,12 @@
 import React from 'react';
 import {
   IonModal,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
   IonButton,
   IonIcon,
   IonContent,
   IonFooter,
 } from '@ionic/react';
-import { close, shareSocial, chevronBack, chevronForward } from 'ionicons/icons';
+import { shareSocial, chevronBack, chevronForward } from 'ionicons/icons';
 import type jsPDF from 'jspdf';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
@@ -19,6 +15,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { sharePdf } from '../utils/saveFile';
 import Toast from './Toast';
+import GreenHeader from './ui/GreenHeader';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -82,7 +79,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   const [toastMessage, setToastMessage] = React.useState('');
   const [toastColor, setToastColor] = React.useState('success');
 
-  // Renderiza o PDF em 2x a largura da tela para ter qualidade alta no zoom
   const renderWidth = React.useMemo(() => Math.min(window.innerWidth - 32, 800) * 2, []);
 
   React.useEffect(() => {
@@ -164,16 +160,13 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose} className="pdf-viewer-modal">
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>{title || t('pdfViewer.title')}</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={onClose}>
-              <IonIcon icon={close} />
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
+      <GreenHeader
+        title={title || t('pdfViewer.title')}
+        onClose={onClose}
+        onAction={handleShare}
+        actionIcon={shareSocial}
+        actionDisabled={isSaving || !pdfUrl}
+      />
       <IonContent className="ion-no-padding" scrollY={false}>
         <div
           style={{
@@ -190,7 +183,9 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
             </div>
           )}
           {(isLoading || !pdfUrl) && !error && (
-            <div style={{ padding: '32px', textAlign: 'center' }}>{t('pdfViewer.loading')}</div>
+            <div style={{ padding: '32px', textAlign: 'center', color: '#666' }}>
+              {t('pdfViewer.loading')}
+            </div>
           )}
           {pdfUrl && !error && (
             <TransformWrapper
@@ -205,7 +200,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
               velocityAnimation={{ disabled: true }}
             >
               <>
-                <div style={{ width: '100%', height: 'calc(100% - 128px)', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: 'calc(100% - 64px)', overflow: 'hidden' }}>
                   <TransformComponent
                     wrapperStyle={{ width: '100%', height: '100%' }}
                     contentStyle={{ width: '100%', height: '100%' }}
@@ -222,7 +217,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
                         onLoadSuccess={handleDocumentLoadSuccess}
                         onLoadError={handleDocumentLoadError}
                         loading={
-                          <div style={{ padding: '32px', textAlign: 'center' }}>
+                          <div style={{ padding: '32px', textAlign: 'center', color: '#666' }}>
                             {t('pdfViewer.loading')}
                           </div>
                         }
@@ -234,7 +229,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
                           renderAnnotationLayer={false}
                           onRenderError={handleRenderError}
                           loading={
-                            <div style={{ padding: '32px', textAlign: 'center' }}>
+                            <div style={{ padding: '32px', textAlign: 'center', color: '#666' }}>
                               {t('pdfViewer.loadingPage')}
                             </div>
                           }
@@ -244,46 +239,55 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
                   </TransformComponent>
                 </div>
                 <IonFooter>
-                  <IonToolbar style={{ padding: '16px 16px 40px 16px' }}>
-                    <div
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 16px',
+                      paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 8px))',
+                      backgroundColor: '#fff',
+                      borderTop: '1px solid #e8e8e8',
+                    }}
+                  >
+                    <IonButton
+                      color="primary"
+                      onClick={handleShare}
+                      disabled={isSaving || !pdfUrl}
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
+                        '--border-radius': '10px',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        fontSize: '14px',
                       }}
                     >
+                      <IonIcon icon={shareSocial} slot="start" />
+                      {isSaving ? t('pdfViewer.sharing') : t('pdfViewer.share')}
+                    </IonButton>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <IonButton
-                        color="primary"
-                        onClick={handleShare}
-                        disabled={isSaving || !pdfUrl}
+                        fill="clear"
                         size="small"
+                        onClick={handlePrevPage}
+                        disabled={pageNumber <= 1 || numPages <= 1}
+                        style={{ '--color': '#098947' }}
                       >
-                        <IonIcon icon={shareSocial} slot="start" />
-                        {isSaving ? t('pdfViewer.sharing') : t('pdfViewer.share')}
+                        <IonIcon icon={chevronBack} />
                       </IonButton>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <IonButton
-                          fill="clear"
-                          size="small"
-                          onClick={handlePrevPage}
-                          disabled={pageNumber <= 1 || numPages <= 1}
-                        >
-                          <IonIcon icon={chevronBack} />
-                        </IonButton>
-                        <span style={{ fontSize: '14px', color: '#ffffff' }}>
-                          {numPages > 0 ? t('pdfViewer.pageCounter', { current: pageNumber, total: numPages }) : '-'}
-                        </span>
-                        <IonButton
-                          fill="clear"
-                          size="small"
-                          onClick={handleNextPage}
-                          disabled={pageNumber >= numPages || numPages <= 1}
-                        >
-                          <IonIcon icon={chevronForward} />
-                        </IonButton>
-                      </div>
+                      <span style={{ fontSize: '14px', color: '#333', fontWeight: 600, minWidth: '48px', textAlign: 'center' }}>
+                        {numPages > 0 ? t('pdfViewer.pageCounter', { current: pageNumber, total: numPages }) : '-'}
+                      </span>
+                      <IonButton
+                        fill="clear"
+                        size="small"
+                        onClick={handleNextPage}
+                        disabled={pageNumber >= numPages || numPages <= 1}
+                        style={{ '--color': '#098947' }}
+                      >
+                        <IonIcon icon={chevronForward} />
+                      </IonButton>
                     </div>
-                  </IonToolbar>
+                  </div>
                 </IonFooter>
               </>
             </TransformWrapper>

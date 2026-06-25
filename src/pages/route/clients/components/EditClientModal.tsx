@@ -1,17 +1,14 @@
 import React from 'react';
 import {
   IonModal,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonButton,
   IonContent,
   IonItem,
   IonInput
 } from '@ionic/react';
 import { useTranslation } from 'react-i18next';
 import { UpdateClientRequest } from '../../../../services/clientApi';
+import GreenHeader from '../../../../components/ui/GreenHeader';
+import PrimaryButton from '../../../../components/ui/PrimaryButton';
 
 interface EditClientModalProps {
   isOpen: boolean;
@@ -32,37 +29,60 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onDidDismiss}>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>{t('pages.clients.editClient')}</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={onDidDismiss}>{t('common.close')}</IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
+      <GreenHeader
+        title={t('pages.clients.editClient')}
+        onClose={onDidDismiss}
+      />
       <IonContent>
-        <div style={{ padding: '16px' }}>
-          {(['name','cpf','phone','address','shop'] as const).map((field) => (
-            <IonItem key={field}>
-              <IonInput
-                label={t(`pages.clients.${field}`)}
-                labelPlacement="floating"
-                placeholder={t(`pages.clients.${field}Placeholder`)}
-                value={editClient[field]}
-                onIonInput={(e: any) =>
-                  setEditClient({ ...editClient, [field]: e.detail.value! })
-                }
+        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: '16px',
+            padding: '20px',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '4px',
+              height: '100%',
+              backgroundColor: '#098947',
+              borderRadius: '16px 0 0 16px'
+            }} />
+            <div style={{ paddingLeft: '8px' }}>
+              {(['name','cpf','phone','address','shop'] as const).map((field) => (
+                <IonItem
+                  key={field}
+                  style={{
+                    '--background': '#f5f5f5',
+                    '--border-radius': '12px',
+                    '--padding-start': '16px',
+                    '--inner-padding-end': '16px',
+                    '--min-height': '52px',
+                    marginBottom: '8px'
+                  }}
+                >
+                  <IonInput
+                    label={t(`pages.clients.${field}`)}
+                    labelPlacement="floating"
+                    placeholder={t(`pages.clients.${field}Placeholder`)}
+                    value={editClient[field]}
+                    onIonInput={(e: any) =>
+                      setEditClient({ ...editClient, [field]: e.detail.value! })
+                    }
+                  />
+                </IonItem>
+              ))}
+              <PrimaryButton
+                onClick={onUpdate}
+                label={t('pages.clients.update')}
+                style={{ marginTop: '8px' }}
               />
-            </IonItem>
-          ))}
-          <IonButton
-            expand="block"
-            shape="round"
-            onClick={onUpdate}
-            style={{ marginTop: '16px' }}
-          >
-            {t('pages.clients.update')}
-          </IonButton>
+            </div>
+          </div>
         </div>
       </IonContent>
     </IonModal>

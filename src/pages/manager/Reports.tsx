@@ -5,18 +5,12 @@ import {
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
   IonButton,
   IonItem,
   IonLabel,
   IonModal,
-  IonButtons,
   IonIcon,
   IonSpinner,
-  IonList,
   IonBadge,
   IonCheckbox,
   IonRefresher,
@@ -24,7 +18,10 @@ import {
   IonAlert,
   IonInput
 } from '@ionic/react';
-import { close, add, download, trash, document, calendar, chevronDown, chevronUp, eye } from 'ionicons/icons';
+import { close, addCircle, trash, document, calendar, chevronDown, chevronUp, eye, documentText } from 'ionicons/icons';
+import GreenHeader from '../../components/ui/GreenHeader';
+import PrimaryButton from '../../components/ui/PrimaryButton';
+import ModernCard from '../../components/ui/ModernCard';
 import { getRoutes } from '../../services/routeApi';
 import { getCurrentUser } from '../../services/api';
 import { generateReport, generateWeeklyByRouteReport, generateSimpleWeeklyReport, generateDailyByRouteReport, listReports, deleteReport, Report } from '../../services/reportApi';
@@ -317,6 +314,7 @@ const Reports: React.FC = () => {
     const summary = data.dailyRouteSummary;
     const collections = data.collectionRows || [];
     const newCredits = data.newCreditRows || [];
+    const overdueClients = data.overdueClients || [];
 
     // ── Header ──
     doc.setFontSize(16);
@@ -485,6 +483,30 @@ const Reports: React.FC = () => {
         }
       }
     });
+
+    // Overdue Clients Section
+    if (overdueClients.length > 0) {
+      const ocStartY = (doc as any).lastAutoTable?.finalY || startY;
+      doc.setFontSize(12);
+      doc.setTextColor(220, 53, 69);
+      doc.text(t('reports.overdueClients'), 14, ocStartY + 8);
+      startY = ocStartY + 12;
+
+      const ocHeaders = [t('reports.client'), t('reports.creditValue'), t('reports.tax'), t('reports.creditStartDate'), t('reports.expectedPayment'), t('reports.amountPaid'), t('reports.remainingDebt'), t('reports.overdue')];
+      const ocRows = overdueClients.map(c => [
+        c.clientName,
+        formatCurrencyWithSymbol(c.initialValue), `${c.tax}%`, c.startDate,
+        formatCurrencyWithSymbol(c.expectedPayment), formatCurrencyWithSymbol(c.amountPaid),
+        formatCurrencyWithSymbol(c.remainingDebt), c.overdue ? t('reports.overdue') : '-'
+      ]);
+
+      autoTable(doc, {
+        startY, head: [ocHeaders], body: ocRows, theme: 'grid',
+        headStyles: { fillColor: [220, 53, 69], textColor: 255, fontSize: 7 },
+        bodyStyles: { fontSize: 7, cellPadding: 1 },
+        margin: { left: 10, right: 10 }
+      });
+    }
   };
 
   const handleViewPDF = async (report: Report | null | undefined) => {
@@ -641,6 +663,34 @@ const Reports: React.FC = () => {
           margin: { left: 4, right: 4 }
         });
 
+        // Overdue Clients Section
+        const simpleOverdueClients = report.data.overdueClients || [];
+        if (simpleOverdueClients.length > 0) {
+          if (startY > 170) { doc.addPage(); startY = 20; }
+          startY = (doc as any).lastAutoTable?.finalY || startY;
+          startY += 8;
+          doc.setFontSize(12);
+          doc.setTextColor(220, 53, 69);
+          doc.text(t('reports.overdueClients'), 4, startY);
+          startY += 6;
+
+          autoTable(doc, {
+            startY,
+            head: [[t('reports.client'), t('reports.creditValue'), t('reports.tax'), t('reports.remainingDebt'), t('reports.overdue')]],
+            body: simpleOverdueClients.map(oc => [
+              oc.clientName,
+              formatCurrencyWithSymbol(oc.initialValue),
+              `${oc.tax}%`,
+              formatCurrencyWithSymbol(oc.remainingDebt),
+              oc.overdue ? t('reports.overdue') : '-',
+            ]),
+            theme: 'grid',
+            headStyles: { fillColor: [220, 53, 69], textColor: 255, fontSize: 7 },
+            bodyStyles: { fontSize: 7 },
+            margin: { left: 4, right: 4 }
+          });
+        }
+
         setPdfDoc(doc);
         setPdfFileName(`relatorio-simplificado-${report.periodStart}-${report.periodEnd}.pdf`);
         setShowPdfModal(true);
@@ -770,6 +820,32 @@ const Reports: React.FC = () => {
           startY += 5;
         }
 
+        // Overdue clients for this day
+        if (day.overdueClients && day.overdueClients.length > 0) {
+          doc.setFontSize(10);
+          doc.setTextColor(220, 53, 69);
+          doc.text(t('reports.overdueClients'), 14, startY);
+          startY += 5;
+          const overdueDayRows = day.overdueClients.map(oc => [
+            oc.clientName + (oc.clientShop ? ` (${oc.clientShop})` : ''),
+            formatCurrencyWithSymbol(oc.expectedPayment),
+            formatCurrencyWithSymbol(oc.amountPaid),
+            formatCurrencyWithSymbol(oc.remainingDebt),
+            oc.overdue ? t('reports.overdue') : '-',
+          ]);
+          autoTable(doc, {
+            startY,
+            head: [[t('reports.client'), t('reports.expectedPayment'), t('reports.amountPaid'), t('reports.remainingDebt'), t('reports.overdue')]],
+            body: overdueDayRows,
+            theme: 'grid',
+            headStyles: { fillColor: [220, 53, 69], textColor: 255, fontSize: 8 },
+            bodyStyles: { fontSize: 7 },
+            margin: { left: 14, right: 14 }
+          });
+          startY = (doc as any).lastAutoTable?.finalY || startY;
+          startY += 5;
+        }
+
         // Daily total
         if (day.dailyTotal) {
           doc.setFontSize(9);
@@ -788,6 +864,34 @@ const Reports: React.FC = () => {
           startY += 12;
         }
       });
+
+      // Weekly overdue summary for WEEKLY_BY_ROUTE
+      const weeklyOverdue = report.data.weeklyOverdueClients || [];
+      if (weeklyOverdue.length > 0) {
+        if (startY > 210) { doc.addPage(); startY = 20; }
+        startY = (doc as any).lastAutoTable?.finalY || startY;
+        startY += 8;
+        doc.setFontSize(12);
+        doc.setTextColor(220, 53, 69);
+        doc.text(t('reports.overdueClients'), 14, startY);
+        startY += 8;
+
+        autoTable(doc, {
+          startY,
+          head: [[t('reports.client'), t('reports.creditValue'), t('reports.tax'), t('reports.remainingDebt'), t('reports.overdue')]],
+          body: weeklyOverdue.map(oc => [
+            oc.clientName + (oc.clientShop ? ` (${oc.clientShop})` : ''),
+            formatCurrencyWithSymbol(oc.initialValue),
+            `${oc.tax}%`,
+            formatCurrencyWithSymbol(oc.remainingDebt),
+            oc.overdue ? t('reports.overdue') : '-',
+          ]),
+          theme: 'grid',
+          headStyles: { fillColor: [220, 53, 69], textColor: 255, fontSize: 8 },
+          bodyStyles: { fontSize: 7 },
+          margin: { left: 14, right: 14 }
+        });
+      }
     } else if (report.data.days) {
       // General report
       report.data.days.forEach((day) => {
@@ -861,6 +965,106 @@ const Reports: React.FC = () => {
         }
       });
     }
+      // General report
+      report.data.days.forEach((day) => {
+        if (startY > 250) {
+          doc.addPage();
+          startY = 20;
+        }
+
+        // Day header
+        doc.setFontSize(12);
+        doc.setTextColor(0, 123, 255);
+        doc.text(`${day.date} (${day.dayOfWeek})`, 14, startY);
+        startY += 8;
+
+        // Routes table
+        if (day.routes.length > 0) {
+          const tableRows = day.routes.map(r => [
+            r.routeName,
+            formatCurrencyWithSymbol(r.totalLent),
+            formatCurrencyWithSymbol(r.totalCollected),
+            formatCurrencyWithSymbol(r.totalExpenses),
+            formatCurrencyWithSymbol(r.totalDeposits),
+            formatCurrencyWithSymbol(r.totalWithdrawals),
+            formatCurrencyWithSymbol(r.dailyBalance)
+          ]);
+
+          autoTable(doc, {
+            startY,
+            head: [[
+              t('reports.route'),
+              t('reports.lent'),
+              t('reports.collected'),
+              t('reports.expenses'),
+              t('reports.deposits'),
+              t('reports.withdrawals'),
+              t('reports.balance')
+            ]],
+            body: tableRows,
+            theme: 'grid',
+            headStyles: {
+              fillColor: [0, 123, 255],
+              textColor: 255,
+              fontStyle: 'bold',
+              fontSize: 8
+            },
+            bodyStyles: { fontSize: 7 },
+            columnStyles: {
+              0: { cellWidth: 30 },
+              1: { cellWidth: 25, halign: 'right' },
+              2: { cellWidth: 25, halign: 'right' },
+              3: { cellWidth: 25, halign: 'right' },
+              4: { cellWidth: 25, halign: 'right' },
+              5: { cellWidth: 25, halign: 'right' },
+              6: { cellWidth: 25, halign: 'right' }
+            },
+            margin: { left: 14, right: 14 }
+          });
+
+          startY = (doc as any).lastAutoTable?.finalY || startY;
+          startY += 10;
+        }
+
+        // Daily total
+        if (day.dailyTotal) {
+          doc.setFontSize(9);
+          doc.setTextColor(33, 37, 41);
+          doc.text(t('reports.dailyTotal') + ':', 14, startY);
+          startY += 5;
+          doc.text(`${t('reports.lent')}: ${formatCurrencyWithSymbol(day.dailyTotal.totalLent)} | ${t('reports.collected')}: ${formatCurrencyWithSymbol(day.dailyTotal.totalCollected)} | ${t('reports.expenses')}: ${formatCurrencyWithSymbol(day.dailyTotal.totalExpenses)} | ${t('reports.balance')}: ${formatCurrencyWithSymbol(day.dailyTotal.balance)}`, 14, startY);
+          startY += 12;
+        }
+      });
+    }
+
+    // Overdue Clients (for WEEKLY_GENERAL)
+    const generalOverdueClients = report.data.overdueClients || [];
+    if (report.reportType === 'WEEKLY_GENERAL' && generalOverdueClients.length > 0) {
+      if (startY > 210) { doc.addPage(); startY = 20; }
+      startY = (doc as any).lastAutoTable?.finalY || startY;
+      startY += 8;
+      doc.setFontSize(12);
+      doc.setTextColor(220, 53, 69);
+      doc.text(t('reports.overdueClients'), 14, startY);
+      startY += 8;
+
+      autoTable(doc, {
+        startY,
+        head: [[t('reports.client'), t('reports.creditValue'), t('reports.tax'), t('reports.remainingDebt'), t('reports.overdue')]],
+        body: generalOverdueClients.map(oc => [
+          oc.clientName,
+          formatCurrencyWithSymbol(oc.initialValue),
+          `${oc.tax}%`,
+          formatCurrencyWithSymbol(oc.remainingDebt),
+          oc.overdue ? t('reports.overdue') : '-',
+        ]),
+        theme: 'grid',
+        headStyles: { fillColor: [220, 53, 69], textColor: 255, fontSize: 8 },
+        bodyStyles: { fontSize: 7 },
+        margin: { left: 14, right: 14 }
+      });
+    }
 
     // Weekly summary
     if (startY > 230) {
@@ -905,280 +1109,7 @@ const Reports: React.FC = () => {
     setShowPdfModal(true);
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
-      showToast('Erro ao gerar PDF', 'danger');
-    }
-  };
-
-  const handleDownloadPDF = async (report: Report | null | undefined) => {
-    if (!report) return;
-    try {
-      let doc: jsPDF;
-      let fileName: string;
-
-      if (report.reportType === 'DAILY_BY_ROUTE' && report.data.dailyRouteSummary) {
-        doc = new jsPDF();
-        generateDailyRoutePDF(doc, report);
-        fileName = `relatorio-diario-${report.periodStart}-${report.data.routeName}.pdf`;
-      } else if (report.reportType === 'SIMPLE_WEEKLY' && report.data.simpleDays) {
-        doc = new jsPDF('l', 'mm', 'a4');
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const simpleDays = report.data.simpleDays;
-        const summary = report.data.simpleSummary!;
-        doc.setFontSize(16);
-        doc.setTextColor(33, 37, 41);
-        doc.text(report.title, pageWidth / 2, 15, { align: 'center' });
-        doc.setFontSize(8);
-        doc.setTextColor(108, 117, 125);
-        doc.text(`${t('reports.generatedAt')}: ${new Date(report.createdAt).toLocaleString()}`, pageWidth / 2, 22, { align: 'center' });
-        let startY = 30;
-        if (report.data.includedRoutes && report.data.includedRoutes.length > 0) {
-          doc.setFontSize(9);
-          doc.setTextColor(33, 37, 41);
-          doc.text(t('reports.route') + 's: ' + report.data.includedRoutes.join(', '), 14, startY);
-          startY += 7;
-        }
-        const dayHeaders = [
-          t('reports.dayOfWeek'), t('reports.date'), t('reports.newCredits'), t('reports.paymentsValue'),
-          t('reports.collectedClients'), t('reports.activeCredits'), t('reports.creditsWithPayment'),
-          t('reports.creditsWithoutPayment'), t('reports.expenses'), t('reports.deposits'),
-          t('reports.withdrawals'), t('reports.cashAdjustment'), t('reports.cashBalance')
-        ];
-        const dayRows = simpleDays.map(d => [
-          d.dayOfWeek.substring(0, 3), d.date,
-          `${formatCurrencyWithSymbol(d.newCreditsValue)} (${d.newCreditsCount})`,
-          `${formatCurrencyWithSymbol(d.paymentsValue)} (${d.paymentsCount})`,
-          String(d.collectedClientsCount ?? 0), String(d.activeCreditsCount),
-          String(d.creditsWithPayment), String(d.creditsWithoutPayment),
-          formatCurrencyWithSymbol(d.totalExpenses), formatCurrencyWithSymbol(d.deposits),
-          formatCurrencyWithSymbol(d.withdrawals), formatCurrencyWithSymbol(d.cashAdjustment),
-          formatCurrencyWithSymbol(d.cashBalance)
-        ]);
-        autoTable(doc, { startY, head: [dayHeaders], body: dayRows, theme: 'grid',
-          headStyles: { fillColor: [0, 123, 255], textColor: 255, fontStyle: 'bold', fontSize: 7 },
-          bodyStyles: { fontSize: 9, fontStyle: 'bold', cellPadding: 1 },
-          columnStyles: {
-            0: { cellWidth: 11, halign: 'left' }, 1: { cellWidth: 19, halign: 'center' },
-            2: { cellWidth: 32, halign: 'right' }, 3: { cellWidth: 32, halign: 'right' },
-            4: { cellWidth: 16, halign: 'center' }, 5: { cellWidth: 16, halign: 'center' },
-            6: { cellWidth: 15, halign: 'center' }, 7: { cellWidth: 15, halign: 'center' },
-            8: { cellWidth: 29, halign: 'right' }, 9: { cellWidth: 29, halign: 'right' },
-            10: { cellWidth: 27, halign: 'right' }, 11: { cellWidth: 23, halign: 'right' },
-            12: { cellWidth: 25, halign: 'right' }
-          },
-          margin: { left: 4, right: 4 }
-        });
-        startY = (doc as any).lastAutoTable?.finalY || startY;
-        startY += 4;
-        const totalDays = summary.totalDays || simpleDays.length;
-        const totalNewCreditsValue = simpleDays.reduce((s, d) => s + d.newCreditsValue, 0);
-        const totalExpenses = simpleDays.reduce((s, d) => s + d.totalExpenses, 0);
-        const totalDeposits = simpleDays.reduce((s, d) => s + d.deposits, 0);
-        const totalWithdrawals = simpleDays.reduce((s, d) => s + d.withdrawals, 0);
-        const calcAvg = (fn: (d: typeof simpleDays[0]) => number) =>
-          totalDays > 0 ? Math.round((simpleDays.reduce((s, d) => s + fn(d), 0) / totalDays) * 100) / 100 : 0;
-        const avgCollectedClients = calcAvg(d => d.collectedClientsCount ?? 0);
-        const avgActiveCredits = calcAvg(d => d.activeCreditsCount);
-        const avgWithPayment = calcAvg(d => d.creditsWithPayment);
-        const avgWithoutPayment = calcAvg(d => d.creditsWithoutPayment);
-        const avgExpenses = calcAvg(d => d.totalExpenses);
-        const avgDeposits = calcAvg(d => d.deposits);
-        const avgWithdrawals = calcAvg(d => d.withdrawals);
-        const avgCashBalance = calcAvg(d => d.cashBalance);
-        doc.setFontSize(11);
-        doc.setTextColor(40, 167, 69);
-        doc.text(t('reports.summaryTitle'), 4, startY);
-        startY += 4;
-        const summaryRows = [
-          [t('reports.totalNewCreditsValue'), formatCurrencyWithSymbol(totalNewCreditsValue)],
-          [t('reports.totalPaymentsValue'), formatCurrencyWithSymbol(summary.totalPaymentsValue)],
-          [t('reports.averagePaymentsPerDay'), String(summary.averagePaymentsPerDay)],
-          [t('reports.avgCollectedClientsPerDay'), String(avgCollectedClients)],
-          [t('reports.avgActiveCredits'), String(avgActiveCredits)],
-          [t('reports.avgWithPayment'), String(avgWithPayment)],
-          [t('reports.avgWithoutPayment'), String(avgWithoutPayment)],
-          [t('reports.totalExpenses'), formatCurrencyWithSymbol(totalExpenses)],
-          [t('reports.avgExpensesPerDay'), formatCurrencyWithSymbol(avgExpenses)],
-          [t('reports.totalDeposits'), formatCurrencyWithSymbol(totalDeposits)],
-          [t('reports.avgDepositsPerDay'), formatCurrencyWithSymbol(avgDeposits)],
-          [t('reports.totalWithdrawals'), formatCurrencyWithSymbol(totalWithdrawals)],
-          [t('reports.avgWithdrawalsPerDay'), formatCurrencyWithSymbol(avgWithdrawals)],
-          [t('reports.avgCashBalance'), formatCurrencyWithSymbol(avgCashBalance)]
-        ];
-        autoTable(doc, { startY, body: summaryRows, theme: 'grid',
-          bodyStyles: { fontSize: 10, fontStyle: 'bold' },
-          columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 50, halign: 'right' } },
-          margin: { left: 4, right: 4 }
-        });
-        fileName = `relatorio-simplificado-${report.periodStart}-${report.periodEnd}.pdf`;
-      } else {
-        doc = new jsPDF();
-        const pageWidth = doc.internal.pageSize.getWidth();
-        doc.setFontSize(16);
-        doc.setTextColor(33, 37, 41);
-        doc.text(report.title, pageWidth / 2, 20, { align: 'center' });
-        doc.setFontSize(8);
-        doc.setTextColor(108, 117, 125);
-        doc.text(`${t('reports.generatedAt')}: ${new Date(report.createdAt).toLocaleString()}`, pageWidth / 2, 27, { align: 'center' });
-        let startY = 35;
-        if (report.reportType === 'WEEKLY_BY_ROUTE' && report.data.detailedDays) {
-          report.data.detailedDays.forEach((day) => {
-            if (startY > 250) { doc.addPage(); startY = 20; }
-            doc.setFontSize(12);
-            doc.setTextColor(0, 123, 255);
-            doc.text(`${day.date} (${day.dayOfWeek})`, 14, startY);
-            startY += 8;
-            if (day.credits.length > 0) {
-              doc.setFontSize(10);
-              doc.setTextColor(40, 167, 69);
-              doc.text(t('reports.credits'), 14, startY);
-              startY += 5;
-              autoTable(doc, {
-                startY,
-                head: [[t('reports.client'), t('reports.value')]],
-                body: day.credits.map(c => [c.clientName + (c.clientShop ? ` (${c.clientShop})` : ''), formatCurrencyWithSymbol(c.value)]),
-                theme: 'grid',
-                headStyles: { fillColor: [40, 167, 69], textColor: 255, fontSize: 8 },
-                bodyStyles: { fontSize: 7 },
-                margin: { left: 14, right: 14 }
-              });
-              startY = (doc as any).lastAutoTable?.finalY || startY;
-              startY += 5;
-            }
-            if (day.debits.length > 0) {
-              doc.setFontSize(10);
-              doc.setTextColor(0, 123, 255);
-              doc.text(t('reports.debits'), 14, startY);
-              startY += 5;
-              autoTable(doc, {
-                startY,
-                head: [[t('reports.client'), t('reports.value')]],
-                body: day.debits.map(d => [d.clientName + (d.clientShop ? ` (${d.clientShop})` : ''), formatCurrencyWithSymbol(d.value)]),
-                theme: 'grid',
-                headStyles: { fillColor: [0, 123, 255], textColor: 255, fontSize: 8 },
-                bodyStyles: { fontSize: 7 },
-                margin: { left: 14, right: 14 }
-              });
-              startY = (doc as any).lastAutoTable?.finalY || startY;
-              startY += 5;
-            }
-            if (day.expenses.length > 0) {
-              doc.setFontSize(10);
-              doc.setTextColor(220, 53, 69);
-              doc.text(t('reports.expenses'), 14, startY);
-              startY += 5;
-              autoTable(doc, {
-                startY,
-                head: [[t('reports.category'), t('reports.type'), t('reports.description'), t('reports.value')]],
-                body: day.expenses.map(e => [e.category, e.type, e.description || '-', formatCurrencyWithSymbol(e.value)]),
-                theme: 'grid',
-                headStyles: { fillColor: [220, 53, 69], textColor: 255, fontSize: 8 },
-                bodyStyles: { fontSize: 7 },
-                margin: { left: 14, right: 14 }
-              });
-              startY = (doc as any).lastAutoTable?.finalY || startY;
-              startY += 5;
-            }
-            if (day.transactions.length > 0) {
-              doc.setFontSize(10);
-              doc.setTextColor(108, 117, 125);
-              doc.text(t('reports.transactions'), 14, startY);
-              startY += 5;
-              autoTable(doc, {
-                startY,
-                head: [[t('reports.type'), t('reports.description'), t('reports.value')]],
-                body: day.transactions.map(tx => [tx.type === 'MANAGER_DEPOSIT' ? t('reports.deposit') : t('reports.withdrawal'), tx.description || '-', formatCurrencyWithSymbol(tx.value)]),
-                theme: 'grid',
-                headStyles: { fillColor: [108, 117, 125], textColor: 255, fontSize: 8 },
-                bodyStyles: { fontSize: 7 },
-                margin: { left: 14, right: 14 }
-              });
-              startY = (doc as any).lastAutoTable?.finalY || startY;
-              startY += 5;
-            }
-            if (day.dailyTotal) {
-              doc.setFontSize(9);
-              doc.setTextColor(33, 37, 41);
-              doc.text(t('reports.dailyTotal') + ':', 14, startY);
-              startY += 5;
-              doc.text(
-                `${t('reports.lent')}: ${formatCurrencyWithSymbol(day.dailyTotal.totalLent)} | ` +
-                `${t('reports.collected')}: ${formatCurrencyWithSymbol(day.dailyTotal.totalCollected)} | ` +
-                `${t('reports.expenses')}: ${formatCurrencyWithSymbol(day.dailyTotal.totalExpenses)} | ` +
-                `${t('reports.deposits')}: ${formatCurrencyWithSymbol(day.dailyTotal.totalDeposits)} | ` +
-                `${t('reports.withdrawals')}: ${formatCurrencyWithSymbol(day.dailyTotal.totalWithdrawals)} | ` +
-                `${t('reports.balance')}: ${formatCurrencyWithSymbol(day.dailyTotal.balance)}`,
-                14, startY
-              );
-              startY += 12;
-            }
-          });
-        } else if (report.data.days) {
-          report.data.days.forEach((day) => {
-            if (startY > 250) { doc.addPage(); startY = 20; }
-            doc.setFontSize(12);
-            doc.setTextColor(0, 123, 255);
-            doc.text(`${day.date} (${day.dayOfWeek})`, 14, startY);
-            startY += 8;
-            if (day.routes.length > 0) {
-              autoTable(doc, {
-                startY,
-                head: [[t('reports.route'), t('reports.lent'), t('reports.collected'), t('reports.expenses'), t('reports.deposits'), t('reports.withdrawals'), t('reports.balance')]],
-                body: day.routes.map(r => [r.routeName, formatCurrencyWithSymbol(r.totalLent), formatCurrencyWithSymbol(r.totalCollected), formatCurrencyWithSymbol(r.totalExpenses), formatCurrencyWithSymbol(r.totalDeposits), formatCurrencyWithSymbol(r.totalWithdrawals), formatCurrencyWithSymbol(r.dailyBalance)]),
-                theme: 'grid',
-                headStyles: { fillColor: [0, 123, 255], textColor: 255, fontStyle: 'bold', fontSize: 8 },
-                bodyStyles: { fontSize: 7 },
-                columnStyles: {
-                  0: { cellWidth: 30 }, 1: { cellWidth: 25, halign: 'right' },
-                  2: { cellWidth: 25, halign: 'right' }, 3: { cellWidth: 25, halign: 'right' },
-                  4: { cellWidth: 25, halign: 'right' }, 5: { cellWidth: 25, halign: 'right' },
-                  6: { cellWidth: 25, halign: 'right' }
-                },
-                margin: { left: 14, right: 14 }
-              });
-              startY = (doc as any).lastAutoTable?.finalY || startY;
-              startY += 10;
-            }
-            if (day.dailyTotal) {
-              doc.setFontSize(9);
-              doc.setTextColor(33, 37, 41);
-              doc.text(t('reports.dailyTotal') + ':', 14, startY);
-              startY += 5;
-              doc.text(`${t('reports.lent')}: ${formatCurrencyWithSymbol(day.dailyTotal.totalLent)} | ${t('reports.collected')}: ${formatCurrencyWithSymbol(day.dailyTotal.totalCollected)} | ${t('reports.expenses')}: ${formatCurrencyWithSymbol(day.dailyTotal.totalExpenses)} | ${t('reports.balance')}: ${formatCurrencyWithSymbol(day.dailyTotal.balance)}`, 14, startY);
-              startY += 12;
-            }
-          });
-        }
-        if (startY > 230) { doc.addPage(); startY = 20; }
-        doc.setFontSize(14);
-        doc.setTextColor(40, 167, 69);
-        doc.text(t('reports.weeklySummary'), 14, startY);
-        startY += 10;
-        const ws = report.data.weeklySummary;
-        if (ws) {
-          autoTable(doc, {
-            startY,
-            body: [
-              [t('reports.totalLent'), formatCurrencyWithSymbol(ws.totalLent)],
-              [t('reports.totalCollected'), formatCurrencyWithSymbol(ws.totalCollected)],
-              [t('reports.totalExpenses'), formatCurrencyWithSymbol(ws.totalExpenses)],
-              [t('reports.totalDeposits'), formatCurrencyWithSymbol(ws.totalDeposits)],
-              [t('reports.totalWithdrawals'), formatCurrencyWithSymbol(ws.totalWithdrawals)],
-              [t('reports.finalBalance'), formatCurrencyWithSymbol(ws.finalBalance)]
-            ],
-            theme: 'grid',
-            bodyStyles: { fontSize: 10, fontStyle: 'bold' },
-            columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 50, halign: 'right' } },
-            margin: { left: 14, right: 14 }
-          });
-        }
-        fileName = `relatorio-${report.periodStart}-${report.periodEnd}.pdf`;
-      }
-
-      const savedUri = await savePdf(doc, fileName);
-      if (savedUri) showToast(`PDF salvo: ${savedUri}`, 'success');
-    } catch (error) {
-      console.error('Erro ao salvar PDF:', error);
-      showToast('Erro ao salvar PDF', 'danger');
+      showToast(t('reports.errorGeneratingPdf'), 'danger');
     }
   };
 
@@ -1204,7 +1135,7 @@ const Reports: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
           <IonTitle>{t('reports.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -1216,33 +1147,43 @@ const Reports: React.FC = () => {
           <IonRefresherContent />
         </IonRefresher>
 
-        <div style={{ padding: '16px' }}>
+        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
           {/* Simple Weekly Report - Top */}
-          <IonButton
-            expand="block"
-            color="primary"
+          <div
             onClick={() => setExpandedSimpleWeekly(!expandedSimpleWeekly)}
             style={{ 
-              marginBottom: expandedSimpleWeekly ? '16px' : '0', 
-              height: '56px',
-              borderRadius: '4px'
+              marginBottom: '16px',
+              padding: '16px 20px',
+              backgroundColor: '#098947',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              boxShadow: '0 2px 12px rgba(9,137,71,0.2)'
             }}
           >
-            <IonIcon icon={document} slot="start" style={{ fontSize: '24px' }} />
-            <span style={{ fontSize: '16px' }}>
-              {t('reports.simpleWeekly')}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <IonIcon icon={documentText} style={{ fontSize: '22px', color: '#fff' }} />
+              <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>
+                {t('reports.simpleWeekly')}
+              </span>
+            </div>
             <IonIcon 
               icon={expandedSimpleWeekly ? chevronUp : chevronDown} 
-              slot="end" 
-              style={{ fontSize: '20px' }}
+              style={{ fontSize: '20px', color: 'rgba(255,255,255,0.8)' }}
             />
-          </IonButton>
+          </div>
 
           {/* Expanded Content for Simple Weekly */}
           {expandedSimpleWeekly && (
-            <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
-              <IonCardContent style={{ padding: '12px' }}>
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '16px',
+              marginBottom: '16px',
+              padding: '16px 20px',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+            }}>
                 {isLoading ? (
                   <div style={{ textAlign: 'center', padding: '20px' }}>
                     <IonSpinner name="dots" />
@@ -1309,15 +1250,6 @@ const Reports: React.FC = () => {
                             <IonButton
                               fill="clear"
                               size="small"
-                              color="secondary"
-                              onClick={() => handleDownloadPDF(report)}
-                              style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
-                            >
-                              <IonIcon icon={download} style={{ fontSize: '18px' }} />
-                            </IonButton>
-                            <IonButton
-                              fill="clear"
-                              size="small"
                               color="danger"
                               onClick={() => handleDelete(report.id)}
                               style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
@@ -1341,40 +1273,49 @@ const Reports: React.FC = () => {
                     onClick={() => setShowSimpleWeeklyModal(true)}
                     style={{ height: '40px' }}
                   >
-                    <IonIcon icon={add} slot="start" />
+                    <IonIcon icon={addCircle} slot="start" />
                     {t('reports.generateNew')}
                   </IonButton>
                 </div>
-              </IonCardContent>
-            </IonCard>
+              </div>
           )}
 
           {/* Main Expandable Button */}
-          <IonButton
-            expand="block"
-            color="primary"
+          <div
             onClick={() => setExpanded(!expanded)}
             style={{ 
-              marginBottom: expanded ? '16px' : '0', 
-              height: '56px',
-              borderRadius: '4px'
+              marginBottom: '16px',
+              padding: '16px 20px',
+              backgroundColor: '#098947',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              boxShadow: '0 2px 12px rgba(9,137,71,0.2)'
             }}
           >
-            <IonIcon icon={document} slot="start" style={{ fontSize: '24px' }} />
-            <span style={{ fontSize: '16px' }}>
-              {t('reports.weeklyGeneral')}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <IonIcon icon={documentText} style={{ fontSize: '22px', color: '#fff' }} />
+              <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>
+                {t('reports.weeklyGeneral')}
+              </span>
+            </div>
             <IonIcon 
               icon={expanded ? chevronUp : chevronDown} 
-              slot="end" 
-              style={{ fontSize: '20px' }}
+              style={{ fontSize: '20px', color: 'rgba(255,255,255,0.8)' }}
             />
-          </IonButton>
+          </div>
 
           {/* Expanded Content */}
           {expanded && (
-            <IonCard style={{ margin: '0 0 16px 0', borderRadius: '12px' }}>
-              <IonCardContent style={{ padding: '12px' }}>
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '16px',
+              marginBottom: '16px',
+              padding: '16px 20px',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+            }}>
                 {isLoading ? (
                   <div style={{ textAlign: 'center', padding: '20px' }}>
                     <IonSpinner name="dots" />
@@ -1439,15 +1380,6 @@ const Reports: React.FC = () => {
                             <IonButton
                               fill="clear"
                               size="small"
-                              color="secondary"
-                              onClick={() => handleDownloadPDF(report)}
-                              style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
-                            >
-                              <IonIcon icon={download} style={{ fontSize: '18px' }} />
-                            </IonButton>
-                            <IonButton
-                              fill="clear"
-                              size="small"
                               color="danger"
                               onClick={() => handleDelete(report.id)}
                               style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
@@ -1471,40 +1403,49 @@ const Reports: React.FC = () => {
                     onClick={() => setShowGeneralModal(true)}
                     style={{ height: '40px' }}
                   >
-                    <IonIcon icon={add} slot="start" />
+                    <IonIcon icon={addCircle} slot="start" />
                     {t('reports.generateNew')}
                   </IonButton>
                 </div>
-              </IonCardContent>
-            </IonCard>
+              </div>
           )}
 
           {/* Second Expandable Button - Weekly by Route */}
-          <IonButton
-            expand="block"
-            color="primary"
+          <div
             onClick={() => setExpandedByRoute(!expandedByRoute)}
             style={{ 
-              marginBottom: expandedByRoute ? '16px' : '0', 
-              height: '56px',
-              borderRadius: '4px'
+              marginBottom: '16px',
+              padding: '16px 20px',
+              backgroundColor: '#098947',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              boxShadow: '0 2px 12px rgba(9,137,71,0.2)'
             }}
           >
-            <IonIcon icon={document} slot="start" style={{ fontSize: '24px' }} />
-            <span style={{ fontSize: '16px' }}>
-              {t('reports.weeklyByRoute')}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <IonIcon icon={documentText} style={{ fontSize: '22px', color: '#fff' }} />
+              <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>
+                {t('reports.weeklyByRoute')}
+              </span>
+            </div>
             <IonIcon 
               icon={expandedByRoute ? chevronUp : chevronDown} 
-              slot="end" 
-              style={{ fontSize: '20px' }}
+              style={{ fontSize: '20px', color: 'rgba(255,255,255,0.8)' }}
             />
-          </IonButton>
+          </div>
 
           {/* Expanded Content for Weekly by Route */}
           {expandedByRoute && (
-            <IonCard style={{ margin: '0', borderRadius: '12px' }}>
-              <IonCardContent style={{ padding: '12px' }}>
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '16px',
+              marginBottom: '16px',
+              padding: '16px 20px',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+            }}>
                 {isLoading ? (
                   <div style={{ textAlign: 'center', padding: '20px' }}>
                     <IonSpinner name="dots" />
@@ -1569,15 +1510,6 @@ const Reports: React.FC = () => {
                             <IonButton
                               fill="clear"
                               size="small"
-                              color="secondary"
-                              onClick={() => handleDownloadPDF(report)}
-                              style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
-                            >
-                              <IonIcon icon={download} style={{ fontSize: '18px' }} />
-                            </IonButton>
-                            <IonButton
-                              fill="clear"
-                              size="small"
                               color="danger"
                               onClick={() => handleDelete(report.id)}
                               style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
@@ -1601,40 +1533,49 @@ const Reports: React.FC = () => {
                     onClick={() => setShowByRouteModal(true)}
                     style={{ height: '40px' }}
                   >
-                    <IonIcon icon={add} slot="start" />
+                    <IonIcon icon={addCircle} slot="start" />
                     {t('reports.generateNew')}
                   </IonButton>
                 </div>
-              </IonCardContent>
-            </IonCard>
+              </div>
           )}
 
           {/* Fourth Expandable Button - Daily by Route */}
-          <IonButton
-            expand="block"
-            color="primary"
+          <div
             onClick={() => setExpandedDailyByRoute(!expandedDailyByRoute)}
             style={{ 
-              marginBottom: expandedDailyByRoute ? '16px' : '0', 
-              height: '56px',
-              borderRadius: '4px'
+              marginBottom: '16px',
+              padding: '16px 20px',
+              backgroundColor: '#098947',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              boxShadow: '0 2px 12px rgba(9,137,71,0.2)'
             }}
           >
-            <IonIcon icon={document} slot="start" style={{ fontSize: '24px' }} />
-            <span style={{ fontSize: '16px' }}>
-              {t('reports.dailyByRoute')}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <IonIcon icon={documentText} style={{ fontSize: '22px', color: '#fff' }} />
+              <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>
+                {t('reports.dailyByRoute')}
+              </span>
+            </div>
             <IonIcon 
               icon={expandedDailyByRoute ? chevronUp : chevronDown} 
-              slot="end" 
-              style={{ fontSize: '20px' }}
+              style={{ fontSize: '20px', color: 'rgba(255,255,255,0.8)' }}
             />
-          </IonButton>
+          </div>
 
           {/* Expanded Content for Daily by Route */}
           {expandedDailyByRoute && (
-            <IonCard style={{ margin: '0', borderRadius: '12px' }}>
-              <IonCardContent style={{ padding: '12px' }}>
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '16px',
+              marginBottom: '16px',
+              padding: '16px 20px',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+            }}>
                 {isLoading ? (
                   <div style={{ textAlign: 'center', padding: '20px' }}>
                     <IonSpinner name="dots" />
@@ -1700,15 +1641,6 @@ const Reports: React.FC = () => {
                             <IonButton
                               fill="clear"
                               size="small"
-                              color="secondary"
-                              onClick={() => handleDownloadPDF(report)}
-                              style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
-                            >
-                              <IonIcon icon={download} style={{ fontSize: '18px' }} />
-                            </IonButton>
-                            <IonButton
-                              fill="clear"
-                              size="small"
                               color="danger"
                               onClick={() => handleDelete(report.id)}
                               style={{ '--padding-start': '4px', '--padding-end': '4px' } as any}
@@ -1737,40 +1669,27 @@ const Reports: React.FC = () => {
                     }}
                     style={{ height: '40px' }}
                   >
-                    <IonIcon icon={add} slot="start" />
+                    <IonIcon icon={addCircle} slot="start" />
                     {t('reports.generateNew')}
                   </IonButton>
                 </div>
-              </IonCardContent>
-            </IonCard>
+              </div>
           )}
 
         </div>
 
         {/* Generate General Modal */}
         <IonModal isOpen={showGeneralModal} onDidDismiss={() => setShowGeneralModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('reports.generateWeeklyReport')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowGeneralModal(false)}>
-                  <IonIcon icon={close} />
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <GreenHeader
+            title={t('reports.generateWeeklyReport')}
+            onClose={() => setShowGeneralModal(false)}
+            
+          />
           <IonContent>
-            <div style={{ padding: '16px' }}>
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
               {/* Period Selection */}
-              <IonCard style={{ marginBottom: '16px' }}>
-                <IonCardHeader>
-                  <IonCardTitle style={{ fontSize: '16px' }}>
-                    <IonIcon icon={calendar} style={{ marginRight: '8px' }} />
-                    {t('reports.selectPeriod')}
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <IonItem>
+              <ModernCard headerTitle={t('reports.selectPeriod')} headerIcon={calendar}>
+                  <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                     <IonLabel>{t('reports.lastWeek')}</IonLabel>
                     <IonCheckbox
                       slot="end"
@@ -1778,7 +1697,7 @@ const Reports: React.FC = () => {
                       onIonChange={() => { setSelectedPeriod('LAST_WEEK'); setUseCustomDates(false); }}
                     />
                   </IonItem>
-                  <IonItem>
+                  <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                     <IonLabel>{t('reports.customDates')}</IonLabel>
                     <IonCheckbox
                       slot="end"
@@ -1788,36 +1707,29 @@ const Reports: React.FC = () => {
                   </IonItem>
                   {useCustomDates && (
                     <>
-                      <IonItem>
+                      <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                         <IonLabel position="stacked">{t('reports.periodStart')}</IonLabel>
                         <IonInput type="date" value={customStartDate} onIonChange={e => setCustomStartDate(e.detail.value || '')} />
                       </IonItem>
-                      <IonItem>
+                      <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                         <IonLabel position="stacked">{t('reports.periodEnd')}</IonLabel>
                         <IonInput type="date" value={customEndDate} onIonChange={e => setCustomEndDate(e.detail.value || '')} />
                       </IonItem>
                     </>
                   )}
-                </IonCardContent>
-              </IonCard>
+              </ModernCard>
 
               {/* Routes Selection */}
-              <IonCard style={{ marginBottom: '16px' }}>
-                <IonCardHeader>
-                  <IonCardTitle style={{ fontSize: '16px' }}>
-                    {t('reports.selectRoutes')}
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
+              <ModernCard headerTitle={t('reports.selectRoutes')}>
                   {isLoadingRoutes ? (
                     <div style={{ textAlign: 'center' }}>
                       <IonSpinner name="dots" />
                     </div>
                   ) : routes.length === 0 ? (
-                    <p>{t('reports.noRoutes')}</p>
+                    <p style={{ color: '#999', fontSize: '14px' }}>{t('reports.noRoutes')}</p>
                   ) : (
                     <>
-                      <IonItem>
+                      <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                         <IonLabel>{t('reports.allRoutes')}</IonLabel>
                         <IonCheckbox
                           slot="end"
@@ -1832,7 +1744,7 @@ const Reports: React.FC = () => {
                         />
                       </IonItem>
                       {routes.map(route => (
-                        <IonItem key={route.id}>
+                        <IonItem key={route.id} style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                           <IonLabel>{route.name}</IonLabel>
                           <IonCheckbox
                             slot="end"
@@ -1843,52 +1755,31 @@ const Reports: React.FC = () => {
                       ))}
                     </>
                   )}
-                </IonCardContent>
-              </IonCard>
+              </ModernCard>
 
               {/* Generate Button */}
-              <IonButton
-                expand="block"
-                shape="round"
-                color="primary"
+              <PrimaryButton
                 onClick={handleGenerateGeneral}
+                label={isGenerating ? t('reports.generating') : t('reports.generate')}
+                icon={isGenerating ? undefined : addCircle}
                 disabled={isGenerating || selectedRoutes.length === 0}
-              >
-                {isGenerating ? (
-                  <IonSpinner name="dots" slot="start" />
-                ) : (
-                  <IonIcon icon={add} slot="start" />
-                )}
-                {isGenerating ? t('reports.generating') : t('reports.generate')}
-              </IonButton>
+              />
             </div>
           </IonContent>
         </IonModal>
 
         {/* Generate By Route Modal */}
         <IonModal isOpen={showByRouteModal} onDidDismiss={() => setShowByRouteModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('reports.weeklyByRoute')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowByRouteModal(false)}>
-                  <IonIcon icon={close} />
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <GreenHeader
+            title={t('reports.weeklyByRoute')}
+            onClose={() => setShowByRouteModal(false)}
+            
+          />
           <IonContent>
-            <div style={{ padding: '16px' }}>
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
               {/* Period Selection */}
-              <IonCard style={{ marginBottom: '16px' }}>
-                <IonCardHeader>
-                  <IonCardTitle style={{ fontSize: '16px' }}>
-                    <IonIcon icon={calendar} style={{ marginRight: '8px' }} />
-                    {t('reports.selectPeriod')}
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <IonItem>
+              <ModernCard headerTitle={t('reports.selectPeriod')} headerIcon={calendar}>
+                  <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                     <IonLabel>{t('reports.lastWeek')}</IonLabel>
                     <IonCheckbox
                       slot="end"
@@ -1896,7 +1787,7 @@ const Reports: React.FC = () => {
                       onIonChange={() => { setSelectedPeriod('LAST_WEEK'); setUseCustomDates(false); }}
                     />
                   </IonItem>
-                  <IonItem>
+                  <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                     <IonLabel>{t('reports.customDates')}</IonLabel>
                     <IonCheckbox
                       slot="end"
@@ -1906,36 +1797,29 @@ const Reports: React.FC = () => {
                   </IonItem>
                   {useCustomDates && (
                     <>
-                      <IonItem>
+                      <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                         <IonLabel position="stacked">{t('reports.periodStart')}</IonLabel>
                         <IonInput type="date" value={customStartDate} onIonChange={e => setCustomStartDate(e.detail.value || '')} />
                       </IonItem>
-                      <IonItem>
+                      <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                         <IonLabel position="stacked">{t('reports.periodEnd')}</IonLabel>
                         <IonInput type="date" value={customEndDate} onIonChange={e => setCustomEndDate(e.detail.value || '')} />
                       </IonItem>
                     </>
                   )}
-                </IonCardContent>
-              </IonCard>
+              </ModernCard>
 
               {/* Single Route Selection */}
-              <IonCard style={{ marginBottom: '16px' }}>
-                <IonCardHeader>
-                  <IonCardTitle style={{ fontSize: '16px' }}>
-                    {t('reports.selectOneRoute')}
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
+              <ModernCard headerTitle={t('reports.selectOneRoute')}>
                   {isLoadingRoutes ? (
                     <div style={{ textAlign: 'center' }}>
                       <IonSpinner name="dots" />
                     </div>
                   ) : routes.length === 0 ? (
-                    <p>{t('reports.noRoutes')}</p>
+                    <p style={{ color: '#999', fontSize: '14px' }}>{t('reports.noRoutes')}</p>
                   ) : (
                     routes.map(route => (
-                      <IonItem key={route.id}>
+                      <IonItem key={route.id} style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                         <IonLabel>{route.name}</IonLabel>
                         <IonCheckbox
                           slot="end"
@@ -1945,52 +1829,31 @@ const Reports: React.FC = () => {
                       </IonItem>
                     ))
                   )}
-                </IonCardContent>
-              </IonCard>
+              </ModernCard>
 
               {/* Generate Button */}
-              <IonButton
-                expand="block"
-                shape="round"
-                color="primary"
+              <PrimaryButton
                 onClick={handleGenerateByRoute}
+                label={isGenerating ? t('reports.generating') : t('reports.generate')}
+                icon={isGenerating ? undefined : addCircle}
                 disabled={isGenerating || selectedRoute === null}
-              >
-                {isGenerating ? (
-                  <IonSpinner name="dots" slot="start" />
-                ) : (
-                  <IonIcon icon={add} slot="start" />
-                )}
-                {isGenerating ? t('reports.generating') : t('reports.generate')}
-              </IonButton>
+              />
             </div>
           </IonContent>
         </IonModal>
 
         {/* Generate Simple Weekly Modal */}
         <IonModal isOpen={showSimpleWeeklyModal} onDidDismiss={() => setShowSimpleWeeklyModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('reports.simpleWeekly')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowSimpleWeeklyModal(false)}>
-                  <IonIcon icon={close} />
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <GreenHeader
+            title={t('reports.simpleWeekly')}
+            onClose={() => setShowSimpleWeeklyModal(false)}
+            
+          />
           <IonContent>
-            <div style={{ padding: '16px' }}>
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
               {/* Period Selection */}
-              <IonCard style={{ marginBottom: '16px' }}>
-                <IonCardHeader>
-                  <IonCardTitle style={{ fontSize: '16px' }}>
-                    <IonIcon icon={calendar} style={{ marginRight: '8px' }} />
-                    {t('reports.selectPeriod')}
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <IonItem>
+              <ModernCard headerTitle={t('reports.selectPeriod')} headerIcon={calendar}>
+                  <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                     <IonLabel>{t('reports.lastWeek')}</IonLabel>
                     <IonCheckbox
                       slot="end"
@@ -1998,7 +1861,7 @@ const Reports: React.FC = () => {
                       onIonChange={() => { setSelectedPeriod('LAST_WEEK'); setUseCustomDates(false); }}
                     />
                   </IonItem>
-                  <IonItem>
+                  <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                     <IonLabel>{t('reports.customDates')}</IonLabel>
                     <IonCheckbox
                       slot="end"
@@ -2008,36 +1871,29 @@ const Reports: React.FC = () => {
                   </IonItem>
                   {useCustomDates && (
                     <>
-                      <IonItem>
+                      <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                         <IonLabel position="stacked">{t('reports.periodStart')}</IonLabel>
                         <IonInput type="date" value={customStartDate} onIonChange={e => setCustomStartDate(e.detail.value || '')} />
                       </IonItem>
-                      <IonItem>
+                      <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                         <IonLabel position="stacked">{t('reports.periodEnd')}</IonLabel>
                         <IonInput type="date" value={customEndDate} onIonChange={e => setCustomEndDate(e.detail.value || '')} />
                       </IonItem>
                     </>
                   )}
-                </IonCardContent>
-              </IonCard>
+              </ModernCard>
 
               {/* Routes Selection */}
-              <IonCard style={{ marginBottom: '16px' }}>
-                <IonCardHeader>
-                  <IonCardTitle style={{ fontSize: '16px' }}>
-                    {t('reports.selectRoutes')}
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
+              <ModernCard headerTitle={t('reports.selectRoutes')}>
                   {isLoadingRoutes ? (
                     <div style={{ textAlign: 'center' }}>
                       <IonSpinner name="dots" />
                     </div>
                   ) : routes.length === 0 ? (
-                    <p>{t('reports.noRoutes')}</p>
+                    <p style={{ color: '#999', fontSize: '14px' }}>{t('reports.noRoutes')}</p>
                   ) : (
                     <>
-                      <IonItem>
+                      <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                         <IonLabel>{t('reports.allRoutes')}</IonLabel>
                         <IonCheckbox
                           slot="end"
@@ -2052,7 +1908,7 @@ const Reports: React.FC = () => {
                         />
                       </IonItem>
                       {routes.map(route => (
-                        <IonItem key={route.id}>
+                        <IonItem key={route.id} style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                           <IonLabel>{route.name}</IonLabel>
                           <IonCheckbox
                             slot="end"
@@ -2063,55 +1919,34 @@ const Reports: React.FC = () => {
                       ))}
                     </>
                   )}
-                </IonCardContent>
-              </IonCard>
+              </ModernCard>
 
               {/* Generate Button */}
-              <IonButton
-                expand="block"
-                shape="round"
-                color="primary"
+              <PrimaryButton
                 onClick={handleGenerateSimpleWeekly}
+                label={isGenerating ? t('reports.generating') : t('reports.generate')}
+                icon={isGenerating ? undefined : addCircle}
                 disabled={isGenerating || selectedRoutes.length === 0}
-              >
-                {isGenerating ? (
-                  <IonSpinner name="dots" slot="start" />
-                ) : (
-                  <IonIcon icon={add} slot="start" />
-                )}
-                {isGenerating ? t('reports.generating') : t('reports.generate')}
-              </IonButton>
+              />
             </div>
           </IonContent>
         </IonModal>
 
         {/* Generate Daily By Route Modal */}
         <IonModal isOpen={showDailyByRouteModal} onDidDismiss={() => setShowDailyByRouteModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('reports.dailyByRoute')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowDailyByRouteModal(false)}>
-                  <IonIcon icon={close} />
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <GreenHeader
+            title={t('reports.dailyByRoute')}
+            onClose={() => setShowDailyByRouteModal(false)}
+            
+          />
           <IonContent>
-            <div style={{ padding: '16px' }}>
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
               {/* Date Selection */}
-              <IonCard style={{ marginBottom: '16px' }}>
-                <IonCardHeader>
-                  <IonCardTitle style={{ fontSize: '16px' }}>
-                    <IonIcon icon={calendar} style={{ marginRight: '8px' }} />
-                    {t('reports.selectDate')}
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
+              <ModernCard headerTitle={t('reports.selectDate')} headerIcon={calendar}>
                   <p style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
                     {t('reports.selectDateOrYesterday')}
                   </p>
-                  <IonItem>
+                  <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                     <IonLabel>{t('reports.yesterday')} ({getYesterday()})</IonLabel>
                     <IonCheckbox
                       slot="end"
@@ -2119,7 +1954,7 @@ const Reports: React.FC = () => {
                       onIonChange={() => setUseDefaultDate(true)}
                     />
                   </IonItem>
-                  <IonItem>
+                  <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                     <IonLabel>{t('reports.chooseDate')}</IonLabel>
                     <IonCheckbox
                       slot="end"
@@ -2128,7 +1963,7 @@ const Reports: React.FC = () => {
                     />
                   </IonItem>
                   {!useDefaultDate && (
-                    <IonItem style={{ marginTop: '8px' }}>
+                    <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginTop: '8px' }}>
                       <IonLabel position="stacked">{t('reports.date')}</IonLabel>
                       <IonInput
                         type="date"
@@ -2137,26 +1972,19 @@ const Reports: React.FC = () => {
                       />
                     </IonItem>
                   )}
-                </IonCardContent>
-              </IonCard>
+              </ModernCard>
 
               {/* Single Route Selection */}
-              <IonCard style={{ marginBottom: '16px' }}>
-                <IonCardHeader>
-                  <IonCardTitle style={{ fontSize: '16px' }}>
-                    {t('reports.selectOneRoute')}
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
+              <ModernCard headerTitle={t('reports.selectOneRoute')}>
                   {isLoadingRoutes ? (
                     <div style={{ textAlign: 'center' }}>
                       <IonSpinner name="dots" />
                     </div>
                   ) : routes.length === 0 ? (
-                    <p>{t('reports.noRoutes')}</p>
+                    <p style={{ color: '#999', fontSize: '14px' }}>{t('reports.noRoutes')}</p>
                   ) : (
                     routes.map(route => (
-                      <IonItem key={route.id}>
+                      <IonItem key={route.id} style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '52px', marginBottom: '8px' }}>
                         <IonLabel>
                           {route.name}
                         </IonLabel>
@@ -2168,24 +1996,15 @@ const Reports: React.FC = () => {
                       </IonItem>
                     ))
                   )}
-                </IonCardContent>
-              </IonCard>
+              </ModernCard>
 
               {/* Generate Button */}
-              <IonButton
-                expand="block"
-                shape="round"
-                color="primary"
+              <PrimaryButton
                 onClick={handleGenerateDailyByRoute}
+                label={isGenerating ? t('reports.generating') : t('reports.generate')}
+                icon={isGenerating ? undefined : addCircle}
                 disabled={isGenerating || selectedRouteDaily === null}
-              >
-                {isGenerating ? (
-                  <IonSpinner name="dots" slot="start" />
-                ) : (
-                  <IonIcon icon={add} slot="start" />
-                )}
-                {isGenerating ? t('reports.generating') : t('reports.generate')}
-              </IonButton>
+              />
             </div>
           </IonContent>
         </IonModal>

@@ -6,31 +6,28 @@ import {
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonButton,
-  IonItem,
-  IonLabel,
-  IonInput,
   IonModal,
   IonButtons,
+  IonButton,
   IonIcon,
   IonAlert,
-  IonGrid,
-  IonRow,
-  IonCol,
   IonRefresher,
   IonRefresherContent,
   IonRadioGroup,
   IonRadio,
+  IonLabel,
+  IonItem,
   IonSpinner
 } from '@ionic/react';
-import { add, trash, create, eye, arrowForward, refresh } from 'ionicons/icons';
+import { addCircle, trash, create, arrowForward } from 'ionicons/icons';
 import { getCategorias, createCategoria, deleteCategoria, CategoriaGasto } from '../../services/gastoApi';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
+import PrimaryButton from '../../components/ui/PrimaryButton';
+import StyledInput from '../../components/ui/StyledInput';
+import ActionButton from '../../components/ui/ActionButton';
+import GreenHeader from '../../components/ui/GreenHeader';
+import InfoRow from '../../components/ui/InfoRow';
 
 const Gastos: React.FC = () => {
   const { t } = useTranslation();
@@ -46,8 +43,6 @@ const Gastos: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const history = useHistory();
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
-  
-  // Form states
 
   useEffect(() => {
     loadCategorias();
@@ -57,16 +52,13 @@ const Gastos: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await getCategorias();
-      console.log('Resposta da API getCategorias:', response);
       
-      // Se a resposta tiver a estrutura { success, data }, extrai os dados
       let data = response;
       if (response && typeof response === 'object' && 'data' in response) {
         data = response.data;
       }
       
       setCategorias(Array.isArray(data) ? data : []);
-      console.log('Categorias carregadas:', data);
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
       showToast(t('pages.expenses.errorLoadingCategories'), 'danger');
@@ -96,7 +88,6 @@ const Gastos: React.FC = () => {
     try {
       const response = await createCategoria(newCategoria.nome);
       
-      // Usa a mensagem da API
       showToast(response.message || t('pages.expenses.categoryCreatedSuccess'), response.success ? 'success' : 'danger');
       
       if (response.success) {
@@ -128,24 +119,14 @@ const Gastos: React.FC = () => {
   const handleConfirmMigrate = () => {
     if (!selectedCategoria || !migrateParaId) return;
 
-    console.log('Iniciando migração:', { 
-      sourceId: selectedCategoria.id, 
-      targetId: migrateParaId,
-      sourceName: selectedCategoria.name,
-      typesCount: selectedCategoria.expensesTypesCount
-    });
-
     deleteCategoria(selectedCategoria.id, migrateParaId)
       .then(response => {
-        console.log('Resposta da migração:', response);
         showToast(response.message, response.success ? 'success' : 'danger');
         
-        // Fecha o modal e limpa os estados
         setShowMigrateModal(false);
         setSelectedCategoria(null);
         setMigrateParaId(null);
         
-        // Força recarga completa da página para garantir renderização
         setTimeout(() => {
           window.location.reload();
         }, 200);
@@ -154,12 +135,10 @@ const Gastos: React.FC = () => {
         console.error('Erro ao migrar categoria:', error);
         showToast(t('pages.expenses.errorMigratingCategory'), 'danger');
         
-        // Mesmo com erro, fecha o modal e limpa os estados
         setShowMigrateModal(false);
         setSelectedCategoria(null);
         setMigrateParaId(null);
         
-        // Força recarga mesmo com erro
         setTimeout(() => {
           window.location.reload();
         }, 200);
@@ -174,13 +153,8 @@ const Gastos: React.FC = () => {
   const handleConfirmDeleteAll = () => {
     if (!selectedCategoria) return;
 
-    console.log('Excluindo categoria com tipos:', selectedCategoria.id);
-    
     deleteCategoria(selectedCategoria.id)
       .then(response => {
-        console.log('Resposta da exclusão:', response);
-        
-        // Usa a mensagem da API
         showToast(response.message || t('pages.expenses.categoryDeletedSuccess'), response.success ? 'success' : 'danger');
         
         if (response.success) {
@@ -198,13 +172,8 @@ const Gastos: React.FC = () => {
   const handleDeleteEmpty = () => {
     if (!selectedCategoria) return;
 
-    console.log('Excluindo categoria vazia:', selectedCategoria.id);
-
     deleteCategoria(selectedCategoria.id)
       .then(response => {
-        console.log('Resposta da exclusão:', response);
-        
-        // Usa a mensagem da API
         showToast(response.message || t('pages.expenses.categoryDeletedSuccess'), response.success ? 'success' : 'danger');
         
         if (response.success) {
@@ -220,13 +189,7 @@ const Gastos: React.FC = () => {
   };
 
   const handleEditCategoria = (categoria: CategoriaGasto) => {
-    // Navegar para página de edição
     history.push(`/manager/gastos/${categoria.id}/editar`);
-  };
-
-  const handleDetalhes = (categoria: CategoriaGasto) => {
-    // Navegar para página de detalhes sem mostrar toast
-    history.push(`/manager/gastos/${categoria.id}/detalhes`);
   };
 
   const outrasCategorias = categorias.filter(cat => cat.id !== selectedCategoria?.id);
@@ -234,7 +197,6 @@ const Gastos: React.FC = () => {
   useEffect(() => {
     loadCategorias();
     
-    // Configurar o refresher
     const setupRefresher = () => {
       const refresher = document.getElementById('gastos-refresher') as HTMLIonRefresherElement;
       if (refresher) {
@@ -245,14 +207,13 @@ const Gastos: React.FC = () => {
       }
     };
 
-    // Usar setTimeout para garantir que o DOM esteja pronto
     setTimeout(setupRefresher, 100);
   }, []);
 
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
           <IonTitle>{t('pages.expenses.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -260,7 +221,7 @@ const Gastos: React.FC = () => {
         <IonRefresher slot="fixed" id="gastos-refresher">
           <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
-        <div style={{ padding: '16px' }}>
+        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
           {isLoading ? (
             <div style={{ 
               display: 'flex', 
@@ -271,77 +232,85 @@ const Gastos: React.FC = () => {
               gap: '16px'
             }}>
               <IonSpinner name="dots" />
-              <p style={{ color: '#666', fontSize: '14px' }}>{t('pages.expenses.loadingExpenses')}</p>
+              <p style={{ color: '#999', fontSize: '14px' }}>{t('pages.expenses.loadingExpenses')}</p>
             </div>
           ) : (
             <>
-              <IonButton 
-                expand="block" 
-                shape="round" 
+              <PrimaryButton
                 onClick={() => setShowCreateModal(true)}
-                style={{ marginBottom: '16px' }}
-              >
-                <IonIcon slot="start" icon={add} />
-                {t('pages.expenses.addCategory')}
-              </IonButton>
+                label={t('pages.expenses.addCategory')}
+                icon={addCircle}
+              />
 
               {categorias.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px' }}>
-                  <p>{t('pages.expenses.noCategoriesFound')}</p>
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  backgroundColor: '#fff',
+                  borderRadius: '16px',
+                  marginTop: '8px'
+                }}>
+                  <p style={{ color: '#999', margin: 0, fontSize: '15px' }}>{t('pages.expenses.noCategoriesFound')}</p>
                 </div>
               ) : (
                 categorias.map((categoria) => (
-                <IonCard 
-                  key={categoria.id} 
+                <div
+                  key={categoria.id}
                   style={{ 
                     marginBottom: '16px',
-                    borderRadius: '12px'
+                    backgroundColor: '#fff',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                    position: 'relative',
+                    overflow: 'hidden'
                   }}
                 >
-                  <IonCardHeader>
-                    <IonCardTitle>{categoria.name}</IonCardTitle>
-                  </IonCardHeader>
-                  <IonCardContent>
-                    <IonGrid>
-                      <IonRow>
-                        <IonCol size="12">
-                          <IonItem>
-                            <IonLabel>
-                              <h3>{t('pages.expenses.expenseTypes')} {categoria.expensesTypesCount}</h3>
-                            </IonLabel>
-                          </IonItem>
-                        </IonCol>
-                      </IonRow>
-                      <IonRow>
-                        <IonCol size="3">
-                          <IonButton
-                            fill="clear"
-                            onClick={() => handleEditCategoria(categoria)}
-                          >
-                            <IonIcon icon={create} />
-                          </IonButton>
-                        </IonCol>
-                        {/* <IonCol size="3">
-                          <IonButton
-                            fill="clear"
-                            onClick={() => handleDetalhes(categoria)}
-                          >
-                            <IonIcon icon={eye} />
-                          </IonButton>
-                        </IonCol> */}
-                        <IonCol size="3">
-                          <IonButton
-                            fill="clear"
-                            color="danger"
-                            onClick={() => handleDeleteClick(categoria)}
-                          >
-                            <IonIcon icon={trash} />
-                          </IonButton>
-                        </IonCol>
-                      </IonRow>
-                    </IonGrid>
-                  </IonCardContent>
-                </IonCard>
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '4px',
+                    height: '100%',
+                    backgroundColor: '#098947',
+                    borderRadius: '16px 0 0 16px'
+                  }} />
+                  
+                  <div style={{ paddingLeft: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <h2 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#262626' }}>
+                        {categoria.name}
+                      </h2>
+                    </div>
+
+                    <InfoRow
+                      label={t('pages.expenses.expenseTypes')}
+                      value={categoria.expensesTypesCount?.toString() || '0'}
+                    />
+
+                    <div style={{
+                      display: 'flex',
+                      gap: '8px',
+                      marginTop: '14px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <ActionButton
+                        icon={create}
+                        label={t('common.edit')}
+                        onClick={() => handleEditCategoria(categoria)}
+                        backgroundColor="#f0f7ff"
+                        color="#0066cc"
+                      />
+                      <ActionButton
+                        icon={trash}
+                        label={t('common.delete')}
+                        onClick={() => handleDeleteClick(categoria)}
+                        backgroundColor="#fff0f0"
+                        color="#dc3545"
+                      />
+                    </div>
+                  </div>
+                </div>
                 ))
               )}
             </>
@@ -350,33 +319,23 @@ const Gastos: React.FC = () => {
 
         {/* Modal Criar Categoria */}
         <IonModal isOpen={showCreateModal} onDidDismiss={() => setShowCreateModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('pages.expenses.addCategory')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowCreateModal(false)}>{t('common.close')}</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <GreenHeader
+            title={t('pages.expenses.addCategory')}
+            onClose={() => setShowCreateModal(false)}
+            
+          />
           <IonContent>
-            <div style={{ padding: '16px' }}>
-              <IonItem>
-                <IonInput
-                  label={t('pages.expenses.name')}
-                  labelPlacement="floating"
-                  placeholder={t('pages.expenses.namePlaceholder')}
-                  value={newCategoria.nome}
-                  onIonInput={(e: any) => setNewCategoria({ ...newCategoria, nome: e.detail.value! })}
-                />
-              </IonItem>
-              <IonButton 
-                expand="block" 
-                shape="round"
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+              <StyledInput
+                label={t('pages.expenses.name')}
+                placeholder={t('pages.expenses.namePlaceholder')}
+                value={newCategoria.nome}
+                onIonInput={(e: any) => setNewCategoria({ ...newCategoria, nome: e.detail.value! })}
+              />
+              <PrimaryButton
                 onClick={handleCreateCategoria}
-                style={{ marginTop: '16px' }}
-              >
-                {t('pages.expenses.save')}
-              </IonButton>
+                label={t('pages.expenses.save')}
+              />
             </div>
           </IonContent>
         </IonModal>
@@ -406,54 +365,42 @@ const Gastos: React.FC = () => {
 
         {/* Modal Migrar */}
         <IonModal isOpen={showMigrateModal} onDidDismiss={() => setShowMigrateModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('pages.expenses.migrate')} {t('pages.expenses.title')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowMigrateModal(false)}>{t('common.cancel')}</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <GreenHeader
+            title={`${t('pages.expenses.migrate')} ${t('pages.expenses.title')}`}
+            onClose={() => setShowMigrateModal(false)}
+            
+          />
           <IonContent>
-            <div style={{ padding: '16px' }}>
-              <IonItem>
-                <IonLabel>
-                  <h2>{t('pages.expenses.migrate')} {selectedCategoria?.expensesTypesCount || 0} {t('pages.expenses.title')} {t('pages.expenses.title')} {selectedCategoria?.name}</h2>
-                </IonLabel>
-              </IonItem>
-              
-              <div style={{ 
-                padding: '12px', 
-                margin: '16px 0', 
-                backgroundColor: '#fee', 
-                border: '1px solid #fcc', 
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+              <div style={{
+                padding: '12px',
+                margin: '0 0 16px',
+                backgroundColor: '#fee',
+                border: '1px solid #fcc',
                 borderRadius: '8px',
                 color: '#c00'
               }}>
-                <p style={{ margin: 0, fontSize: '14px' }}>
+                <p style={{ margin: 0, fontSize: '13px' }}>
                   <strong>{t('common.attention')}:</strong> {t('pages.expenses.migrateWarning').replace('{categoryName}', selectedCategoria?.name || '')}
                 </p>
               </div>
-              
+
               <IonRadioGroup value={migrateParaId} onIonChange={(e: any) => setMigrateParaId(e.detail.value)}>
                 {outrasCategorias.map((categoria) => (
-                  <IonItem key={categoria.id}>
+                  <IonItem key={categoria.id} style={{ '--border-radius': '12px', marginBottom: '4px' }}>
                     <IonRadio value={categoria.id} slot="start" />
                     <IonLabel>{categoria.name}</IonLabel>
                   </IonItem>
                 ))}
               </IonRadioGroup>
-              
-              <IonButton 
-                expand="block" 
-                shape="round"
+
+              <PrimaryButton
                 onClick={handleConfirmMigrate}
+                label={t('pages.expenses.migrate')}
+                icon={arrowForward}
                 disabled={!migrateParaId}
                 style={{ marginTop: '16px' }}
-              >
-                <IonIcon slot="start" icon={arrowForward} />
-                {t('pages.expenses.migrate')}
-              </IonButton>
+              />
             </div>
           </IonContent>
         </IonModal>

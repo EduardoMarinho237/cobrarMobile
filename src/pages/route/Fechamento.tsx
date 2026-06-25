@@ -5,21 +5,13 @@ import {
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
+  IonIcon,
   IonButton,
   IonAlert,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonIcon,
   IonRefresher,
-  IonRefresherContent,
-  IonSpinner
+  IonRefresherContent
 } from '@ionic/react';
-import { cashOutline, peopleOutline, walletOutline, lockClosed, refresh, saveOutline } from 'ionicons/icons';
+import { cashOutline, peopleOutline, walletOutline, lockClosed, saveOutline } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
 import {
   getFechamentoData,
@@ -27,44 +19,79 @@ import {
   FechamentoData
 } from '../../services/fechamentoApi';
 import { getMyBalance } from '../../services/cashBoxApi';
-import { generateRouteDailyTodayReport } from '../../services/reportApi';
-import { buildDailyRoutePdf } from '../../utils/buildDailyRoutePdf';
-import PdfViewerModal from '../../components/PdfViewerModal';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
-import { useFechamentoControl } from '../../hooks/useFechamentoControl';
-import type jsPDF from 'jspdf';
+
+interface CardSectionProps {
+  icon: string;
+  label: string;
+  value: string;
+  valueColor?: string;
+  borderColor?: string;
+  subtitle?: string;
+  extraInfo?: string;
+}
+
+const CardSection: React.FC<CardSectionProps> = ({ icon, label, value, valueColor = '#262626', borderColor, subtitle, extraInfo }) => (
+  <div style={{
+    backgroundColor: '#fff',
+    borderRadius: '16px',
+    marginBottom: '16px',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+    overflow: 'hidden',
+    borderLeft: `4px solid ${borderColor || '#098947'}`,
+  }}>
+    <div style={{ padding: '16px 20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+        <div style={{
+          width: '36px',
+          height: '36px',
+          borderRadius: '10px',
+          backgroundColor: `${borderColor || '#098947'}15`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <IonIcon icon={icon} style={{ fontSize: '18px', color: borderColor || '#098947' }} />
+        </div>
+        <span style={{ fontSize: '14px', fontWeight: 600, color: '#555' }}>
+          {label}
+        </span>
+      </div>
+      <p style={{
+        fontSize: '24px',
+        fontWeight: 700,
+        color: valueColor,
+        margin: '0 0 0 44px',
+      }}>
+        {value}
+      </p>
+      {subtitle && (
+        <p style={{ fontSize: '12px', color: '#999', margin: '4px 0 0 44px' }}>
+          {subtitle}
+        </p>
+      )}
+      {extraInfo && (
+        <p style={{ fontSize: '12px', color: '#999', margin: '2px 0 0 44px' }}>
+          {extraInfo}
+        </p>
+      )}
+    </div>
+  </div>
+);
 
 const Fechamento: React.FC = () => {
   const { t } = useTranslation();
-  const { diaFechado, carregando, verificando, verificarStatus } = useFechamentoControl(); // Usar hook para status de fechamento
-  
-  // Estado visual: mantém o estado atual durante a verificação
-  const [estadoVisual, setEstadoVisual] = useState(diaFechado);
-  
-  // Atualiza o estado visual quando o hook muda (mas não durante verificação)
-  useEffect(() => {
-    if (!verificando) {
-      setEstadoVisual(diaFechado);
-    }
-  }, [diaFechado, verificando]);
+
   const [fechamentoData, setFechamentoData] = useState<FechamentoData | null>(null);
   const [cashBalance, setCashBalance] = useState<number>(0);
   const [showConfirmAlert, setShowConfirmAlert] = useState(false);
-  const [showBloqueadoAlert, setShowBloqueadoAlert] = useState(false);
-  const [isClosingWithReport, setIsClosingWithReport] = useState(false);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
-  const [pdfDoc, setPdfDoc] = useState<jsPDF | null>(null);
-  const [pdfFileName, setPdfFileName] = useState('');
-  const [showPdfViewer, setShowPdfViewer] = useState(false);
 
   useEffect(() => {
     loadFechamentoData();
     loadCashBalance();
-    // REMOVIDO: Não verifica mais status via API
-    // O status agora vem do hook useFechamentoControl baseado no usuário logado
 
-    // Configurar o refresher
     const setupRefresher = () => {
       const refresher = document.getElementById('fechamento-refresher') as HTMLIonRefresherElement;
       if (refresher) {
@@ -76,7 +103,6 @@ const Fechamento: React.FC = () => {
       }
     };
 
-    // Usar setTimeout para garantir que o DOM esteja pronto
     setTimeout(setupRefresher, 100);
   }, []);
 
@@ -110,7 +136,7 @@ const Fechamento: React.FC = () => {
     try {
       const response = await fecharDia();
       showToast(response.message, response.success ? 'success' : 'danger');
-      
+
       if (response.success) {
         setTimeout(() => {
           window.location.replace('/route/fechamento');
@@ -120,244 +146,130 @@ const Fechamento: React.FC = () => {
       showToast(t('pages.closing.errorClosingDay'), 'danger');
     }
   };
-
-  const confirmarFecharDiaComRelatorio = async () => {
-    setIsClosingWithReport(true);
-    try {
-      const response = await fecharDia();
-      showToast(response.message, response.success ? 'success' : 'danger');
-      
-      if (response.success) {
-        try {
-          const { report } = await generateRouteDailyTodayReport();
-          const doc = buildDailyRoutePdf(report, t);
-          const fileName = `relatorio-diario-${report.periodStart}.pdf`;
-          setPdfDoc(doc);
-          setPdfFileName(fileName);
-          setShowPdfViewer(true);
-        } catch (reportError) {
-          console.error('Erro ao gerar relatório do dia:', reportError);
-          showToast(t('pages.closing.reportGenerationError'), 'danger');
-        }
-        setTimeout(() => {
-          window.location.replace('/route/fechamento');
-        }, 1000);
-      }
-    } catch (error) {
-      showToast(t('pages.closing.errorClosingDay'), 'danger');
-    } finally {
-      setIsClosingWithReport(false);
-    }
-  };
-
-  const handleAcessoBloqueado = () => {
-    setShowBloqueadoAlert(true);
-  };
-
-  const handleVerificarLiberacao = async () => {
-    try {
-      // Usa a função do hook para verificar status na API
-      await verificarStatus();
-      
-      // Mostra mensagem de sucesso
-      showToast(t('pages.closing.verifyingLiberation'), 'primary');
-      
-      // Se o dia foi aberto, a interface vai atualizar automaticamente
-      // Se ainda estiver fechado, continua mostrando a tela de bloqueio
-    } catch (error) {
-      showToast(t('pages.closing.errorVerifyingLiberation'), 'danger');
-    }
-  };
-
-
-  if (estadoVisual) {
-    return (
-      <IonPage>
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>{t('pages.closing.title')}</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent fullscreen>
-          <div style={{ padding: '16px' }}>
-            <IonCard style={{ borderRadius: '12px', textAlign: 'center' }}>
-              <IonCardContent>
-                <IonIcon 
-                  icon={lockClosed} 
-                  style={{ fontSize: '64px', color: '#dc3545', marginBottom: '16px' }}
-                />
-                <h2 style={{ color: '#dc3545', marginBottom: '16px' }}>
-                  {t('pages.closing.dayClosed')}
-                </h2>
-                <p style={{ color: '#666', marginBottom: '16px' }}>
-                  {t('pages.closing.blockedMessage')}
-                </p>
-                <p style={{ color: '#666', fontSize: '14px' }}>
-                  {t('pages.closing.onlyAvailableTabs')}
-                </p>
-                <IonButton
-                  expand="block"
-                  shape="round"
-                  fill="outline"
-                  onClick={handleVerificarLiberacao}
-                  disabled={verificando || carregando}
-                  style={{ marginTop: '16px' }}
-                >
-                  <IonIcon icon={refresh} slot="start" />
-                  {verificando || carregando ? t('pages.closing.verifying') : t('pages.closing.verifyLiberation')}
-                </IonButton>
-              </IonCardContent>
-            </IonCard>
-          </div>
-
-          <IonAlert
-            isOpen={showBloqueadoAlert}
-            onDidDismiss={() => setShowBloqueadoAlert(false)}
-            header={t('pages.closing.systemBlocked')}
-            message={t('pages.closing.blockedMessage')}
-            buttons={[
-              {
-                text: t('config.understood'),
-                role: 'cancel'
-              }
-            ]}
-          />
-
-          <Toast
-            isOpen={toast.isOpen}
-            message={toast.message}
-            color={toast.color}
-            onDidDismiss={() => setToast({ ...toast, isOpen: false })}
-          />
-        </IonContent>
-      </IonPage>
-    );
-  }
 
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
           <IonTitle>{t('pages.closing.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent fullscreen>
+      <IonContent>
         <IonRefresher slot="fixed" id="fechamento-refresher">
-          <IonRefresherContent></IonRefresherContent>
+          <IonRefresherContent />
         </IonRefresher>
-        <div style={{ padding: '16px' }}>
+        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
           {fechamentoData && (
             <>
-              {/* Card de Saldo em Caixa */}
-              <IonCard style={{ marginBottom: '16px', borderRadius: '12px', border: `2px solid ${cashBalance >= 0 ? '#28a745' : '#dc3545'}` }}>
-                <IonCardHeader>
-                  <IonCardTitle>
-                    <IonIcon icon={saveOutline} style={{ marginRight: '8px' }} />
-                    {t('pages.closing.cashBoxTitle')}
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <h2 style={{ textAlign: 'center', color: cashBalance >= 0 ? '#28a745' : '#dc3545', margin: '0', fontSize: '28px', fontWeight: 'bold' }}>
-                    {formatCurrencyWithSymbol(cashBalance)}
-                  </h2>
-                  <p style={{ textAlign: 'center', color: '#666', marginTop: '8px', fontSize: '14px' }}>
-                    {cashBalance >= 0 ? t('pages.closing.cashBoxPositive') : t('pages.closing.cashBoxNegative')}
-                  </p>
-                  {fechamentoData && (
-                    <p style={{ textAlign: 'center', color: '#888', marginTop: '4px', fontSize: '12px' }}>
-                      {t('pages.closing.initialBalance')}: {formatCurrencyWithSymbol(fechamentoData.caixaInicial)}
+              <CardSection
+                icon={saveOutline}
+                label={t('pages.closing.cashBoxTitle')}
+                value={formatCurrencyWithSymbol(cashBalance)}
+                valueColor={cashBalance >= 0 ? '#098947' : '#dc3545'}
+                borderColor={cashBalance >= 0 ? '#098947' : '#dc3545'}
+                subtitle={cashBalance >= 0 ? t('pages.closing.cashBoxPositive') : t('pages.closing.cashBoxNegative')}
+                extraInfo={`${t('pages.closing.initialBalance')}: ${formatCurrencyWithSymbol(fechamentoData.caixaInicial)}`}
+              />
+
+              <CardSection
+                icon={cashOutline}
+                label={t('pages.closing.collectionExpectation')}
+                value={formatCurrencyWithSymbol(fechamentoData.expectativaArrecadacao)}
+                valueColor="#098947"
+                borderColor="#098947"
+              />
+
+              <CardSection
+                icon={walletOutline}
+                label={t('pages.closing.dayCollection')}
+                value={formatCurrencyWithSymbol(fechamentoData.arrecadacaoDia)}
+                valueColor="#098947"
+                borderColor="#098947"
+              />
+
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                <div style={{
+                  flex: 1,
+                  backgroundColor: '#fff',
+                  borderRadius: '16px',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                  overflow: 'hidden',
+                  borderLeft: '4px solid #6f42c1',
+                }}>
+                  <div style={{ padding: '14px 16px' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      backgroundColor: '#6f42c115',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: '10px',
+                    }}>
+                      <IonIcon icon={peopleOutline} style={{ fontSize: '16px', color: '#6f42c1' }} />
+                    </div>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#555', display: 'block', marginBottom: '6px' }}>
+                      {t('pages.closing.collectedClients')}
+                    </span>
+                    <p style={{ fontSize: '22px', fontWeight: 700, color: '#6f42c1', margin: 0 }}>
+                      {fechamentoData.clientesCobrados}/{fechamentoData.activeClientsCount}
                     </p>
-                  )}
-                </IonCardContent>
-              </IonCard>
+                  </div>
+                </div>
+                <div style={{
+                  flex: 1,
+                  backgroundColor: '#fff',
+                  borderRadius: '16px',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                  overflow: 'hidden',
+                  borderLeft: '4px solid #dc3545',
+                }}>
+                  <div style={{ padding: '14px 16px' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      backgroundColor: '#dc354515',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: '10px',
+                    }}>
+                      <IonIcon icon={walletOutline} style={{ fontSize: '16px', color: '#dc3545' }} />
+                    </div>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#555', display: 'block', marginBottom: '6px' }}>
+                      {t('pages.closing.dayExpenses')}
+                    </span>
+                    <p style={{ fontSize: '22px', fontWeight: 700, color: '#dc3545', margin: 0 }}>
+                      {formatCurrencyWithSymbol(fechamentoData.gastosDia)}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-              {/* Card de Expectativa */}
-              <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
-                <IonCardHeader>
-                  <IonCardTitle>
-                    <IonIcon icon={cashOutline} style={{ marginRight: '8px' }} />
-                    {t('pages.closing.collectionExpectation')}
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <h2 style={{ textAlign: 'center', color: '#28a745', margin: '0' }}>
-                    {formatCurrencyWithSymbol(fechamentoData.expectativaArrecadacao)}
-                  </h2>
-                </IonCardContent>
-              </IonCard>
-
-              {/* Card de Arrecadação */}
-              <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
-                <IonCardHeader>
-                  <IonCardTitle>
-                    <IonIcon icon={walletOutline} style={{ marginRight: '8px' }} />
-                    {t('pages.closing.dayCollection')}
-                  </IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <h2 style={{ textAlign: 'center', color: '#007bff', margin: '0' }}>
-                    {formatCurrencyWithSymbol(fechamentoData.arrecadacaoDia)}
-                  </h2>
-                </IonCardContent>
-              </IonCard>
-
-              {/* Cards de Clientes e Gastos */}
-              <IonGrid>
-                <IonRow>
-                  <IonCol size="6">
-                    <IonCard style={{ borderRadius: '12px' }}>
-                      <IonCardHeader>
-                        <IonCardTitle style={{ fontSize: '16px' }}>
-                          <IonIcon icon={peopleOutline} style={{ marginRight: '8px' }} />
-                          {t('pages.closing.collectedClients')}
-                        </IonCardTitle>
-                      </IonCardHeader>
-                      <IonCardContent>
-                        <h3 style={{ textAlign: 'center', color: '#6f42c1', margin: '0' }}>
-                          {fechamentoData.clientesCobrados}
-                        </h3>
-                      </IonCardContent>
-                    </IonCard>
-                  </IonCol>
-                  <IonCol size="6">
-                    <IonCard style={{ borderRadius: '12px' }}>
-                      <IonCardHeader>
-                        <IonCardTitle style={{ fontSize: '16px' }}>
-                          <IonIcon icon={walletOutline} style={{ marginRight: '8px' }} />
-                          {t('pages.closing.dayExpenses')}
-                        </IonCardTitle>
-                      </IonCardHeader>
-                      <IonCardContent>
-                        <h3 style={{ textAlign: 'center', color: '#dc3545', margin: '0' }}>
-                          {formatCurrencyWithSymbol(fechamentoData.gastosDia)}
-                        </h3>
-                      </IonCardContent>
-                    </IonCard>
-                  </IonCol>
-                </IonRow>
-              </IonGrid>
-
-              {/* Botão Fechar Dia */}
               <IonButton
                 expand="block"
-                shape="round"
-                color="danger"
                 onClick={handleFecharDia}
-                disabled={isClosingWithReport}
-                style={{ marginTop: '24px' }}
+                style={{
+                  '--background': '#dc3545',
+                  '--background-hover': '#c82333',
+                  '--border-radius': '14px',
+                  '--padding-top': '16px',
+                  '--padding-bottom': '16px',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '16px',
+                  marginTop: '8px',
+                }}
               >
-                {isClosingWithReport ? (
-                  <IonSpinner name="dots" slot="start" />
-                ) : (
-                  <IonIcon icon={lockClosed} slot="start" />
-                )}
-                {isClosingWithReport ? t('pages.closing.closing') : t('pages.closing.closeDay')}
+                <IonIcon icon={lockClosed} slot="start" />
+                {t('pages.closing.closeDay')}
               </IonButton>
             </>
           )}
         </div>
 
-        {/* Alert de Confirmação */}
         <IonAlert
           isOpen={showConfirmAlert}
           onDidDismiss={() => setShowConfirmAlert(false)}
@@ -372,23 +284,10 @@ const Fechamento: React.FC = () => {
               text: t('pages.closing.closeDay'),
               role: 'destructive',
               handler: confirmarFecharDia
-            },
-            {
-              text: t('pages.closing.closeDayAndDownloadReport'),
-              handler: confirmarFecharDiaComRelatorio
             }
           ]}
         />
 
-        <PdfViewerModal
-          isOpen={showPdfViewer}
-          onClose={() => setShowPdfViewer(false)}
-          doc={pdfDoc}
-          fileName={pdfFileName}
-          title={t('pages.reports.dailyReport')}
-        />
-
-        {/* Toast */}
         <Toast
           isOpen={toast.isOpen}
           message={toast.message}

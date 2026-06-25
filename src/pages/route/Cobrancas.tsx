@@ -2,31 +2,17 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   IonContent,
   IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonItem,
-  IonLabel,
   IonButton,
+  IonItem,
   IonModal,
-  IonButtons,
   IonIcon,
   IonAlert,
   IonRefresher,
   IonRefresherContent,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonSpinner,
   IonInput,
-  IonCheckbox,
-  IonText
+  IonSpinner,
 } from '@ionic/react';
-import { create, refresh, cashOutline, personOutline, locationOutline, callOutline, timeOutline, searchOutline, close } from 'ionicons/icons';
+import { cashOutline, locationOutline, callOutline, timeOutline, searchOutline, close, arrowUndo, warning } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { formatToBrazilTime } from '../../utils/dateFormat';
 import { 
@@ -49,6 +35,19 @@ import { matchesSearchQuery, collectSearchableValues } from '../../utils/listSea
 import { useTranslation } from 'react-i18next';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useInView } from 'react-intersection-observer';
+import GreenHeader from '../../components/ui/GreenHeader';
+import PrimaryButton from '../../components/ui/PrimaryButton';
+import InfoRow from '../../components/ui/InfoRow';
+import ActionButton from '../../components/ui/ActionButton';
+
+const inputStyle = {
+  '--background': '#f5f5f5',
+  '--border-radius': '12px',
+  '--padding-start': '16px',
+  '--inner-padding-end': '16px',
+  '--min-height': '52px',
+  marginBottom: '8px',
+} as any;
 
 const Cobrancas: React.FC = () => {
   const { t } = useTranslation();
@@ -71,7 +70,6 @@ const Cobrancas: React.FC = () => {
   const [creditHistory, setCreditHistory] = useState<CreditHistoryEntry[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
-  // Estados para o rodapé de débitos de hoje
   const [todayTotal, setTodayTotal] = useState<number>(0);
   const [showTodayDebitsModal, setShowTodayDebitsModal] = useState(false);
   const [todayDebits, setTodayDebits] = useState<Debit[]>([]);
@@ -86,16 +84,12 @@ const Cobrancas: React.FC = () => {
     isLoadingAll,
     hasMore,
     loadMore,
-    refresh,
+    refresh: refreshPayments,
     loadAllPages,
   } = useInfiniteScroll<PendingPayment>({
     fetchPage: async (page, size) => {
       const response = await getPendingCollectionsPaginated(page, size);
-      return {
-        content: response.content,
-        last: response.last,
-        totalElements: response.totalElements,
-      };
+      return { content: response.content, last: response.last, totalElements: response.totalElements };
     },
     pageSize: 30,
   });
@@ -103,93 +97,54 @@ const Cobrancas: React.FC = () => {
   const { ref: sentinelRef, inView } = useInView({ threshold: 0 });
 
   useEffect(() => {
-    if (inView && hasMore && !isLoading && !isLoadingMore) {
-      loadMore();
-    }
+    if (inView && hasMore && !isLoading && !isLoadingMore) loadMore();
   }, [inView, hasMore, isLoading, isLoadingMore, loadMore]);
 
   const hasLoadedAllForSearch = useRef(false);
   const prevSearchQuery = useRef('');
 
   useEffect(() => {
-    if (searchQuery && !hasLoadedAllForSearch.current) {
-      hasLoadedAllForSearch.current = true;
-      loadAllPages();
-    }
-    if (!searchQuery && prevSearchQuery.current) {
-      hasLoadedAllForSearch.current = false;
-      refresh();
-    }
+    if (searchQuery && !hasLoadedAllForSearch.current) { hasLoadedAllForSearch.current = true; loadAllPages(); }
+    if (!searchQuery && prevSearchQuery.current) { hasLoadedAllForSearch.current = false; refreshPayments(); }
     prevSearchQuery.current = searchQuery;
   }, [searchQuery]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const getDebtColor = (payment: PendingPayment): string => {
     const daysLate = payment.overdueInstallmentsCount ?? 0;
-
-    if (!payment.hasOverdueInstallments || daysLate === 0) {
-      return '#3963db'; // azul
-    }
-
-    if (daysLate <= 3) {
-      return '#fac002'; // amarelo
-    }
-
-    if (daysLate <= 7) {
-      return '#ff7300'; // laranja
-    }
-
-    return '#da0d28'; // vermelho
-  };  
+    if (!payment.hasOverdueInstallments || daysLate === 0) return '#098947';
+    if (daysLate <= 3) return '#fac002';
+    if (daysLate <= 7) return '#ff7300';
+    return '#da0d28';
+  };
 
   const loadData = async () => {
     try {
       const scheduleData = await getDailySchedule();
       setDailySchedule(scheduleData);
-      if (searchQuery) {
-        hasLoadedAllForSearch.current = false;
-        await loadAllPages();
-      } else {
-        await refresh();
-      }
+      if (searchQuery) { hasLoadedAllForSearch.current = false; await loadAllPages(); }
+      else await refreshPayments();
       await loadTodayTotal();
-    } catch (error: any) {
-      console.error('Erro ao carregar agenda diária:', error);
-      showToast(error.message || t('pages.collections.errorLoadingSchedule'), 'danger');
-      setDailySchedule({
-        pendingPayments: [],
-        dailyExpectation: 0,
-        collectedToday: 0,
-        remainingToCollect: 0
-      });
+    } catch {
+      showToast(t('pages.collections.errorLoadingSchedule'), 'danger');
+      setDailySchedule({ pendingPayments: [], dailyExpectation: 0, collectedToday: 0, remainingToCollect: 0 });
     }
   };
 
   const loadTodayTotal = async () => {
-    try {
-      const total = await getTodayDebitsTotal();
-      setTodayTotal(total);
-    } catch (error) {
-      console.error('Erro ao carregar total de débitos de hoje:', error);
-    }
+    try { const total = await getTodayDebitsTotal(); setTodayTotal(total); }
+    catch { console.error('Erro loading today debits total'); }
   };
 
   const loadTodayDebits = async () => {
     setIsLoadingTodayDebits(true);
     try {
       const response = await getTodayDebitsPaginated(0, 1000);
-      const sorted = [...response.content].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      const sorted = [...response.content].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setTodayDebits(sorted);
-    } catch (error) {
-      console.error('Erro ao carregar débitos de hoje:', error);
-    } finally {
-      setIsLoadingTodayDebits(false);
-    }
+    } catch { console.error('Erro loading today debits'); }
+    finally { setIsLoadingTodayDebits(false); }
   };
 
   const openTodayDebitsModal = async () => {
@@ -204,7 +159,6 @@ const Cobrancas: React.FC = () => {
 
   const confirmUndoFromModal = async () => {
     if (!selectedDebitModal) return;
-
     try {
       const response = await undoDebit(selectedDebitModal.id);
       if (response.success) {
@@ -216,37 +170,22 @@ const Cobrancas: React.FC = () => {
       } else {
         showToast(response.message || t('pages.collected.errorUndoingDebit'), 'danger');
       }
-    } catch (error) {
-      showToast(t('pages.collected.errorUndoingDebit'), 'danger');
-    }
+    } catch { showToast(t('pages.collected.errorUndoingDebit'), 'danger'); }
   };
 
-  const showToast = (message: string, color: string) => {
-    setToast({ isOpen: true, message, color });
-  };
+  const showToast = (message: string, color: string) => setToast({ isOpen: true, message, color });
 
   const handlePayment = async (payment: PendingPayment) => {
     const currentValue = editedValues[payment.creditId] ?? payment.installmentValue;
-
-    if (currentValue <= 0) {
-      showToast(t('pages.collections.valueMustBeGreaterThanZero'), 'danger');
-      return;
-    }
-
+    if (currentValue <= 0) { showToast(t('pages.collections.valueMustBeGreaterThanZero'), 'danger'); return; }
     try {
       const credit = await getCredit(payment.creditId);
-      if (!credit) {
-        showToast(t('pages.collections.errorRegisteringPayment'), 'danger');
-        return;
-      }
-
+      if (!credit) { showToast(t('pages.collections.errorRegisteringPayment'), 'danger'); return; }
       setSelectedPayment(payment);
       setPaymentCredit(credit);
       setEditedValues(prev => ({ ...prev, [payment.creditId]: currentValue }));
       setShowPaymentModal(true);
-    } catch (error) {
-      showToast(t('pages.collections.errorRegisteringPayment'), 'danger');
-    }
+    } catch { showToast(t('pages.collections.errorRegisteringPayment'), 'danger'); }
   };
 
   const getPaymentValue = () => {
@@ -254,17 +193,9 @@ const Cobrancas: React.FC = () => {
     return editedValues[selectedPayment.creditId] ?? selectedPayment.installmentValue;
   };
 
-  const calculateInitialDebt = (credit: Credit) => {
-    return credit.initialValue + (credit.initialValue * credit.tax / 100);
-  };
+  const calculateInitialDebt = (credit: Credit) => credit.initialValue + (credit.initialValue * credit.tax / 100);
 
-const buildWhatsAppMessage = (
-  clientName: string,
-  amountPaid: number,
-  initialDebt: number,
-  remainingDebt: number,
-  transactionId: string | number
-) => {
+  const buildWhatsAppMessage = (clientName: string, amountPaid: number, initialDebt: number, remainingDebt: number, transactionId: string | number) => {
     return [
       `${t('pages.collections.whatsappShareClientName')}: ${clientName}`,
       `${t('pages.collections.whatsappShareAmountPaid')}: ${formatCurrencyWithSymbol(amountPaid)}`,
@@ -275,8 +206,7 @@ const buildWhatsAppMessage = (
   };
 
   const openWhatsAppShare = (message: string) => {
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const closePaymentModal = () => {
@@ -287,40 +217,21 @@ const buildWhatsAppMessage = (
 
   const confirmPayment = async (shareOnWhatsApp: boolean) => {
     if (!selectedPayment || !paymentCredit || isProcessingPayment) return;
-
     const paidValue = getPaymentValue();
-    const debitRequest: CreateDebitRequest = {
-      value: paidValue,
-      creditId: selectedPayment.creditId,
-      changeAllDays: false
-    };
-
+    const debitRequest: CreateDebitRequest = { value: paidValue, creditId: selectedPayment.creditId, changeAllDays: false };
     setIsProcessingPayment(true);
     try {
       const response = await createDebit(debitRequest);
       if (response.success && response.data) {
         let remainingDebt = Math.max(paymentCredit.totalDebt - paidValue, 0);
-
         try {
           const updatedCredit = await getCredit(selectedPayment.creditId);
-          if (updatedCredit) {
-            remainingDebt = updatedCredit.totalDebt;
-          }
-        } catch (error) {
-          console.error('Erro ao buscar saldo atualizado do crédito:', error);
-        }
-
+          if (updatedCredit) remainingDebt = updatedCredit.totalDebt;
+        } catch { console.error('Erro'); }
         if (shareOnWhatsApp && (response.data.transactionId || response.data.id)) {
-          const message = buildWhatsAppMessage(
-            selectedPayment.clientName,
-            paidValue,
-            calculateInitialDebt(paymentCredit),
-            remainingDebt,
-            response.data.transactionId || String(response.data.id)
-          );
+          const message = buildWhatsAppMessage(selectedPayment.clientName, paidValue, calculateInitialDebt(paymentCredit), remainingDebt, response.data.transactionId || String(response.data.id));
           openWhatsAppShare(message);
         }
-
         showToast(t('pages.collections.paymentRegisteredSuccess'), 'success');
         closePaymentModal();
         setEditedValues({});
@@ -328,14 +239,9 @@ const buildWhatsAppMessage = (
       } else {
         showToast(response.message || t('pages.collections.errorRegisteringPayment'), 'danger');
       }
-    } catch (error) {
-      showToast(t('pages.collections.errorRegisteringPayment'), 'danger');
-    } finally {
-      setIsProcessingPayment(false);
-    }
+    } catch { showToast(t('pages.collections.errorRegisteringPayment'), 'danger'); }
+    finally { setIsProcessingPayment(false); }
   };
-
-  
 
   const calculateClientSummary = (credits: Credit[]) => {
     const totalInitialValue = credits.reduce((sum, credit) => sum + credit.initialValue, 0);
@@ -343,30 +249,14 @@ const buildWhatsAppMessage = (
     const totalRemainingDebt = credits.reduce((sum, credit) => sum + credit.totalDebt, 0);
     const totalInstallments = credits.reduce((sum, credit) => sum + credit.quantityDays, 0);
     const paidInstallments = credits.reduce((sum, credit) => sum + (credit.quantityDays - Math.ceil(credit.totalDebt / credit.dayValue)), 0);
-    const remainingInstallments = totalInstallments - paidInstallments;
-
-    return {
-      totalInitialValue,
-      totalDebt,
-      totalRemainingDebt,
-      remainingInstallments
-    };
+    return { totalInitialValue, totalDebt, totalRemainingDebt, remainingInstallments: totalInstallments - paidInstallments };
   };
 
-  const filteredPayments = useMemo(() => {
-    return pendingPayments.filter((payment) =>
-      matchesSearchQuery(
-        searchQuery,
-        ...collectSearchableValues(payment)
-      )
-    );
-  }, [pendingPayments, searchQuery]);
+  const filteredPayments = useMemo(() => pendingPayments.filter((p) => matchesSearchQuery(searchQuery, ...collectSearchableValues(p))), [pendingPayments, searchQuery]);
 
   const filteredTodayDebits = useMemo(() => {
     if (!todayDebitsSearchQuery) return todayDebits;
-    return todayDebits.filter((debit) =>
-      matchesSearchQuery(todayDebitsSearchQuery, debit.clientName, debit.value.toString(), debit.createdAt)
-    );
+    return todayDebits.filter((d) => matchesSearchQuery(todayDebitsSearchQuery, d.clientName, d.value.toString(), d.createdAt));
   }, [todayDebits, todayDebitsSearchQuery]);
 
   const openClientModal = async (clientId: number, creditId?: number) => {
@@ -375,73 +265,44 @@ const buildWhatsAppMessage = (
       setSelectedClient(client);
       setActiveCreditId(creditId ?? null);
       try {
-        // Se um creditId for fornecido, busca apenas esse crédito específico
         if (creditId) {
           const credit = await getCredit(creditId);
           setSelectedCredit(credit);
           setClientCredits(credit ? [credit] : []);
         } else {
-          // Se não, busca todos os créditos do cliente (comportamento anterior)
           const credits = await getCreditsByClient(clientId);
           setClientCredits(credits);
           setSelectedCredit(null);
         }
-      } catch (error) {
-        console.error('Erro ao carregar créditos do cliente:', error);
-        setClientCredits([]);
-        setSelectedCredit(null);
-      }
+      } catch { setClientCredits([]); setSelectedCredit(null); }
       setShowClientModal(true);
     }
   };
 
   const getHistoryEventLabel = (eventType: CreditHistoryEntry['eventType']) => {
     switch (eventType) {
-      case 'DEBIT_APPLIED':
-        return t('pages.collections.historyPayment');
-      case 'DEBIT_UNDONE':
-        return t('pages.collections.historyPaymentUndone');
-      case 'DEBIT_DELETED':
-        return t('pages.collections.historyPaymentDeleted');
-      case 'CREDIT_CREATED':
-        return t('pages.collections.historyCreditCreated');
-      case 'CREDIT_UPDATED':
-        return t('pages.collections.historyCreditUpdated');
-      default:
-        return eventType;
+      case 'DEBIT_APPLIED': return t('pages.collections.historyPayment');
+      case 'DEBIT_UNDONE': return t('pages.collections.historyPaymentUndone');
+      case 'DEBIT_DELETED': return t('pages.collections.historyPaymentDeleted');
+      case 'CREDIT_CREATED': return t('pages.collections.historyCreditCreated');
+      case 'CREDIT_UPDATED': return t('pages.collections.historyCreditUpdated');
+      default: return eventType;
     }
   };
 
-  const formatHistoryDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  const formatHistoryDate = (dateString: string) => new Date(dateString).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   const openPaymentHistory = async () => {
     const creditId = activeCreditId ?? selectedCredit?.id;
-    if (!creditId) {
-      return;
-    }
-
+    if (!creditId) return;
     setIsHistoryLoading(true);
     setShowHistoryModal(true);
     try {
       const history = await getCreditHistory(creditId);
-      const paymentEvents = history.filter((entry) =>
-        ['DEBIT_APPLIED', 'DEBIT_UNDONE', 'DEBIT_DELETED'].includes(entry.eventType)
-      );
+      const paymentEvents = history.filter((entry) => ['DEBIT_APPLIED', 'DEBIT_UNDONE', 'DEBIT_DELETED'].includes(entry.eventType));
       setCreditHistory(paymentEvents.length > 0 ? paymentEvents : history);
-    } catch (error) {
-      showToast(t('pages.collections.errorLoadingHistory'), 'danger');
-      setCreditHistory([]);
-    } finally {
-      setIsHistoryLoading(false);
-    }
+    } catch { showToast(t('pages.collections.errorLoadingHistory'), 'danger'); setCreditHistory([]); }
+    finally { setIsHistoryLoading(false); }
   };
 
   return (
@@ -453,49 +314,27 @@ const buildWhatsAppMessage = (
       />
       <IonContent fullscreen>
         <IonRefresher slot="fixed" id="cobrancas-refresher" onIonRefresh={loadData}>
-          <IonRefresherContent></IonRefresherContent>
+          <IonRefresherContent />
         </IonRefresher>
 
-        <div style={{ padding: '16px' }}>
-          {/* Cards de Resumo */}
+        <div style={{ padding: '16px', paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 16px))' }}>
           {dailySchedule && (
-            <IonGrid style={{ marginBottom: '20px' }}>
-              <IonRow>
-                <IonCol size="4">
-                  <IonCard style={{ textAlign: 'center', borderRadius: '12px', background: 'var(--ion-color-light)' }}>
-                    <IonCardContent>
-                      <IonIcon icon={cashOutline} style={{ fontSize: '24px', color: '#007bff' }} />
-                      <h4 style={{ margin: '8px 0 4px 0', color: '#007bff' }}>
-                        {formatCurrencyWithSymbol(dailySchedule.dailyExpectation)}
-                      </h4>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{t('pages.collections.dailyGoal')}</p>
-                    </IonCardContent>
-                  </IonCard>
-                </IonCol>
-                <IonCol size="4">
-                  <IonCard style={{ textAlign: 'center', borderRadius: '12px', background: 'var(--ion-color-light)' }}>
-                    <IonCardContent>
-                      <IonIcon icon={cashOutline} style={{ fontSize: '24px', color: '#28a745' }} />
-                      <h4 style={{ margin: '8px 0 4px 0', color: '#28a745' }}>
-                        {formatCurrencyWithSymbol(dailySchedule.collectedToday)}
-                      </h4>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{t('pages.collections.collected')}</p>
-                    </IonCardContent>
-                  </IonCard>
-                </IonCol>
-                <IonCol size="4">
-                  <IonCard style={{ textAlign: 'center', borderRadius: '12px', background: 'var(--ion-color-light)' }}>
-                    <IonCardContent>
-                      <IonIcon icon={cashOutline} style={{ fontSize: '24px', color: '#dc3545' }} />
-                      <h4 style={{ margin: '8px 0 4px 0', color: '#dc3545' }}>
-                        {formatCurrencyWithSymbol(dailySchedule.remainingToCollect)}
-                      </h4>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>{t('pages.collections.remaining')}</p>
-                    </IonCardContent>
-                  </IonCard>
-                </IonCol>
-              </IonRow>
-            </IonGrid>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+              {[
+                { label: t('pages.collections.dailyGoal'), value: dailySchedule.dailyExpectation, color: '#098947' },
+                { label: t('pages.collections.collected'), value: dailySchedule.collectedToday, color: '#28a745' },
+                { label: t('pages.collections.remaining'), value: dailySchedule.remainingToCollect, color: '#dc3545' },
+              ].map((item, i) => (
+                <div key={i} style={{ flex: 1, backgroundColor: '#fff', borderRadius: '14px', padding: '14px 10px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '3px', height: '100%', backgroundColor: item.color, borderRadius: '14px 0 0 14px' }} />
+                  <div style={{ paddingLeft: '6px', textAlign: 'center' }}>
+                    <IonIcon icon={cashOutline} style={{ fontSize: '20px', color: item.color, display: 'block', margin: '0 auto 6px' }} />
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: item.color }}>{formatCurrencyWithSymbol(item.value)}</div>
+                    <div style={{ fontSize: '10px', color: '#999', marginTop: '2px', fontWeight: 500 }}>{item.label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
 
           {isLoading || isLoadingAll ? (
@@ -504,342 +343,156 @@ const buildWhatsAppMessage = (
               <p style={{ color: '#666', marginTop: '16px' }}>{isLoadingAll ? t('common.loading') : t('pages.collections.loadingCollections')}</p>
             </div>
           ) : pendingPayments.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p>{t('pages.collections.noCollectionsToday')}</p>
-            </div>
+            <div style={{ textAlign: 'center', padding: '20px' }}><p>{t('pages.collections.noCollectionsToday')}</p></div>
           ) : filteredPayments.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <p>{t('common.noSearchResults')}</p>
-            </div>
+            <div style={{ textAlign: 'center', padding: '20px' }}><p>{t('common.noSearchResults')}</p></div>
           ) : (
             <>
-            {filteredPayments.map((payment) => (
-              <IonCard 
-                key={payment.creditId} 
-                style={{ 
-                  marginBottom: '16px',
-                  borderRadius: '12px',
-                  background: '#ffffff'
-                }}
-              >
-                <IonCardHeader>
-                  <IonCardTitle>{payment.clientName}</IonCardTitle>
-                </IonCardHeader>
-                <IonCardContent style={{ padding: '16px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {/* Linha principal: informações e valor */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                      {/* Informações do cliente */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div 
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            marginBottom: '8px',
-                            cursor: 'pointer'
-                          }}
-                          onClick={() => openClientModal(payment.clientId, payment.creditId)}
-                        >
-                          <IonIcon 
-                            icon={locationOutline} 
-                            style={{ 
-                              marginRight: '8px', 
-                              color: '#666', 
-                              fontSize: '14px',
-                              flexShrink: 0
-                            }} 
-                          />
-                          <p style={{ 
-                            color: '#666', 
-                            fontSize: '13px', 
-                            margin: 0,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {payment.address || t('pages.collections.addressNotAvailable')}
-                          </p>
+              {filteredPayments.map((payment) => {
+                const debtColor = getDebtColor(payment);
+                return (
+                  <div key={payment.creditId} style={{
+                    backgroundColor: '#fff', borderRadius: '16px', padding: '18px', marginBottom: '12px',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden'
+                  }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: debtColor, borderRadius: '16px 0 0 16px' }} />
+                    <div style={{ paddingLeft: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '10px' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span
+                            style={{ fontSize: '15px', fontWeight: 700, color: '#262626', cursor: 'pointer', display: 'block', marginBottom: '6px' }}
+                            onClick={() => openClientModal(payment.clientId, payment.creditId)}
+                          >
+                            {payment.clientName}
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                            <IonIcon icon={locationOutline} style={{ fontSize: '12px', color: '#999', flexShrink: 0 }} />
+                            <span style={{ fontSize: '12px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {payment.address || t('pages.collections.addressNotAvailable')}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <IonIcon icon={callOutline} style={{ fontSize: '12px', color: '#999', flexShrink: 0 }} />
+                            <span style={{ fontSize: '12px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {payment.phone || t('pages.collections.phoneNotAvailable')}
+                            </span>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <IonIcon 
-                            icon={callOutline} 
-                            style={{ 
-                              marginRight: '8px', 
-                              color: '#666', 
-                              fontSize: '14px',
-                              flexShrink: 0
-                            }} 
-                          />
-                          <p style={{ 
-                            color: '#666', 
-                            fontSize: '13px', 
-                            margin: 0,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {payment.phone || t('pages.collections.phoneNotAvailable')}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Campo de valor e botão */}
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '8px',
-                        flexShrink: 0,
-                        width: '120px'
-                      }}>
-                        <div style={{ flex: 1 }}>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                           <IonInput
                             type="number"
                             key={`payment-val-${payment.creditId}`}
+                            placeholder={String(payment.installmentValue)}
                             onIonChange={(e: any) => {
                               const value = e.detail.value === '' ? 0 : Number(e.detail.value);
                               setEditedValues(prev => ({ ...prev, [payment.creditId]: value }));
                             }}
-                            style={{ 
-                              textAlign: 'center', 
-                              fontSize: '13px',
-                              height: '36px'
-                            }}
+                            style={{ textAlign: 'center', fontSize: '13px', height: '36px', width: '80px' }}
                           />
-                        </div>
                           <IonButton
                             size="small"
                             onClick={() => handlePayment(payment)}
                             style={{
-                              margin: 0,
-                              width: '36px',
-                              height: '36px',
-                              '--padding-start': '0',
-                              '--padding-end': '0',
-                              '--background': getDebtColor(payment),
-                              '--color': '#fff'
+                              margin: 0, width: '36px', height: '36px', minWidth: '36px',
+                              '--padding-start': '0', '--padding-end': '0',
+                              '--background': debtColor, '--background-hover': debtColor, '--color': '#fff',
+                              '--border-radius': '10px'
                             } as any}
                           >
-                          <IonIcon icon={cashOutline} style={{ fontSize: '16px' }} />
-                        </IonButton>
+                            <IonIcon icon={cashOutline} style={{ fontSize: '16px' }} />
+                          </IonButton>
+                        </div>
                       </div>
+
+                      {payment.hasOverdueInstallments && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 10px', backgroundColor: '#fff5f5', borderRadius: '8px' }}>
+                          <IonIcon icon={warning} style={{ fontSize: '14px', color: '#dc3545', flexShrink: 0 }} />
+                          <span style={{ fontSize: '11px', color: '#dc3545', fontWeight: 600 }}>
+                            {payment.overdueInstallmentsCount} {t('pages.collections.daysLate')} - {formatCurrencyWithSymbol(payment.accumulatedOverdueValue)} {t('pages.collections.accumulated')}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    {payment.hasOverdueInstallments && (
-                      <div style={{ marginTop: '8px' }}>
-                        <IonText color="danger">
-                          <p style={{ fontSize: '12px', margin: 0 }}>
-                            ⚠️ {payment.overdueInstallmentsCount} {t('pages.collections.daysLate')} - {formatCurrencyWithSymbol(payment.accumulatedOverdueValue)} {t('pages.collections.accumulated')}
-                          </p>
-                        </IonText>
-                      </div>
-                    )}
                   </div>
-                </IonCardContent>
-              </IonCard>
-            ))}
-            {/* Sentinel para infinite scroll */}
-            <div ref={sentinelRef} style={{ height: '40px', textAlign: 'center', padding: '10px' }}>
-              {isLoadingMore && <IonSpinner name="dots" />}
-            </div>
+                );
+              })}
+              <div ref={sentinelRef} style={{ height: '40px', textAlign: 'center', padding: '10px' }}>
+                {isLoadingMore && <IonSpinner name="dots" />}
+              </div>
             </>
           )}
         </div>
 
         {/* Modal de Detalhes do Cliente */}
         <IonModal isOpen={showClientModal} onDidDismiss={() => setShowClientModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('pages.collections.clientInfo')}</IonTitle>
-              <IonButtons slot="end">
-                {(activeCreditId || selectedCredit?.id) && (
-                  <IonButton onClick={openPaymentHistory}>
-                    <IonIcon slot="start" icon={timeOutline} />
-                    {t('pages.collections.paymentHistory')}
-                  </IonButton>
-                )}
-                <IonButton onClick={() => setShowClientModal(false)}>{t('common.close')}</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <GreenHeader
+            title={t('pages.collections.clientInfo')}
+            onClose={() => setShowClientModal(false)}
+            onAction={(activeCreditId || selectedCredit?.id) ? openPaymentHistory : undefined}
+            actionIcon={timeOutline}
+          />
           <IonContent>
             {selectedClient && (
-              <div style={{ padding: '16px' }}>
-                <IonItem>
-                  <IonIcon icon={personOutline} style={{ marginRight: '12px', color: '#666' }} />
-                  <IonLabel>
-                    <h3>{t('pages.collections.name')}</h3>
-                    <p>{selectedClient.name}</p>
-                  </IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonIcon icon={callOutline} style={{ marginRight: '12px', color: '#666' }} />
-                  <IonLabel>
-                    <h3>{t('pages.collections.phone')}</h3>
-                    <p>{selectedClient.phone || t('pages.collections.notInformed')}</p>
-                  </IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonIcon icon={locationOutline} style={{ marginRight: '12px', color: '#666' }} />
-                  <IonLabel>
-                    <h3>{t('pages.collections.address')}</h3>
-                    <p>{selectedClient.address || t('pages.collections.notInformed')}</p>
-                  </IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonLabel>
-                    <h3>{t('pages.collections.shop')}</h3>
-                    <p>{selectedClient.shop || t('pages.collections.notInformed')}</p>
-                  </IonLabel>
-                </IonItem>
-                <IonItem>
-                  <IonLabel>
-                    <h3>{t('pages.collections.cpf')}</h3>
-                    <p>{selectedClient.cpf || t('pages.collections.notInformed')}</p>
-                  </IonLabel>
-                </IonItem>
-                
-                {/* Informações de Resumo da Dívida */}
+              <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+                <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', marginBottom: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#098947', borderRadius: '16px 0 0 16px' }} />
+                  <div style={{ paddingLeft: '8px' }}>
+                    <InfoRow label={t('pages.collections.name')} value={selectedClient.name} />
+                    <InfoRow label={t('pages.collections.phone')} value={selectedClient.phone || t('pages.collections.notInformed')} />
+                    <InfoRow label={t('pages.collections.address')} value={selectedClient.address || t('pages.collections.notInformed')} />
+                    <InfoRow label={t('pages.collections.shop')} value={selectedClient.shop || t('pages.collections.notInformed')} />
+                    <InfoRow label={t('pages.collections.cpf')} value={selectedClient.cpf || t('pages.collections.notInformed')} showBorder={false} />
+                  </div>
+                </div>
+
                 {clientCredits.length > 0 && (() => {
                   const summary = calculateClientSummary(clientCredits);
                   return (
                     <>
-                      <div style={{ 
-                        marginTop: '20px', 
-                        padding: '16px', 
-                        backgroundColor: 'var(--ion-color-light)', 
-                        borderRadius: '8px' 
-                      }}>
-                        <h4 style={{ margin: '0 0 12px 0', color: 'var(--ion-color-dark)' }}>
-                          {t('pages.collections.debtSummary')}
-                        </h4>
-                        <IonItem style={{ marginBottom: '8px' }}>
-                          <IonLabel>
-                            <h3>{t('pages.collections.remainingInstallments')}</h3>
-                            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--ion-color-dark)' }}>
-                              {summary.remainingInstallments} {t('pages.collections.installments')}
-                            </p>
-                          </IonLabel>
-                        </IonItem>
-                        <IonItem style={{ marginBottom: '8px' }}>
-                          <IonLabel>
-                            <h3>{t('pages.collections.remainingDebt')}</h3>
-                            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--ion-color-dark)' }}>
-                              {formatCurrencyWithSymbol(summary.totalRemainingDebt)}
-                            </p>
-                          </IonLabel>
-                        </IonItem>
-                        <IonItem style={{ marginBottom: '8px' }}>
-                          <IonLabel>
-                            <h3>{t('pages.collections.totalDebtWithInterest')}</h3>
-                            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--ion-color-dark)' }}>
-                              {formatCurrencyWithSymbol(summary.totalDebt)}
-                            </p>
-                          </IonLabel>
-                        </IonItem>
+                      <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', marginBottom: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#6f42c1', borderRadius: '16px 0 0 16px' }} />
+                        <div style={{ paddingLeft: '8px' }}>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#262626', marginBottom: '12px' }}>{t('pages.collections.debtSummary')}</div>
+                          <InfoRow label={t('pages.collections.remainingInstallments')} value={`${summary.remainingInstallments} ${t('pages.collections.installments')}`} valueColor="#262626" />
+                          <InfoRow label={t('pages.collections.remainingDebt')} value={formatCurrencyWithSymbol(summary.totalRemainingDebt)} />
+                          <InfoRow label={t('pages.collections.totalDebtWithInterest')} value={formatCurrencyWithSymbol(summary.totalDebt)} showBorder={false} />
+                        </div>
                       </div>
 
-                      {/* Detalhes da Dívida */}
-                      <div style={{ 
-                        marginTop: '16px', 
-                        padding: '16px', 
-                        backgroundColor: 'var(--ion-color-light)', 
-                        borderRadius: '8px' 
-                      }}>
-                        <h4 style={{ margin: '0 0 12px 0', color: 'var(--ion-color-dark)' }}>
-                          {t('pages.collections.debtDetails')}
-                        </h4>
-                        {clientCredits.map((credit, index) => {
-                          const paidAmount = (credit.initialValue + (credit.initialValue * credit.tax / 100)) - credit.totalDebt;
-                          const progressPercentage = ((credit.initialValue + (credit.initialValue * credit.tax / 100)) > 0) 
-                            ? (paidAmount / (credit.initialValue + (credit.initialValue * credit.tax / 100))) * 100 
-                            : 0;
-                          
-                          return (
-                            <div key={credit.id} style={{ marginBottom: index < clientCredits.length - 1 ? '16px' : '0' }}>
-                              <div style={{ marginBottom: '8px' }}>
-                                <IonItem>
-                                  <IonLabel>
-                                    <h3>
-                                      {t('pages.collections.debtStartDate')}
-                                    </h3>
-                                    <p>
-                                      {formatToBrazilTime(credit.startDate)}
-                                    </p>
-                                  </IonLabel>
-                                </IonItem>
-                                <IonItem>
-                                  <IonLabel>
-                                    <h3>
-                                      {t('pages.collections.debtInterestRate')}
-                                    </h3>
-                                    <p>
-                                      {credit.tax}%
-                                    </p>
-                                  </IonLabel>
-                                </IonItem>
-                                <IonItem>
-                                  <IonLabel>
-                                    <h3>
-                                      {t('pages.collections.debtInstallmentValue')}
-                                    </h3>
-                                    <p>
-                                      {formatCurrencyWithSymbol(credit.dayValue)}
-                                    </p>
-                                  </IonLabel>
-                                </IonItem>
+                      <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#098947', borderRadius: '16px 0 0 16px' }} />
+                        <div style={{ paddingLeft: '8px' }}>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#262626', marginBottom: '12px' }}>{t('pages.collections.debtDetails')}</div>
+                          {clientCredits.map((credit, index) => {
+                            const paidAmount = (credit.initialValue + (credit.initialValue * credit.tax / 100)) - credit.totalDebt;
+                            const totalWithInterest = credit.initialValue + (credit.initialValue * credit.tax / 100);
+                            const progressPercentage = totalWithInterest > 0 ? (paidAmount / totalWithInterest) * 100 : 0;
+                            return (
+                              <div key={credit.id} style={{ marginBottom: index < clientCredits.length - 1 ? '16px' : 0, paddingBottom: index < clientCredits.length - 1 ? '16px' : 0, borderBottom: index < clientCredits.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
+                                <InfoRow label={t('pages.collections.debtStartDate')} value={formatToBrazilTime(credit.startDate)} />
+                                <InfoRow label={t('pages.collections.debtInterestRate')} value={`${credit.tax}%`} />
+                                <InfoRow label={t('pages.collections.debtInstallmentValue')} value={formatCurrencyWithSymbol(credit.dayValue)} />
                                 {credit.totalDebt > 0 && (
-                                  <IonItem>
-                                    <IonLabel>
-                                      <h3>
-                                        {t('pages.collections.debtOverdueValue')}
-                                      </h3>
-                                      <p>
-                                        {formatCurrencyWithSymbol(credit.totalDebt)}
-                                      </p>
-                                    </IonLabel>
-                                  </IonItem>
+                                  <InfoRow label={t('pages.collections.debtOverdueValue')} value={formatCurrencyWithSymbol(credit.totalDebt)} showBorder={false} />
                                 )}
-                              </div>
-
-                              {/* Barra de Progresso */}
-                              <div style={{ marginTop: '12px' }}>
-                                <div style={{ 
-                                  display: 'flex', 
-                                  justifyContent: 'space-between', 
-                                  marginBottom: '4px',
-                                  fontSize: '12px',
-                                  color: 'var(--ion-color-dark)'
-                                }}>
-                                  <span>{t('pages.collections.debtProgress')}</span>
-                                  <span>{Math.round(progressPercentage)}%</span>
-                                </div>
-                                <div style={{ 
-                                  width: '100%', 
-                                  height: '8px', 
-                                  backgroundColor: '#e9ecef', 
-                                  borderRadius: '4px',
-                                  overflow: 'hidden'
-                                }}>
-                                  <div style={{ 
-                                    width: `${progressPercentage}%`, 
-                                    height: '100%', 
-                                    backgroundColor: '#007bff',
-                                    transition: 'width 0.3s ease'
-                                  }} />
-                                </div>
-                                <div style={{ 
-                                  display: 'flex', 
-                                  justifyContent: 'space-between', 
-                                  marginTop: '4px',
-                                  fontSize: '11px',
-                                  color: 'var(--ion-color-dark)'
-                                }}>
-                                  <span>{t('pages.collections.debtPaid')}: {formatCurrencyWithSymbol(paidAmount)}</span>
-                                  <span>{t('pages.collections.debtRemaining')}: {formatCurrencyWithSymbol(credit.totalDebt)}</span>
+                                <div style={{ marginTop: '12px' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px', color: '#555' }}>
+                                    <span>{t('pages.collections.debtProgress')}</span>
+                                    <span style={{ fontWeight: 600 }}>{Math.round(progressPercentage)}%</span>
+                                  </div>
+                                  <div style={{ width: '100%', height: '8px', backgroundColor: '#e9ecef', borderRadius: '4px', overflow: 'hidden' }}>
+                                    <div style={{ width: `${progressPercentage}%`, height: '100%', backgroundColor: '#098947', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '11px', color: '#888' }}>
+                                    <span>{t('pages.collections.debtPaid')}: {formatCurrencyWithSymbol(paidAmount)}</span>
+                                    <span>{t('pages.collections.debtRemaining')}: {formatCurrencyWithSymbol(credit.totalDebt)}</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
                     </>
                   );
@@ -849,167 +502,113 @@ const buildWhatsAppMessage = (
           </IonContent>
         </IonModal>
 
+        {/* Modal Histórico */}
         <IonModal isOpen={showHistoryModal} onDidDismiss={() => setShowHistoryModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('pages.collections.paymentHistory')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowHistoryModal(false)}>{t('common.close')}</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <GreenHeader title={t('pages.collections.paymentHistory')} onClose={() => setShowHistoryModal(false)} />
           <IonContent>
-            <div style={{ padding: '16px' }}>
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
               {isHistoryLoading ? (
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <IonSpinner name="dots" />
-                  <p style={{ color: '#666', marginTop: '16px' }}>{t('pages.collections.loadingHistory')}</p>
-                </div>
+                <div style={{ textAlign: 'center', padding: '40px' }}><IonSpinner name="dots" /><p style={{ color: '#666', marginTop: '16px' }}>{t('pages.collections.loadingHistory')}</p></div>
               ) : creditHistory.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px' }}>
-                  <p>{t('pages.collections.noPaymentHistory')}</p>
-                </div>
+                <div style={{ textAlign: 'center', padding: '20px' }}><p>{t('pages.collections.noPaymentHistory')}</p></div>
               ) : (
                 creditHistory.map((entry) => (
-                  <IonCard key={`${entry.eventType}-${entry.id}-${entry.occurredAt}`} style={{ marginBottom: '12px', borderRadius: '12px' }}>
-                    <IonCardContent>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                  <div key={`${entry.eventType}-${entry.id}-${entry.occurredAt}`} style={{ backgroundColor: '#fff', borderRadius: '14px', padding: '16px', marginBottom: '10px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, width: '3px', height: '100%', backgroundColor: entry.eventType === 'DEBIT_APPLIED' ? '#28a745' : '#dc3545', borderRadius: '14px 0 0 14px' }} />
+                    <div style={{ paddingLeft: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                          <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>
-                            {getHistoryEventLabel(entry.eventType)}
-                          </h3>
-                          <p style={{ margin: 0, color: '#666', fontSize: '13px' }}>
-                            {formatHistoryDate(entry.occurredAt)}
-                          </p>
+                          <div style={{ fontSize: '14px', fontWeight: 600, color: '#262626', marginBottom: '4px' }}>{getHistoryEventLabel(entry.eventType)}</div>
+                          <div style={{ fontSize: '12px', color: '#888' }}>{formatHistoryDate(entry.occurredAt)}</div>
                           {entry.debitValue != null && (
-                            <p style={{ margin: '8px 0 0 0', fontWeight: 'bold', color: entry.eventType === 'DEBIT_APPLIED' ? '#28a745' : '#dc3545' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: entry.eventType === 'DEBIT_APPLIED' ? '#28a745' : '#dc3545', marginTop: '6px' }}>
                               {formatCurrencyWithSymbol(entry.debitValue)}
-                            </p>
+                            </div>
                           )}
                           {entry.totalDebt != null && (
-                            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#666' }}>
+                            <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
                               {t('pages.collections.historyRemainingDebt')}: {formatCurrencyWithSymbol(entry.totalDebt)}
-                            </p>
+                            </div>
                           )}
                         </div>
                         {entry.debitActive != null && (
-                          <IonText color={entry.debitActive ? 'success' : 'medium'}>
-                            <span style={{ fontSize: '12px', fontWeight: 'bold' }}>
-                              {entry.debitActive ? t('pages.collections.historyActive') : t('pages.collections.historyUndone')}
-                            </span>
-                          </IonText>
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: entry.debitActive ? '#28a745' : '#999', whiteSpace: 'nowrap' }}>
+                            {entry.debitActive ? t('pages.collections.historyActive') : t('pages.collections.historyUndone')}
+                          </span>
                         )}
                       </div>
-                    </IonCardContent>
-                  </IonCard>
+                    </div>
+                  </div>
                 ))
               )}
             </div>
           </IonContent>
         </IonModal>
 
-        
-        {/* Modal de Confirmação de Pagamento */}
+        {/* Modal Confirmação Pagamento */}
         <IonModal isOpen={showPaymentModal} onDidDismiss={closePaymentModal}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{t('pages.collections.confirmPaymentModalTitle')}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={closePaymentModal} disabled={isProcessingPayment}>
-                  {t('common.close')}
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <GreenHeader title={t('pages.collections.confirmPaymentModalTitle')} onClose={closePaymentModal} />
           <IonContent>
-            <div style={{ padding: '16px' }}>
-              <p style={{ margin: '0 0 24px 0', color: '#444', lineHeight: 1.5 }}>
-                {t('pages.collections.confirmPaymentModalMessage')
-                  .replace('{value}', formatCurrencyWithSymbol(getPaymentValue()))
-                  .replace('{clientName}', selectedPayment?.clientName || t('pages.collections.thisClient'))}
-              </p>
-
-              <IonButton
-                expand="block"
-                shape="round"
-                color="success"
-                style={{ marginBottom: '12px' }}
-                disabled={isProcessingPayment}
-                onClick={() => confirmPayment(true)}
-              >
-                {t('pages.collections.confirmAndShare')}
-              </IonButton>
-
-              <IonButton
-                expand="block"
-                shape="round"
-                fill="outline"
-                disabled={isProcessingPayment}
-                onClick={() => confirmPayment(false)}
-              >
-                {t('pages.collections.confirm')}
-              </IonButton>
-
-              {isProcessingPayment && (
-                <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                  <IonSpinner name="dots" />
+            <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+              <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', marginBottom: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#098947', borderRadius: '16px 0 0 16px' }} />
+                <div style={{ paddingLeft: '8px' }}>
+                  <p style={{ margin: '0 0 20px 0', color: '#555', lineHeight: 1.5, fontSize: '14px' }}>
+                    {t('pages.collections.confirmPaymentModalMessage')
+                      .replace('{value}', formatCurrencyWithSymbol(getPaymentValue()))
+                      .replace('{clientName}', selectedPayment?.clientName || t('pages.collections.thisClient'))}
+                  </p>
+                  <PrimaryButton
+                    onClick={() => confirmPayment(true)}
+                    label={t('pages.collections.confirmAndShare')}
+                    disabled={isProcessingPayment}
+                    style={{ marginBottom: '10px' }}
+                  />
+                  <IonButton
+                    expand="block"
+                    fill="outline"
+                    disabled={isProcessingPayment}
+                    onClick={() => confirmPayment(false)}
+                    style={{ '--border-radius': '12px', textTransform: 'none', fontWeight: 600, fontSize: '15px', '--padding-top': '14px', '--padding-bottom': '14px' } as any}
+                  >
+                    {t('pages.collections.confirm')}
+                  </IonButton>
+                  {isProcessingPayment && (
+                    <div style={{ textAlign: 'center', marginTop: '16px' }}><IonSpinner name="dots" /></div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </IonContent>
         </IonModal>
-
-        {/* Rodapé - Total de Débitos de Hoje */}
-        <div
-          onClick={openTodayDebitsModal}
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            width: '100%',
-            backgroundColor: '#f8f9fa',
-            borderTop: '1px solid #dee2e6',
-            padding: '12px 16px',
-            zIndex: 100,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            boxSizing: 'border-box',
-            cursor: 'pointer',
-          }}
-        >
-          <span style={{ fontSize: '14px', color: '#666', fontWeight: 500 }}>
-            {t('pages.collections.todayDebits')}
-          </span>
-          <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#28a745' }}>
-            {formatCurrencyWithSymbol(todayTotal)}
-          </span>
-        </div>
-
-        {/* Toast */}
-        <Toast
-          isOpen={toast.isOpen}
-          message={toast.message}
-          color={toast.color}
-          onDidDismiss={() => setToast({ ...toast, isOpen: false })}
-        />
       </IonContent>
 
-      {/* Modal de Débitos de Hoje */}
+      {/* Rodapé - Total de Débitos de Hoje */}
+      <div
+        onClick={openTodayDebitsModal}
+        style={{
+          position: 'fixed', bottom: 0, left: 0, width: '100%',
+          backgroundColor: '#fff', borderTop: '1px solid #e8e8e8',
+          padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 12px))',
+          zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          boxSizing: 'border-box', cursor: 'pointer', boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
+        }}
+      >
+        <span style={{ fontSize: '14px', color: '#555', fontWeight: 600 }}>
+          {t('pages.collections.todayDebits')}
+        </span>
+        <span style={{ fontSize: '18px', fontWeight: 700, color: '#098947' }}>
+          {formatCurrencyWithSymbol(todayTotal)}
+        </span>
+      </div>
+
+      {/* Modal Débitos de Hoje */}
       <IonModal isOpen={showTodayDebitsModal} onDidDismiss={() => setShowTodayDebitsModal(false)}>
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>{t('pages.collections.todayDebits')}</IonTitle>
-            <IonButtons slot="end">
-              <IonButton onClick={() => setShowTodayDebitsModal(false)}>{t('common.close')}</IonButton>
-            </IonButtons>
-          </IonToolbar>
-        </IonHeader>
+        <GreenHeader title={t('pages.collections.todayDebits')} onClose={() => setShowTodayDebitsModal(false)} />
         <IonContent>
-          <div style={{ padding: '16px' }}>
-            {/* Search bar inside modal */}
-            <IonItem style={{ marginBottom: '12px', borderRadius: '8px', '--background': '#f4f5f8' } as any}>
-              <IonIcon icon={searchOutline} slot="start" style={{ marginLeft: '8px' }} />
+          <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+            <IonItem style={{ '--background': '#f5f5f5', '--border-radius': '12px', '--padding-start': '16px', '--inner-padding-end': '16px', '--min-height': '48px', marginBottom: '12px' } as any}>
+              <IonIcon icon={searchOutline} slot="start" style={{ color: '#999' }} />
               <IonInput
                 placeholder={t('common.searchPlaceholder')}
                 key={todayDebitsSearchKey}
@@ -1022,70 +621,58 @@ const buildWhatsAppMessage = (
                 </IonButton>
               )}
             </IonItem>
+
             {isLoadingTodayDebits ? (
-              <div style={{ textAlign: 'center', padding: '40px' }}>
-                <IonSpinner name="dots" />
-                <p style={{ color: '#666', marginTop: '16px' }}>{t('pages.collections.loadingTodayDebits')}</p>
-              </div>
+              <div style={{ textAlign: 'center', padding: '40px' }}><IonSpinner name="dots" /><p style={{ color: '#666', marginTop: '16px' }}>{t('pages.collections.loadingTodayDebits')}</p></div>
             ) : filteredTodayDebits.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px' }}>
-                <p style={{ color: '#666' }}>{todayDebits.length === 0 ? t('pages.collections.noDebitsToday') : t('common.noSearchResults')}</p>
-              </div>
+              <div style={{ textAlign: 'center', padding: '40px' }}><p style={{ color: '#666' }}>{todayDebits.length === 0 ? t('pages.collections.noDebitsToday') : t('common.noSearchResults')}</p></div>
             ) : (
               filteredTodayDebits.map((debit) => (
-                <IonCard key={debit.id} style={{ marginBottom: '12px', borderRadius: '12px' }}>
-                  <IonCardContent>
-                    <IonGrid>
-                      <IonRow>
-                        <IonCol size="8">
-                          <IonItem lines="none">
-                            <IonLabel>
-                              <h3 style={{ fontWeight: 'bold', color: '#333' }}>{debit.clientName}</h3>
-                              <p style={{ color: '#666', marginTop: '4px' }}>
-                                {formatCurrencyWithSymbol(debit.value)}
-                              </p>
-                              <p style={{ color: '#999', fontSize: '12px' }}>
-                                {formatToBrazilTime(debit.createdAt)}
-                              </p>
-                            </IonLabel>
-                          </IonItem>
-                        </IonCol>
-                        <IonCol size="4" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <IonButton
-                            color="danger"
-                            size="small"
-                            onClick={() => handleUndoFromModal(debit)}
-                          >
-                            {t('pages.collected.undo')}
-                          </IonButton>
-                        </IonCol>
-                      </IonRow>
-                    </IonGrid>
-                  </IonCardContent>
-                </IonCard>
+                <div key={debit.id} style={{ backgroundColor: '#fff', borderRadius: '14px', padding: '16px 18px', marginBottom: '10px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '3px', height: '100%', backgroundColor: '#098947', borderRadius: '14px 0 0 14px' }} />
+                  <div style={{ paddingLeft: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '15px', fontWeight: 600, color: '#262626' }}>{debit.clientName}</div>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: '#098947', marginTop: '4px' }}>
+                        {formatCurrencyWithSymbol(debit.value)}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                        {formatToBrazilTime(debit.createdAt)}
+                      </div>
+                    </div>
+                    <IonButton
+                      size="small"
+                      onClick={() => handleUndoFromModal(debit)}
+                      style={{
+                        margin: 0, width: '36px', height: '36px', minWidth: '36px',
+                        '--padding-start': '0', '--padding-end': '0',
+                        '--background': '#dc3545', '--background-hover': '#c82333', '--color': '#fff',
+                        '--border-radius': '10px'
+                      } as any}
+                    >
+                      <IonIcon icon={arrowUndo} style={{ fontSize: '16px' }} />
+                    </IonButton>
+                  </div>
+                </div>
               ))
             )}
           </div>
         </IonContent>
       </IonModal>
 
-      {/* Alert de Confirmação de Desfazer do Modal */}
       <IonAlert
         isOpen={showUndoAlertModal}
         onDidDismiss={() => setShowUndoAlertModal(false)}
         header={t('pages.collected.undoCollection')}
         message={t('pages.collected.undoCollectionMessage').replace('{value}', formatCurrencyWithSymbol(selectedDebitModal?.value || 0)).replace('{clientName}', selectedDebitModal?.clientName || 'este cliente')}
         buttons={[
-          {
-            text: t('common.cancel'),
-            role: 'cancel'
-          },
-          {
-            text: t('pages.collected.undo'),
-            handler: confirmUndoFromModal
-          }
+          { text: t('common.cancel'), role: 'cancel' },
+          { text: t('pages.collected.undo'), handler: confirmUndoFromModal }
         ]}
       />
+
+      <Toast isOpen={toast.isOpen} message={toast.message} color={toast.color}
+        onDidDismiss={() => setToast({ ...toast, isOpen: false })} />
     </IonPage>
   );
 };

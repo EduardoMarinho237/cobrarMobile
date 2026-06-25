@@ -37,7 +37,7 @@ const AdminTabs: React.FC = () => {
           <Redirect to="/admin/managers" />
         </Route>
       </IonRouterOutlet>
-      <IonTabBar slot="bottom">
+      <IonTabBar slot="bottom" color="primary">
         <IonTabButton tab="managers" href="/admin/managers">
           <IonIcon aria-hidden="true" icon={people} />
           <IonLabel>{t('tabs.managers')}</IonLabel>

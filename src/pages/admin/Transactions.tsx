@@ -6,10 +6,6 @@ import {
   IonToolbar,
   IonTitle,
   IonList,
-  IonItem,
-  IonLabel,
-  IonSelect,
-  IonSelectOption,
   IonText,
   IonBadge,
   IonRefresher,
@@ -23,6 +19,7 @@ import {
   IonCol,
   IonInput,
 } from '@ionic/react';
+import SelectInput from '../../components/ui/SelectInput';
 import { refresh,chevronBack,chevronForward,calendar } from 'ionicons/icons';
 import { getAdminTransactions, TransactionPage, Transaction } from '../../services/transactionApi';
 import { getManagers } from '../../services/api';
@@ -154,10 +151,10 @@ const Transactions: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
           <IonTitle>{t('pages.transactions.title')}</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={() => fetchTransactions(page, false)} disabled={loading}>
+            <IonButton onClick={() => fetchTransactions(page, false)} disabled={loading} style={{ color: '#fff' }}>
               <IonIcon icon={refresh} slot="icon-only" />
             </IonButton>
           </IonButtons>
@@ -168,54 +165,87 @@ const Transactions: React.FC = () => {
           <IonRefresherContent />
         </IonRefresher>
 
-        <IonList>
-          <IonItem>
-            <IonIcon icon={calendar} slot="start" />
-            <IonLabel>
-              {t('pages.transactions.date')}
-              {isToday && <span style={{ fontSize: '0.75em', opacity: 0.7 }}> ({t('pages.transactions.today')})</span>}
-            </IonLabel>
-            <IonInput
-              ref={dateInputRef}
+        {/* Filter card */}
+        <div style={{
+          margin: '16px',
+          backgroundColor: '#fff',
+          borderRadius: '16px',
+          padding: '16px',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <IonIcon icon={calendar} style={{ fontSize: '18px', color: '#098947' }} />
+              <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>
+                {t('pages.transactions.date')}
+                {isToday && <span style={{ fontSize: '12px', fontWeight: '400', color: '#999', marginLeft: '4px' }}>({t('pages.transactions.today')})</span>}
+              </span>
+            </div>
+            <input
               type="date"
               value={selectedDate}
               max={todayStr}
-              onIonChange={e => {
-                setSelectedDate(e.detail.value || todayStr);
+              onChange={e => {
+                setSelectedDate(e.target.value || todayStr);
                 setPage(0);
               }}
-              style={{ textAlign: 'right' }}
+              style={{
+                border: '1px solid #e0e0e0',
+                borderRadius: '10px',
+                padding: '8px 12px',
+                fontSize: '13px',
+                color: '#333',
+                backgroundColor: '#f9f9f9',
+                outline: 'none'
+              }}
             />
-          </IonItem>
+          </div>
 
-          <IonItem>
-            <IonLabel>{t('pages.transactions.filter')}</IonLabel>
-            <IonSelect value={filterMode} onIonChange={e => { setFilterMode(e.detail.value); setPage(0); }}
-              interface="popover">
-              <IonSelectOption value="all">{t('pages.transactions.filterAll')}</IonSelectOption>
-              <IonSelectOption value="manager">{t('pages.transactions.filterManager')}</IonSelectOption>
-              <IonSelectOption value="route">{t('pages.transactions.filterRoute')}</IonSelectOption>
-            </IonSelect>
-          </IonItem>
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {(['all', 'manager', 'route'] as FilterMode[]).map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => { setFilterMode(mode); setPage(0); }}
+                  style={{
+                    flex: 1,
+                    padding: '8px 4px',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    backgroundColor: filterMode === mode ? '#098947' : '#f0f0f0',
+                    color: filterMode === mode ? '#fff' : '#666',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {mode === 'all' ? t('pages.transactions.filterAll') :
+                   mode === 'manager' ? t('pages.transactions.filterManager') :
+                   t('pages.transactions.filterRoute')}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {filterMode === 'manager' && (
-            <IonItem>
-              <IonLabel>{t('pages.transactions.manager')}</IonLabel>
-              <IonSelect value={selectedManagerId} onIonChange={e => { setSelectedManagerId(e.detail.value); setPage(0); }}
-                interface="popover" placeholder={t('pages.transactions.selectManager')}>
-                {managers.map(m => (
-                  <IonSelectOption key={m.id} value={m.id}>{m.name}</IonSelectOption>
-                ))}
-              </IonSelect>
-            </IonItem>
+            <SelectInput
+              label={t('pages.transactions.selectManager')}
+              value={selectedManagerId ?? ''}
+              options={managers}
+              onChange={(val) => { setSelectedManagerId(val ? Number(val) : null); setPage(0); }}
+              placeholder={t('pages.transactions.selectManager')}
+            />
           )}
 
           {filterMode === 'route' && (
             <>
-              <IonItem>
-                <IonLabel>{t('pages.transactions.manager')}</IonLabel>
-                <IonSelect value={routeManagerId} onIonChange={e => {
-                  const mgrId = e.detail.value as number | null;
+              <SelectInput
+                label={t('pages.transactions.selectManager')}
+                value={routeManagerId ?? ''}
+                options={managers}
+                onChange={(val) => {
+                  const mgrId = val ? Number(val) : null;
                   setRouteManagerId(mgrId);
                   setSelectedRouteId(null);
                   setPage(0);
@@ -228,95 +258,125 @@ const Transactions: React.FC = () => {
                     setRoutes([]);
                   }
                 }}
-                  interface="popover" placeholder={t('pages.transactions.selectManager')}>
-                  {managers.map(m => (
-                    <IonSelectOption key={m.id} value={m.id}>{m.name}</IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
+                placeholder={t('pages.transactions.selectManager')}
+              />
               {routeManagerId != null && (
-                <IonItem>
-                  <IonLabel>{t('pages.transactions.route')}</IonLabel>
-                  <IonSelect value={selectedRouteId} onIonChange={e => { setSelectedRouteId(e.detail.value); setPage(0); }}
-                    interface="popover" placeholder={t('pages.transactions.selectRoute')}>
-                    {routes.map(r => (
-                      <IonSelectOption key={r.id} value={r.id}>{r.name}</IonSelectOption>
-                    ))}
-                  </IonSelect>
-                </IonItem>
+                <SelectInput
+                  label={t('pages.transactions.selectRoute')}
+                  value={selectedRouteId ?? ''}
+                  options={routes}
+                  onChange={(val) => { setSelectedRouteId(val ? Number(val) : null); setPage(0); }}
+                  placeholder={t('pages.transactions.selectRoute')}
+                />
               )}
             </>
           )}
 
           {lastUpdate && (
-            <IonItem lines="none">
-              <IonNote slot="end" style={{ fontSize: '0.75rem' }}>
+            <div style={{ textAlign: 'right', marginTop: '8px' }}>
+              <span style={{ fontSize: '11px', color: '#aaa' }}>
                 {t('pages.transactions.lastUpdate')}: {lastUpdate}
-              </IonNote>
-            </IonItem>
+              </span>
+            </div>
           )}
-        </IonList>
+        </div>
 
         {error && (
-          <IonText color="danger" className="ion-padding">
-            <p>{error}</p>
-          </IonText>
+          <div style={{ margin: '0 16px 16px', padding: '12px 16px', backgroundColor: '#fff0f0', borderRadius: '12px', borderLeft: '4px solid #eb445a' }}>
+            <p style={{ margin: 0, fontSize: '13px', color: '#eb445a' }}>{error}</p>
+          </div>
         )}
 
-        <IonList>
+        {/* Transactions list */}
+        <div style={{ padding: '0 16px 16px' }}>
           {transactions.length === 0 && !loading && (
-            <IonItem>
-              <IonLabel className="ion-text-center">
-                <IonText color="medium">{t('pages.transactions.empty')}</IonText>
-              </IonLabel>
-            </IonItem>
+            <div style={{
+              textAlign: 'center',
+              padding: '40px',
+              backgroundColor: '#fff',
+              borderRadius: '16px'
+            }}>
+              <p style={{ margin: 0, color: '#999', fontSize: '14px' }}>{t('pages.transactions.empty')}</p>
+            </div>
           )}
           {transactions.map(tx => (
-            <IonItem key={tx.id || tx.transactionId} detail={false}>
-              <IonLabel className="ion-text-wrap">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <IonText>
-                    <strong>{formatTxType(tx.transactionType)}</strong>
-                  </IonText>
-                  <IonBadge color={getAmountColor(tx.amount)}>
-                    {formatCurrencyWithSymbol(Math.abs(tx.amount))}
-                  </IonBadge>
-                </div>
-                <p>{tx.description}</p>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                  <IonNote>{tx.performedByName} ({translateRole(tx.performedByRole, t)})</IonNote>
-                  <IonNote>{tx.routeName && `${t('pages.transactions.route')}: ${tx.routeName}`}</IonNote>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                  <IonNote color="medium">
-                    {t('pages.transactions.balanceBefore')}: {formatCurrencyWithSymbol(tx.balanceBefore)} | 
-                    {t('pages.transactions.balanceAfter')}: {formatCurrencyWithSymbol(tx.balanceAfter)}
-                  </IonNote>
-                  <IonNote color="medium">{formatToBrazilTime(tx.createdAt)}</IonNote>
-                </div>
-              </IonLabel>
-            </IonItem>
+            <div key={tx.id || tx.transactionId} style={{
+              backgroundColor: '#fff',
+              borderRadius: '14px',
+              padding: '16px',
+              marginBottom: '10px',
+              boxShadow: '0 1px 6px rgba(0,0,0,0.05)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '15px', fontWeight: '700', color: '#262626' }}>
+                  {formatTxType(tx.transactionType)}
+                </span>
+                <span style={{
+                  fontSize: '15px',
+                  fontWeight: '800',
+                  color: tx.amount >= 0 ? '#098947' : '#eb445a'
+                }}>
+                  {tx.amount >= 0 ? '+' : ''}{formatCurrencyWithSymbol(tx.amount)}
+                </span>
+              </div>
+              {tx.description && (
+                <p style={{ margin: '0 0 8px', fontSize: '13px', color: '#666' }}>{tx.description}</p>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#888' }}>
+                <span>{tx.performedByName} · {translateRole(tx.performedByRole, t)}</span>
+                <span>{tx.routeName || ''}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#aaa', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #f0f0f0' }}>
+                <span>
+                  {t('pages.transactions.balanceBefore')}: {formatCurrencyWithSymbol(tx.balanceBefore)} → {t('pages.transactions.balanceAfter')}: {formatCurrencyWithSymbol(tx.balanceAfter)}
+                </span>
+                <span>{formatToBrazilTime(tx.createdAt)}</span>
+              </div>
+            </div>
           ))}
-        </IonList>
+        </div>
 
+        {/* Pagination */}
         {!isToday && totalPages > 0 && (
-          <IonGrid>
-            <IonRow className="ion-justify-content-center ion-align-items-center">
-              <IonCol size="auto">
-                <IonButtons>
-                  <IonButton disabled={!canPrev} onClick={() => goToPage(page - 1)}>
-                    <IonIcon icon={chevronBack} slot="icon-only" />
-                  </IonButton>
-                  <IonLabel className="ion-padding-horizontal">
-                    {t('pages.transactions.page')} {page + 1} {t('pages.transactions.of')} {totalPages}
-                  </IonLabel>
-                  <IonButton disabled={!canNext} onClick={() => goToPage(page + 1)}>
-                    <IonIcon icon={chevronForward} slot="icon-only" />
-                  </IonButton>
-                </IonButtons>
-              </IonCol>
-            </IonRow>
-          </IonGrid>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px', gap: '16px' }}>
+            <button
+              disabled={!canPrev}
+              onClick={() => goToPage(page - 1)}
+              style={{
+                padding: '10px 20px',
+                border: 'none',
+                borderRadius: '10px',
+                backgroundColor: canPrev ? '#098947' : '#e0e0e0',
+                color: canPrev ? '#fff' : '#999',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: canPrev ? 'pointer' : 'default'
+              }}
+            >
+              <IonIcon icon={chevronBack} style={{ marginRight: '4px' }} />
+              {t('pages.transactions.previous')}
+            </button>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#555' }}>
+              {page + 1} {t('pages.transactions.of')} {totalPages}
+            </span>
+            <button
+              disabled={!canNext}
+              onClick={() => goToPage(page + 1)}
+              style={{
+                padding: '10px 20px',
+                border: 'none',
+                borderRadius: '10px',
+                backgroundColor: canNext ? '#098947' : '#e0e0e0',
+                color: canNext ? '#fff' : '#999',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: canNext ? 'pointer' : 'default'
+              }}
+            >
+              {t('pages.transactions.next')}
+              <IonIcon icon={chevronForward} style={{ marginLeft: '4px' }} />
+            </button>
+          </div>
         )}
       </IonContent>
     </IonPage>

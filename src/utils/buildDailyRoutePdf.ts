@@ -10,6 +10,7 @@ export const buildDailyRoutePdf = (report: Report, t: (key: string) => string): 
   const summary = data.dailyRouteSummary;
   const collections = data.collectionRows || [];
   const newCredits = data.newCreditRows || [];
+  const overdueClients = data.overdueClients || [];
 
   // Title
   doc.setFontSize(16);
@@ -128,6 +129,51 @@ export const buildDailyRoutePdf = (report: Report, t: (key: string) => string): 
       headStyles: {
         fillColor: [255, 193, 7],
         textColor: [33, 37, 41],
+        fontStyle: 'bold',
+        fontSize: 8,
+      },
+      bodyStyles: { fontSize: 8 },
+      margin: { left: 14, right: 14 },
+    });
+
+    lastY = (doc as any).lastAutoTable?.finalY || startY;
+  }
+
+  // Overdue Clients Section
+  if (overdueClients.length > 0) {
+    startY = lastY + 12;
+    doc.setFontSize(11);
+    doc.setTextColor(220, 53, 69);
+    doc.text(t('pages.reports.overdueClients'), 14, startY);
+
+    const overdueRows = overdueClients.map((c) => [
+      c.clientName + (c.clientShop ? ` (${c.clientShop})` : ''),
+      formatCurrencyWithSymbol(c.initialValue),
+      `${c.tax}%`,
+      c.startDate,
+      formatCurrencyWithSymbol(c.expectedPayment),
+      formatCurrencyWithSymbol(c.amountPaid),
+      formatCurrencyWithSymbol(c.remainingDebt),
+      c.overdue ? t('pages.reports.overdue') : '-',
+    ]);
+
+    autoTable(doc, {
+      startY: startY + 4,
+      head: [[
+        t('pages.reports.client'),
+        t('pages.reports.creditValue'),
+        t('pages.reports.tax'),
+        t('pages.reports.creditStartDate'),
+        t('pages.reports.expectedPayment'),
+        t('pages.reports.amountPaid'),
+        t('pages.reports.remainingDebt'),
+        t('pages.reports.overdue'),
+      ]],
+      body: overdueRows,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [220, 53, 69],
+        textColor: 255,
         fontStyle: 'bold',
         fontSize: 8,
       },

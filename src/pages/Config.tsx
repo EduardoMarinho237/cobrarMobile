@@ -6,19 +6,13 @@ import {
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
   IonButton,
-  IonItem,
-  IonLabel,
   IonAlert,
   IonIcon,
   IonRefresher,
   IonRefresherContent
 } from '@ionic/react';
-import { logOut, person, lockClosed, lockOpen, refresh, helpCircle } from 'ionicons/icons';
+import { logOut, helpCircle } from 'ionicons/icons';
 import { getCurrentUser, logout } from '../services/api';
 import { useFechamentoControl } from '../hooks/useFechamentoControl';
 import { useTranslation } from 'react-i18next';
@@ -82,7 +76,7 @@ const Config: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
           <IonTitle>{t('config.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -90,110 +84,158 @@ const Config: React.FC = () => {
         <IonRefresher slot="fixed" id="config-refresher">
           <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
-        <div style={{ padding: '16px' }}>
-          {/* Card de Informações do Usuário */}
-          <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
-            <IonCardHeader>
-              <IonCardTitle>
-                <IonIcon icon={person} style={{ marginRight: '8px' }} />
-                {t('config.userInfo')}
-              </IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
+        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+          {/* Card de Informações do Usuário - Profile Style */}
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: '20px',
+            marginBottom: '16px',
+            boxShadow: '0 2px 16px rgba(0,0,0,0.07)',
+            overflow: 'hidden'
+          }}>
+            {/* Green header area */}
+            <div style={{
+              background: 'linear-gradient(135deg, #098947 0%, #0ab55a 100%)',
+              padding: '32px 20px 40px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              position: 'relative'
+            }}>
               {user && (
-                <>
-                  <IonItem>
-                    <IonLabel>
-                      <h3>{t('config.name')}</h3>
-                      <p>{user.name}</p>
-                    </IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>
-                      <h3>{t('config.login')}</h3>
-                      <p>{user.login}</p>
-                    </IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>
-                      <h3>{t('config.type')}</h3>
-                      <p>{translateRole(user.role, t)}</p>
-                    </IonLabel>
-                  </IonItem>
-                </>
+                <div style={{ textAlign: 'center' }}>
+                  <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '700', color: '#fff' }}>
+                    {user.name}
+                  </h2>
+                  <span style={{
+                    display: 'inline-block',
+                    marginTop: '6px',
+                    padding: '4px 14px',
+                    borderRadius: '20px',
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#fff'
+                  }}>
+                    {translateRole(user.role, t)}
+                  </span>
+                </div>
               )}
-            </IonCardContent>
-          </IonCard>
+            </div>
 
-          {/* Card de Status do Sistema - Apenas para ROTAS */}
-          {user?.role === 'ROUTE' && (
-            <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
-              <IonCardHeader>
-                <IonCardTitle>
-                  <IonIcon 
-                    icon={diaFechado ? lockClosed : lockOpen} 
-                    style={{ marginRight: '8px' }} 
-                  />
-                  {t('config.systemStatus')}
-                </IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonItem>
-                  <IonLabel>
-                    <h3>{t('config.dayClosing')}</h3>
-                    <p style={{ 
-                      color: diaFechado ? '#dc3545' : '#28a745',
-                      fontWeight: 'bold'
-                    }}>
-                      {diaFechado ? t('config.closed') : t('config.open')}
-                    </p>
-                  </IonLabel>
-                </IonItem>
-                {diaFechado && (
-                  <IonItem>
-                    <IonLabel>
-                      <p style={{ color: '#666', fontSize: '14px' }}>
-                        {t('config.systemBlocked')}
-                      </p>
-                    </IonLabel>
-                  </IonItem>
-                )}
-              </IonCardContent>
-            </IonCard>
-          )}
+            {/* Info section - overlapping */}
+            <div style={{
+              margin: '-24px 16px 16px',
+              backgroundColor: '#fff',
+              borderRadius: '16px',
+              padding: '14px 16px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+              position: 'relative',
+              zIndex: 2
+            }}>
+              {user && (
+                <div>
+                  <span style={{ fontSize: '11px', color: '#999', fontWeight: 500 }}>{t('config.login')}</span>
+                  <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: '600', color: '#262626' }}>
+                    {user.login}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Card de Suporte */}
-          <IonCard style={{ marginBottom: '16px', borderRadius: '12px' }}>
-            <IonCardHeader>
-              <IonCardTitle>
-                <IonIcon icon={helpCircle} style={{ marginRight: '8px' }} />
-                {t('config.support')}
-              </IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <IonItem 
-                button 
-                onClick={() => window.open(import.meta.env.VITE_SUPPORT_LINK, '_blank')}
-                style={{ cursor: 'pointer' }}
-              >
-                <IonLabel>
-                  <p style={{ color: '#007bff', fontSize: '14px' }}>
-                    {t('config.reportError')}
-                  </p>
-                </IonLabel>
-                <IonIcon icon={helpCircle} slot="end" color="primary" />
-              </IonItem>
-            </IonCardContent>
-          </IonCard>
+          <button
+            onClick={() => window.open(import.meta.env.VITE_SUPPORT_LINK, '_blank')}
+            style={{
+              width: '100%',
+              padding: '18px 20px',
+              border: 'none',
+              backgroundColor: '#fff',
+              borderRadius: '16px',
+              marginBottom: '16px',
+              boxShadow: '0 2px 16px rgba(0,0,0,0.07)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              textAlign: 'center'
+            }}
+          >
+            <IonIcon icon={helpCircle} style={{ fontSize: '20px', color: '#098947', flexShrink: 0 }} />
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#098947' }}>
+              {t('config.reportError')}
+            </span>
+          </button>
+
+          {/* Branding */}
+          <div style={{
+            background: 'linear-gradient(135deg, #098947 0%, #0ab55a 100%)',
+            borderRadius: '20px',
+            padding: '28px 24px',
+            marginBottom: '16px',
+            boxShadow: '0 4px 20px rgba(9,137,71,0.25)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: '-30px',
+              right: '-20px',
+              width: '120px',
+              height: '120px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.08)'
+            }} />
+            <div style={{
+              position: 'absolute',
+              bottom: '-20px',
+              left: '-10px',
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.05)'
+            }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <h1 style={{
+                color: '#fff',
+                fontSize: '32px',
+                fontWeight: 'bold',
+                margin: '0 0 4px 0',
+                fontFamily: "'League Spartan', sans-serif",
+                letterSpacing: '-1.5px'
+              }}>
+                abonopay <span style={{ fontSize: '14px', fontWeight: 400, opacity: 0.7 }}>v{import.meta.env.VITE_APP_VERSION}</span>
+              </h1>
+              <p style={{
+                color: 'rgba(255,255,255,0.85)',
+                fontSize: '13px',
+                margin: 0,
+                fontFamily: "'Futura', 'Century Gothic', 'Apple Gothic', sans-serif",
+                fontWeight: 500
+              }}>
+                abono en la deuda, crecimiento en el bolsillo
+              </p>
+            </div>
+          </div>
 
           {/* Botão de Logout */}
           <IonButton
             expand="block"
-            shape="round"
-            color={user?.role === 'ROUTE' && diaFechado ? 'medium' : 'danger'}
             onClick={handleLogout}
             disabled={user?.role === 'ROUTE' && diaFechado}
-            style={{ marginTop: '24px' }}
+            style={{
+              marginTop: '8px',
+              '--background': user?.role === 'ROUTE' && diaFechado ? '#ccc' : '#eb445a',
+              '--background-hover': user?.role === 'ROUTE' && diaFechado ? '#ccc' : '#d32f2f',
+              '--border-radius': '14px',
+              '--padding-top': '16px',
+              '--padding-bottom': '16px',
+              textTransform: 'none',
+              fontWeight: '600',
+              fontSize: '16px'
+            }}
           >
             <IonIcon icon={logOut} slot="start" />
             {user?.role === 'ROUTE' && diaFechado ? t('config.logoutBlocked') : t('config.logoutButton')}
