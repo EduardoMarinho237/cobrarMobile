@@ -9,6 +9,13 @@ let appUpdateCallback: ((message: string, downloadUrl: string) => void) | null =
 // Flag global para bloquear requisições durante tela de atualização
 let appUpdateBlocked = false;
 
+// Callback para notificar App.tsx sobre dia fechado/aberto (evita circular dependency)
+let closedDayCallback: ((isClosed: boolean) => void) | null = null;
+
+export const setClosedDayCallback = (callback: (isClosed: boolean) => void) => {
+  closedDayCallback = callback;
+};
+
 export const setAppUpdateCallback = (callback: (message: string, downloadUrl: string) => void) => {
   appUpdateCallback = callback;
 };
@@ -156,10 +163,8 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
         console.log('Estado especial detectado na resposta da API:', errorData.data);
         
         if (errorData.data === "sunday-maintenance") {
-          console.log('Manutenção dominical, redirecionando para página de bloqueio dominical');
-          if (window.location.pathname !== '/sunday-blocked') {
-            window.location.replace('/sunday-blocked');
-          }
+          console.log('Manutenção dominical, redirecionando para login');
+          window.location.replace('/login');
           return;
         }
         
@@ -169,15 +174,21 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
           events.emit(true); // true = dia fechado/bloqueado
         }
         
-        // Se for "blocked", redireciona para página de bloqueio (bloqueio total)
+        // Se for "blocked", redireciona para login (bloqueio total)
         if (errorData.data === "blocked") {
-          console.log('Usuário bloqueado, redirecionando para página de bloqueio');
-          localStorage.removeItem('user'); // Remove usuário do localStorage
-          window.location.replace('/route/blocked');
+          console.log('Usuário bloqueado, redirecionando para login');
+          clearSessionData();
+          window.location.replace('/login');
           return;
         }
         
-        // Se for "closed-day", redireciona para tela de fechamento
+        // Se for "closed-day", salva estado e abre BlockedScreen imediatamente
+        salvarClosedDay();
+        if (closedDayCallback) {
+          closedDayCallback(true);
+          return;
+        }
+        // Fallback: se callback não registrado (ex: durante carregamento inicial), redireciona
         if (window.location.pathname !== '/route/fechamento') {
           window.location.replace('/route/fechamento');
         }
@@ -200,11 +211,13 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
       const parsed = JSON.parse(text);
       console.log('JSON parseado com sucesso:', parsed);
       
-      // Se a resposta não tiver "closed-day", emitir evento de dia aberto
+      // Se a resposta não tiver "closed-day", limpar flag local e notificar
       if (parsed && parsed.data !== "closed-day") {
-        const events = getFechamentoEvents();
-        if (events) {
-          events.emit(false); // false = dia aberto
+        if (localStorage.getItem('closedDay') === 'true') {
+          salvarDiaAberto();
+          if (closedDayCallback) {
+            closedDayCallback(false);
+          }
         }
       }
       
@@ -307,6 +320,34 @@ export const clearSessionData = () => {
   localStorage.removeItem('closedDay');
 };
 
+const salvarClosedDay = () => {
+  localStorage.setItem('closedDay', 'true');
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      if (user && user.role === 'ROUTE') {
+        user.closedDay = true;
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+    } catch (e) {}
+  }
+};
+
+const salvarDiaAberto = () => {
+  localStorage.setItem('closedDay', 'false');
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      if (user) {
+        user.closedDay = false;
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+    } catch (e) {}
+  }
+};
+
 export const checkToken = async (): Promise<boolean> => {
   const token = localStorage.getItem('auth_token');
   if (!token) {
@@ -328,7 +369,14 @@ export const checkToken = async (): Promise<boolean> => {
 
     if (isClosedDay) {
       console.log('checkToken: dia fechado detectado, permitindo acesso');
+      salvarClosedDay();
       return true;
+    }
+
+    // Dia está aberto, limpar flag local se estava como fechado
+    salvarDiaAberto();
+    if (closedDayCallback) {
+      closedDayCallback(false);
     }
 
     return response?.success === true && response?.data?.valid === true;
@@ -341,6 +389,7 @@ export const checkToken = async (): Promise<boolean> => {
       error?.closedDay === true;
     if (isClosedDay) {
       console.log('checkToken: dia fechado (catch), permitindo acesso');
+      salvarClosedDay();
       return true;
     }
     return false;

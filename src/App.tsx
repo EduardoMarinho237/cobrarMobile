@@ -9,7 +9,7 @@ import RouteTabs from './pages/RouteTabs';
 import EditarCategoria from './pages/manager/EditarCategoria';
 import DetalhesGastos from './pages/manager/DetalhesGastos';
 import BlockedScreen, { BlockedType } from './components/ui/BlockedScreen';
-import { getCurrentUser, setAppUpdateCallback, checkToken, clearSessionData, setAppUpdateBlocked, logout } from './services/api';
+import { getCurrentUser, setAppUpdateCallback, setClosedDayCallback, checkToken, clearSessionData, setAppUpdateBlocked, logout } from './services/api';
 import { isSunday } from './utils/sundayUtil';
 import { useTranslation } from 'react-i18next';
 
@@ -49,6 +49,16 @@ const App: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
+    // Registrar callback antes de validar sessão, para capturar "closed-day" no interceptor
+    setClosedDayCallback((isClosed: boolean) => {
+      if (isClosed) {
+        setBlockedType('closedDay');
+        setShowBlockedAlert(true);
+      } else {
+        setShowBlockedAlert(false);
+      }
+    });
+
     const validateSession = async () => {
       const token = localStorage.getItem('auth_token');
       if (!token) {
