@@ -14,12 +14,11 @@ import Gastos from './manager/Gastos';
 import Routes from './manager/Routes';
 import Config from './Config';
 import { useTranslation } from 'react-i18next';
-import { isSunday } from '../utils/sundayUtil';
+import { isSundayBlocked } from '../utils/sundayUtil';
 
 const ManagerTabs: React.FC = () => {
   const { t } = useTranslation();
-  const isDevMode = !!import.meta.env.VITE_DEV_MODE;
-  const blocked = isSunday() && !isDevMode;
+  const blocked = isSundayBlocked();
   
   return (
     <IonTabs>

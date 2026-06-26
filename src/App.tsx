@@ -10,7 +10,7 @@ import EditarCategoria from './pages/manager/EditarCategoria';
 import DetalhesGastos from './pages/manager/DetalhesGastos';
 import BlockedScreen, { BlockedType } from './components/ui/BlockedScreen';
 import { getCurrentUser, setAppUpdateCallback, setClosedDayCallback, checkToken, clearSessionData, setAppUpdateBlocked, logout } from './services/api';
-import { isSunday } from './utils/sundayUtil';
+import { isSundayBlocked } from './utils/sundayUtil';
 import { useTranslation } from 'react-i18next';
 
 /* Core CSS required for Ionic components to work properly */
@@ -93,10 +93,8 @@ const App: React.FC = () => {
     const user = getCurrentUser();
     if (!user) return;
 
-    const isDevMode = !!import.meta.env.VITE_DEV_MODE;
-
-    // Verificar se é domingo e não é dev mode
-    if (user.role === 'MANAGER' && isSunday() && !isDevMode) {
+    // Verificar se é domingo (ou VITE_SUNDAY_BLOCK ativo) — bloqueia apenas ROUTE
+    if (user.role === 'ROUTE' && isSundayBlocked()) {
       setBlockedType('sunday');
       setShowBlockedAlert(true);
       return;
@@ -164,7 +162,7 @@ const App: React.FC = () => {
       case 'ADMIN':
         return '/admin/managers';
       case 'MANAGER':
-        return isSunday() ? '/manager/reports' : '/manager/routes';
+        return isSundayBlocked() ? '/manager/reports' : '/manager/routes';
       case 'ROUTE':
         return isClosedDay ? '/route/fechamento' : '/route/config';
       default:
@@ -185,8 +183,7 @@ const App: React.FC = () => {
       }
 
       const user = getCurrentUser();
-      const isDevMode = !!import.meta.env.VITE_DEV_MODE;
-      if (user?.role === 'MANAGER' && isSunday() && !isDevMode) {
+      if (user?.role === 'MANAGER' && isSundayBlocked()) {
         const currentPath = rest.path || '';
         if (currentPath.startsWith('/manager') && !currentPath.includes('/manager/reports') && !currentPath.includes('/manager/config')) {
           return <Redirect to="/manager/reports" />;

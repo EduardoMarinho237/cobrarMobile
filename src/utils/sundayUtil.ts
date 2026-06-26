@@ -2,6 +2,17 @@ export const isSunday = (date: Date = new Date()): boolean => {
   return date.getDay() === 0;
 };
 
+export const isSundayBlocked = (): boolean => {
+  const forceBlock = import.meta.env.VITE_SUNDAY_BLOCK === 'true';
+  if (forceBlock) return true;
+  const isDevMode = !!import.meta.env.VITE_DEV_MODE;
+  return isSunday() && !isDevMode;
+};
+
+export const isSundayForced = (): boolean => {
+  return import.meta.env.VITE_SUNDAY_BLOCK === 'true';
+};
+
 export const addBusinessDays = (start: Date, businessDays: number): Date => {
   const result = new Date(start);
   let added = 0;
