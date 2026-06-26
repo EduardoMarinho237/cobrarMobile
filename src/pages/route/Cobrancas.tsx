@@ -177,17 +177,23 @@ const Cobrancas: React.FC = () => {
 
   const handlePayment = async (payment: PendingPayment) => {
     const currentValue = editedValues[payment.creditId] ?? payment.installmentValue;
-    if (currentValue <= 0) { showToast(t('pages.collections.valueMustBeGreaterThanZero'), 'danger'); return; }
+    if (currentValue <= 0) {
+      showToast(t('pages.collections.valueMustBeGreaterThanZero'), 'danger');
+      return;
+    }
     try {
       const credit = await getCredit(payment.creditId);
-      if (!credit) { showToast(t('pages.collections.errorRegisteringPayment'), 'danger'); return; }
+      if (!credit) {
+        showToast(t('pages.collections.errorRegisteringPayment'), 'danger');
+        return;
+      }
       setSelectedPayment(payment);
       setPaymentCredit(credit);
-      setEditedValues(prev => ({ ...prev, [payment.creditId]: currentValue }));
       setShowPaymentModal(true);
-    } catch { showToast(t('pages.collections.errorRegisteringPayment'), 'danger'); }
+    } catch {
+      showToast(t('pages.collections.errorRegisteringPayment'), 'danger');
+    }
   };
-
   const getPaymentValue = () => {
     if (!selectedPayment) return 0;
     return editedValues[selectedPayment.creditId] ?? selectedPayment.installmentValue;
@@ -382,9 +388,9 @@ const Cobrancas: React.FC = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                           <IonInput
                             type="number"
-                            key={`payment-val-${payment.creditId}`}
+                            value={editedValues[payment.creditId] ?? payment.installmentValue}
                             placeholder={String(payment.installmentValue)}
-                            onIonChange={(e: any) => {
+                            onIonInput={(e: any) => {          // <-- troquei onIonChange por onIonInput
                               const value = e.detail.value === '' ? 0 : Number(e.detail.value);
                               setEditedValues(prev => ({ ...prev, [payment.creditId]: value }));
                             }}
