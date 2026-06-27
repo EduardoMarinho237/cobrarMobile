@@ -289,7 +289,7 @@ const Credits: React.FC = () => {
                         <div style={{ padding: '0 16px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <span style={{ fontSize: '14px', color: '#666' }}>{t('pages.credits.paymentProgress')}</span>
-                            <span style={{ fontSize: '14px', fontWeight: 'bold', color: progress.percentage >= 100 ? '#28a745' : '#098947' }}>
+                            <span style={{ fontSize: '14px', fontWeight: 'bold', color: progress.percentage >= 100 ? '#28a745' : '#0c0989' }}>
                               {progress.percentage.toFixed(1)}%
                             </span>
                           </div>

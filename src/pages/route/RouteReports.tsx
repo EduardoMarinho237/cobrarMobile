@@ -495,7 +495,7 @@ const RouteReports: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+        <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
           <IonTitle>{t('reports.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -508,7 +508,7 @@ const RouteReports: React.FC = () => {
           <div
             onClick={() => setExpandedDaily(!expandedDaily)}
             style={{
-              background: 'linear-gradient(135deg, #098947 0%, #0ab55a 100%)',
+              background: 'linear-gradient(135deg, #0c0989 0%, #1a17b5 100%)',
               borderRadius: '16px',
               padding: '16px 20px',
               marginBottom: '16px',
@@ -516,7 +516,7 @@ const RouteReports: React.FC = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
               cursor: 'pointer',
-              boxShadow: '0 4px 15px rgba(9,137,71,0.3)',
+              boxShadow: '0 4px 15px rgba(12,9,137,0.3)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -538,7 +538,7 @@ const RouteReports: React.FC = () => {
               marginBottom: '16px',
               boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
               overflow: 'hidden',
-              borderLeft: '4px solid #098947',
+              borderLeft: '4px solid #0c0989',
             }}>
               <div style={{ padding: '16px 20px' }}>
                 {isLoading ? (
@@ -587,7 +587,7 @@ const RouteReports: React.FC = () => {
                               padding: '2px 10px',
                               borderRadius: '12px',
                               backgroundColor: '#e8f5e9',
-                              color: '#098947',
+                              color: '#0c0989',
                               fontSize: '11px',
                               fontWeight: 600
                             }}>
@@ -635,7 +635,7 @@ const RouteReports: React.FC = () => {
           <div
             onClick={() => setExpandedWeekly(!expandedWeekly)}
             style={{
-              background: 'linear-gradient(135deg, #098947 0%, #0ab55a 100%)',
+              background: 'linear-gradient(135deg, #0c0989 0%, #1a17b5 100%)',
               borderRadius: '16px',
               padding: '16px 20px',
               marginBottom: '16px',
@@ -643,7 +643,7 @@ const RouteReports: React.FC = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
               cursor: 'pointer',
-              boxShadow: '0 4px 15px rgba(9,137,71,0.3)',
+              boxShadow: '0 4px 15px rgba(12,9,137,0.3)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -665,7 +665,7 @@ const RouteReports: React.FC = () => {
               marginBottom: '16px',
               boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
               overflow: 'hidden',
-              borderLeft: '4px solid #098947',
+              borderLeft: '4px solid #0c0989',
             }}>
               <div style={{ padding: '16px 20px' }}>
                 {isLoading ? (
@@ -715,7 +715,7 @@ const RouteReports: React.FC = () => {
                                 padding: '2px 10px',
                                 borderRadius: '12px',
                                 backgroundColor: (report.data.weeklySummary?.finalBalance ?? 0) >= 0 ? '#e8f5e9' : '#ffebee',
-                                color: (report.data.weeklySummary?.finalBalance ?? 0) >= 0 ? '#098947' : '#d32f2f',
+                                color: (report.data.weeklySummary?.finalBalance ?? 0) >= 0 ? '#0c0989' : '#d32f2f',
                                 fontSize: '11px',
                                 fontWeight: 600
                               }}>

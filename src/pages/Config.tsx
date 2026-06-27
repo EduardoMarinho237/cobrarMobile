@@ -76,7 +76,7 @@ const Config: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+        <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
           <IonTitle>{t('config.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -95,7 +95,7 @@ const Config: React.FC = () => {
           }}>
             {/* Green header area */}
             <div style={{
-              background: 'linear-gradient(135deg, #098947 0%, #0ab55a 100%)',
+              background: 'linear-gradient(135deg, #0c0989 0%, #1a17b5 100%)',
               padding: '32px 20px 40px',
               display: 'flex',
               flexDirection: 'column',
@@ -163,19 +163,19 @@ const Config: React.FC = () => {
               textAlign: 'center'
             }}
           >
-            <IonIcon icon={helpCircle} style={{ fontSize: '20px', color: '#098947', flexShrink: 0 }} />
-            <span style={{ fontSize: '14px', fontWeight: '600', color: '#098947' }}>
+            <IonIcon icon={helpCircle} style={{ fontSize: '20px', color: '#0c0989', flexShrink: 0 }} />
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#0c0989' }}>
               {t('config.reportError')}
             </span>
           </button>
 
           {/* Branding */}
           <div style={{
-            background: 'linear-gradient(135deg, #098947 0%, #0ab55a 100%)',
+            background: 'linear-gradient(135deg, #0c0989 0%, #1a17b5 100%)',
             borderRadius: '20px',
             padding: '28px 24px',
             marginBottom: '16px',
-            boxShadow: '0 4px 20px rgba(9,137,71,0.25)',
+            boxShadow: '0 4px 20px rgba(12,9,137,0.25)',
             position: 'relative',
             overflow: 'hidden'
           }}>

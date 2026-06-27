@@ -18,8 +18,8 @@ const StyledInput: React.FC<StyledInputProps> = ({ label, placeholder, value, on
       '--padding-start': '16px',
       '--inner-padding-end': '16px',
       '--min-height': '56px',
-      '--highlight-color-focused': '#098947',
-      '--highlight-color-valid': '#098947'
+      '--highlight-color-focused': '#0c0989',
+      '--highlight-color-valid': '#0c0989'
     }}>
       <IonInput
         label={label}

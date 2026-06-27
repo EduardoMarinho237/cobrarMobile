@@ -74,7 +74,7 @@ const BlockedScreen: React.FC<BlockedScreenProps> = ({
     switch (type) {
       case 'sunday':
       case 'closedDay':
-        return '#098947';
+        return '#0c0989';
       case 'update':
         return '#3b82f6';
     }
@@ -94,7 +94,7 @@ const BlockedScreen: React.FC<BlockedScreenProps> = ({
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' } as any}>
+        <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' } as any}>
           <IonTitle style={{ color: '#fff', fontWeight: 700, fontFamily: "'League Spartan', sans-serif" }}>
             {title}
           </IonTitle>
@@ -230,11 +230,11 @@ const BlockedScreen: React.FC<BlockedScreenProps> = ({
           </div>
 
           <div style={{
-            backgroundColor: '#098947',
+            backgroundColor: '#0c0989',
             borderRadius: '20px',
             padding: '28px 24px',
             marginTop: '24px',
-            boxShadow: '0 4px 20px rgba(9,137,71,0.25)',
+            boxShadow: '0 4px 20px rgba(12,9,137,0.25)',
             position: 'relative',
             overflow: 'hidden',
             width: '100%',

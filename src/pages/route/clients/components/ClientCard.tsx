@@ -59,7 +59,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
         left: 0,
         width: '4px',
         height: '100%',
-        backgroundColor: '#098947',
+        backgroundColor: '#0c0989',
         borderRadius: '16px 0 0 16px'
       }} />
 
@@ -72,7 +72,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
             <span style={{
               fontSize: '11px',
               fontWeight: '600',
-              color: '#098947',
+              color: '#0c0989',
               backgroundColor: '#e8f5e9',
               padding: '4px 10px',
               borderRadius: '20px'
@@ -107,8 +107,8 @@ const ClientCard: React.FC<ClientCardProps> = ({
             borderTop: '1px solid #f0f0f0',
           }}
         >
-          <IonIcon icon={showDetails ? eyeOff : eye} style={{ fontSize: '16px', color: '#098947' }} />
-          <span style={{ fontSize: '13px', color: '#098947', fontWeight: 600 }}>
+          <IonIcon icon={showDetails ? eyeOff : eye} style={{ fontSize: '16px', color: '#0c0989' }} />
+          <span style={{ fontSize: '13px', color: '#0c0989', fontWeight: 600 }}>
             {showDetails ? t('common.hide') : t('common.show')}
           </span>
         </div>

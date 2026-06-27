@@ -12,7 +12,7 @@ interface GreenHeaderProps {
 
 const GreenHeader: React.FC<GreenHeaderProps> = ({ title, onClose, onAction, actionIcon, actionDisabled }) => (
   <IonHeader>
-    <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+    <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
       <IonTitle>{title}</IonTitle>
       {onAction && actionIcon && (
         <IonButtons slot="start">

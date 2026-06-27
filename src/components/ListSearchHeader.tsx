@@ -36,7 +36,7 @@ const ListSearchHeader: React.FC<ListSearchHeaderProps> = ({
 
   return (
     <IonHeader>
-      <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+      <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
         {showSearch ? (
           <IonSearchbar
             onIonInput={(e) => onSearchQueryChange(e.detail.value ?? '')}

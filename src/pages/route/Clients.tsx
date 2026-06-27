@@ -207,7 +207,7 @@ const Clients: React.FC = () => {
           <span style={{ fontSize: '14px', color: '#555', fontWeight: 600 }}>
             {t('pages.clients.todayCredits')}
           </span>
-          <span style={{ fontSize: '18px', fontWeight: 700, color: '#098947' }}>
+          <span style={{ fontSize: '18px', fontWeight: 700, color: '#0c0989' }}>
             {formatCurrencyWithSymbol(todayTotal)}
           </span>
         </div>
@@ -301,7 +301,7 @@ const Clients: React.FC = () => {
                     left: 0,
                     width: '4px',
                     height: '100%',
-                    backgroundColor: '#098947',
+                    backgroundColor: '#0c0989',
                     borderRadius: '12px 0 0 12px'
                   }} />
                   <div style={{ paddingLeft: '8px' }}>
@@ -310,7 +310,7 @@ const Clients: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <span style={{ fontSize: '13px', color: '#555' }}>{t('pages.clients.loanAmount')}</span>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#098947' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#0c0989' }}>
                         {formatCurrencyWithSymbol(credit.initialValue)}
                       </span>
                     </div>

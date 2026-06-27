@@ -145,7 +145,8 @@
       "updatedSuccess": "Manager updated successfully",
       "accessRestored": "Access restored successfully",
       "accessRestricted": "Access restricted successfully",
-      "passwordMinLength": "Password must be at least 6 characters"
+      "passwordMinLength": "Password must be at least 6 characters",
+      "includeDefaultExpenses": "Include default expense categories and types"
     },
     "routes": {
       "title": "Routes",

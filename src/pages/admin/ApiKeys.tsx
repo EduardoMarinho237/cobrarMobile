@@ -123,7 +123,7 @@ const ApiKeys: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+        <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
           <IonTitle>{t('pages.apiKeys.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -137,7 +137,7 @@ const ApiKeys: React.FC = () => {
             borderRadius: '12px',
             padding: '12px 16px',
             marginBottom: '16px',
-            borderLeft: '4px solid #098947'
+            borderLeft: '4px solid #0c0989'
           }}>
             <p style={{ margin: 0, fontSize: '13px', color: '#2e7d32', lineHeight: '1.4' }}>
               {t('pages.apiKeys.description')}
@@ -149,7 +149,7 @@ const ApiKeys: React.FC = () => {
             onClick={() => setShowGenerateModal(true)}
             style={{
               marginBottom: '20px',
-              '--background': '#098947',
+              '--background': '#0c0989',
               '--border-radius': '14px',
               '--padding-top': '14px',
               '--padding-bottom': '14px',
@@ -313,7 +313,7 @@ const ApiKeys: React.FC = () => {
         {/* Modal Gerar Chave */}
         <IonModal isOpen={showGenerateModal} onDidDismiss={() => { setShowGenerateModal(false); setDescription(''); }}>
           <IonHeader>
-            <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+            <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
               <IonTitle>{t('pages.apiKeys.generateKey')}</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => { setShowGenerateModal(false); setDescription(''); }} style={{ color: '#fff' }}>{t('pages.apiKeys.cancel')}</IonButton>

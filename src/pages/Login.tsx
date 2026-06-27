@@ -142,7 +142,7 @@ width: '380px',
           />
           {/* Top green section with branding */}
           <div style={{
-            background: '#098947',
+            background: '#0c0989',
             padding: '60px 28px 80px 28px',
             borderBottomLeftRadius: '40px',
             borderBottomRightRadius: '40px',
@@ -219,8 +219,8 @@ width: '380px',
               '--padding-start': '20px',
               '--inner-padding-end': '20px',
               '--min-height': '58px',
-              '--highlight-color-focused': '#098947',
-              '--highlight-color-valid': '#098947'
+              '--highlight-color-focused': '#0c0989',
+              '--highlight-color-valid': '#0c0989'
             }}>
               <IonInput
                 label={t('login.username')}
@@ -239,8 +239,8 @@ width: '380px',
               '--padding-start': '20px',
               '--inner-padding-end': '20px',
               '--min-height': '58px',
-              '--highlight-color-focused': '#098947',
-              '--highlight-color-valid': '#098947'
+              '--highlight-color-focused': '#0c0989',
+              '--highlight-color-valid': '#0c0989'
             }}>
               <IonInput
                 label={t('login.password')}
@@ -264,8 +264,8 @@ width: '380px',
                 onIonChange={(e) => setShowPassword(e.detail.checked)}
                 labelPlacement="end"
                 style={{
-                  '--checkbox-background-checked': '#098947',
-                  '--border-color-checked': '#098947',
+                  '--checkbox-background-checked': '#0c0989',
+                  '--border-color-checked': '#0c0989',
                   '--checkmark-color': '#fff',
                   '--size': '22px'
                 }}
@@ -288,8 +288,8 @@ width: '380px',
                 onIonChange={(e) => setRememberMe(e.detail.checked)}
                 labelPlacement="end"
                 style={{
-                  '--checkbox-background-checked': '#098947',
-                  '--border-color-checked': '#098947',
+                  '--checkbox-background-checked': '#0c0989',
+                  '--border-color-checked': '#0c0989',
                   '--checkmark-color': '#fff',
                   '--size': '22px'
                 }}
@@ -304,8 +304,8 @@ width: '380px',
             <IonButton
               expand="block"
               style={{
-                '--background': '#098947',
-                '--background-hover': '#067a3a',
+                '--background': '#0c0989',
+                '--background-hover': '#08066a',
                 '--border-radius': '14px',
                 '--font-weight': 'bold',
                 '--padding-top': '16px',

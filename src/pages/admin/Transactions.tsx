@@ -151,7 +151,7 @@ const Transactions: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+        <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
           <IonTitle>{t('pages.transactions.title')}</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={() => fetchTransactions(page, false)} disabled={loading} style={{ color: '#fff' }}>
@@ -175,7 +175,7 @@ const Transactions: React.FC = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <IonIcon icon={calendar} style={{ fontSize: '18px', color: '#098947' }} />
+              <IonIcon icon={calendar} style={{ fontSize: '18px', color: '#0c0989' }} />
               <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>
                 {t('pages.transactions.date')}
                 {isToday && <span style={{ fontSize: '12px', fontWeight: '400', color: '#999', marginLeft: '4px' }}>({t('pages.transactions.today')})</span>}
@@ -215,7 +215,7 @@ const Transactions: React.FC = () => {
                     fontSize: '12px',
                     fontWeight: '600',
                     cursor: 'pointer',
-                    backgroundColor: filterMode === mode ? '#098947' : '#f0f0f0',
+                    backgroundColor: filterMode === mode ? '#0c0989' : '#f0f0f0',
                     color: filterMode === mode ? '#fff' : '#666',
                     transition: 'all 0.2s'
                   }}
@@ -314,7 +314,7 @@ const Transactions: React.FC = () => {
                 <span style={{
                   fontSize: '15px',
                   fontWeight: '800',
-                  color: tx.amount >= 0 ? '#098947' : '#eb445a'
+                  color: tx.amount >= 0 ? '#0c0989' : '#eb445a'
                 }}>
                   {tx.amount >= 0 ? '+' : ''}{formatCurrencyWithSymbol(tx.amount)}
                 </span>
@@ -346,7 +346,7 @@ const Transactions: React.FC = () => {
                 padding: '10px 20px',
                 border: 'none',
                 borderRadius: '10px',
-                backgroundColor: canPrev ? '#098947' : '#e0e0e0',
+                backgroundColor: canPrev ? '#0c0989' : '#e0e0e0',
                 color: canPrev ? '#fff' : '#999',
                 fontSize: '14px',
                 fontWeight: '600',
@@ -366,7 +366,7 @@ const Transactions: React.FC = () => {
                 padding: '10px 20px',
                 border: 'none',
                 borderRadius: '10px',
-                backgroundColor: canNext ? '#098947' : '#e0e0e0',
+                backgroundColor: canNext ? '#0c0989' : '#e0e0e0',
                 color: canNext ? '#fff' : '#999',
                 fontSize: '14px',
                 fontWeight: '600',

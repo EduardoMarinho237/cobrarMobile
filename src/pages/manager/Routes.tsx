@@ -402,7 +402,7 @@ const Routes: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+        <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
           <IonTitle>{t('pages.routes.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -462,7 +462,7 @@ const Routes: React.FC = () => {
                       left: 0,
                       width: '4px',
                       height: '100%',
-                      backgroundColor: route.restricted ? '#ccc' : '#098947',
+                      backgroundColor: route.restricted ? '#ccc' : '#0c0989',
                       borderRadius: '16px 0 0 16px'
                     }} />
                     
@@ -487,10 +487,10 @@ const Routes: React.FC = () => {
 
                       <div style={{ marginBottom: '16px' }}>
                         <InfoRow label={t('pages.routes.login')} value={route.login} />
-                        <InfoRow label={t('pages.routes.role')} value={translateRole(route.role, t)} valueColor="#098947" />
+                        <InfoRow label={t('pages.routes.role')} value={translateRole(route.role, t)} valueColor="#0c0989" />
                         <InfoRow label={t('pages.routes.lastAccess')} value={formatDate(route.lastAccess)} />
-                        <InfoRow label={t('pages.routes.cashBalance')} value={formatCurrencyWithSymbol(route.cashBalance || 0)} valueColor={(route.cashBalance || 0) >= 0 ? '#098947' : '#dc3545'} />
-                        <InfoRow label={t('pages.routes.dayStatus')} value={route.dayClosed ? t('pages.routes.closed') : t('pages.routes.open')} valueColor={route.dayClosed ? '#dc3545' : '#098947'} />
+                        <InfoRow label={t('pages.routes.cashBalance')} value={formatCurrencyWithSymbol(route.cashBalance || 0)} valueColor={(route.cashBalance || 0) >= 0 ? '#0c0989' : '#dc3545'} />
+                        <InfoRow label={t('pages.routes.dayStatus')} value={route.dayClosed ? t('pages.routes.closed') : t('pages.routes.open')} valueColor={route.dayClosed ? '#dc3545' : '#0c0989'} />
                         <InfoRow label={t('pages.routes.tax')} value={`${route.tax || 0}%`} showBorder={false} />
                       </div>
 
@@ -566,7 +566,7 @@ const Routes: React.FC = () => {
         {/* Modal Criar Route */}
         <IonModal isOpen={showCreateModal} onDidDismiss={() => setShowCreateModal(false)}>
           <IonHeader>
-            <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+            <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
               <IonTitle>{t('pages.routes.addRoute')}</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowCreateModal(false)} style={{ color: '#fff' }}>{t('common.close')}</IonButton>
@@ -624,7 +624,7 @@ const Routes: React.FC = () => {
         {/* Modal Depositar */}
         <IonModal isOpen={showDepositModal} onDidDismiss={() => setShowDepositModal(false)}>
           <IonHeader>
-            <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+            <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
               <IonTitle>{t('pages.routes.depositTitle', { routeName: selectedRoute?.name })}</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowDepositModal(false)} style={{ color: '#fff' }}>{t('common.close')}</IonButton>
@@ -634,7 +634,7 @@ const Routes: React.FC = () => {
           <IonContent>
             <div style={{ padding: '20px', paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 20px))' }}>
               <p style={{ marginBottom: '16px', color: '#666' }}>
-                {t('pages.routes.currentBalance')} <strong style={{ color: '#098947' }}>{formatCurrencyWithSymbol(selectedRoute?.cashBalance || 0)}</strong>
+                {t('pages.routes.currentBalance')} <strong style={{ color: '#0c0989' }}>{formatCurrencyWithSymbol(selectedRoute?.cashBalance || 0)}</strong>
               </p>
               <StyledInput
                 label={t('pages.routes.value')}
@@ -658,7 +658,7 @@ const Routes: React.FC = () => {
         {/* Modal Retirar */}
         <IonModal isOpen={showWithdrawalModal} onDidDismiss={() => setShowWithdrawalModal(false)}>
           <IonHeader>
-            <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+            <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
               <IonTitle>{t('pages.routes.withdrawalTitle', { routeName: selectedRoute?.name })}</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowWithdrawalModal(false)} style={{ color: '#fff' }}>{t('common.close')}</IonButton>
@@ -668,7 +668,7 @@ const Routes: React.FC = () => {
           <IonContent>
             <div style={{ padding: '20px', paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 20px))' }}>
               <p style={{ marginBottom: '16px', color: '#666' }}>
-                {t('pages.routes.currentBalance')} <strong style={{ color: '#098947' }}>{formatCurrencyWithSymbol(selectedRoute?.cashBalance || 0)}</strong>
+                {t('pages.routes.currentBalance')} <strong style={{ color: '#0c0989' }}>{formatCurrencyWithSymbol(selectedRoute?.cashBalance || 0)}</strong>
               </p>
               <StyledInput
                 label={t('pages.routes.value')}
@@ -692,7 +692,7 @@ const Routes: React.FC = () => {
         {/* Modal Editar Route */}
         <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
           <IonHeader>
-            <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+            <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
               <IonTitle>{t('pages.routes.editRoute')}</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowEditModal(false)} style={{ color: '#fff' }}>{t('common.close')}</IonButton>
@@ -729,7 +729,7 @@ const Routes: React.FC = () => {
         {/* Modal Trocar Senha */}
         <IonModal isOpen={showPasswordModal} onDidDismiss={() => setShowPasswordModal(false)}>
           <IonHeader>
-            <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+            <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
               <IonTitle>{t('pages.routes.changePassword')}</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowPasswordModal(false)} style={{ color: '#fff' }}>{t('common.close')}</IonButton>

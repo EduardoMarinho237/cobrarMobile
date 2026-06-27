@@ -213,7 +213,7 @@ const Gastos: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+        <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
           <IonTitle>{t('pages.expenses.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -272,7 +272,7 @@ const Gastos: React.FC = () => {
                     left: 0,
                     width: '4px',
                     height: '100%',
-                    backgroundColor: '#098947',
+                    backgroundColor: '#0c0989',
                     borderRadius: '16px 0 0 16px'
                   }} />
                   

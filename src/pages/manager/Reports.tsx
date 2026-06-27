@@ -1063,7 +1063,7 @@ const Reports: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+        <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
           <IonTitle>{t('reports.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -1082,13 +1082,13 @@ const Reports: React.FC = () => {
             style={{ 
               marginBottom: '16px',
               padding: '16px 20px',
-              backgroundColor: '#098947',
+              backgroundColor: '#0c0989',
               borderRadius: '16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               cursor: 'pointer',
-              boxShadow: '0 2px 12px rgba(9,137,71,0.2)'
+              boxShadow: '0 2px 12px rgba(12,9,137,0.2)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1214,13 +1214,13 @@ const Reports: React.FC = () => {
             style={{ 
               marginBottom: '16px',
               padding: '16px 20px',
-              backgroundColor: '#098947',
+              backgroundColor: '#0c0989',
               borderRadius: '16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               cursor: 'pointer',
-              boxShadow: '0 2px 12px rgba(9,137,71,0.2)'
+              boxShadow: '0 2px 12px rgba(12,9,137,0.2)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1344,13 +1344,13 @@ const Reports: React.FC = () => {
             style={{ 
               marginBottom: '16px',
               padding: '16px 20px',
-              backgroundColor: '#098947',
+              backgroundColor: '#0c0989',
               borderRadius: '16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               cursor: 'pointer',
-              boxShadow: '0 2px 12px rgba(9,137,71,0.2)'
+              boxShadow: '0 2px 12px rgba(12,9,137,0.2)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1474,13 +1474,13 @@ const Reports: React.FC = () => {
             style={{ 
               marginBottom: '16px',
               padding: '16px 20px',
-              backgroundColor: '#098947',
+              backgroundColor: '#0c0989',
               borderRadius: '16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               cursor: 'pointer',
-              boxShadow: '0 2px 12px rgba(9,137,71,0.2)'
+              boxShadow: '0 2px 12px rgba(12,9,137,0.2)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

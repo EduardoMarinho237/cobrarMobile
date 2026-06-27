@@ -48,7 +48,7 @@ const Managers: React.FC = () => {
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
   
   // Form states
-  const [newManager, setNewManager] = useState({ name: '', login: '', password: '', confirmPassword: '' });
+  const [newManager, setNewManager] = useState({ name: '', login: '', password: '', confirmPassword: '', includeDefaultExpenses: true });
   const [editManager, setEditManager] = useState({ name: '', login: '' });
   const [newPassword, setNewPassword] = useState({ password: '', confirmPassword: '' });
 
@@ -141,14 +141,14 @@ const Managers: React.FC = () => {
     }
 
     try {
-      const response = await createManager(newManager.name, newManager.login, newManager.password);
+      const response = await createManager(newManager.name, newManager.login, newManager.password, newManager.includeDefaultExpenses);
       
       // Usa a mensagem da API
       showToast(response.message || t('pages.managers.createdSuccess'), response.success ? 'success' : 'danger');
       
       if (response.success) {
         setShowCreateModal(false);
-        setNewManager({ name: '', login: '', password: '', confirmPassword: '' });
+        setNewManager({ name: '', login: '', password: '', confirmPassword: '', includeDefaultExpenses: true });
         loadManagers();
       }
     } catch (error) {
@@ -280,7 +280,7 @@ const Managers: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+        <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
           <IonTitle>{t('pages.managers.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -326,7 +326,7 @@ const Managers: React.FC = () => {
                 left: 0,
                 width: '4px',
                 height: '100%',
-                backgroundColor: manager.restricted ? '#ccc' : '#098947',
+                backgroundColor: manager.restricted ? '#ccc' : '#0c0989',
                 borderRadius: '16px 0 0 16px'
               }} />
               
@@ -351,10 +351,10 @@ const Managers: React.FC = () => {
 
                 <div style={{ marginBottom: '16px' }}>
                   <InfoRow label={t('pages.managers.login')} value={manager.login} />
-                  <InfoRow label={t('pages.managers.role')} value={translateRole(manager.role, t)} valueColor="#098947" />
+                  <InfoRow label={t('pages.managers.role')} value={translateRole(manager.role, t)} valueColor="#0c0989" />
                   <InfoRow label={t('pages.managers.lastAccess')} value={formatDate(manager.lastAccess)} />
                   <InfoRow label={t('pages.managers.routesCount')} value={String(manager.routeCount || 0)} />
-                  <InfoRow label={t('pages.managers.cashBalance')} value={`$${(manager.cashBalance || 0).toFixed(2)}`} valueColor="#098947" showBorder={false} />
+                  <InfoRow label={t('pages.managers.cashBalance')} value={`$${(manager.cashBalance || 0).toFixed(2)}`} valueColor="#0c0989" showBorder={false} />
                 </div>
 
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -390,7 +390,7 @@ const Managers: React.FC = () => {
         {/* Modal Criar Manager */}
         <IonModal isOpen={showCreateModal} onDidDismiss={() => setShowCreateModal(false)}>
           <IonHeader>
-            <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+            <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
               <IonTitle>{t('pages.managers.addManager')}</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowCreateModal(false)} style={{ color: '#fff' }}>{t('common.close')}</IonButton>
@@ -424,8 +424,20 @@ const Managers: React.FC = () => {
                 value={newManager.confirmPassword}
                 onIonInput={(e: any) => setNewManager({ ...newManager, confirmPassword: e.detail.value! })}
                 type="password"
-                marginBottom="24px"
+                marginBottom="8px"
               />
+              <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="checkbox"
+                  id="includeDefaultExpenses"
+                  checked={newManager.includeDefaultExpenses}
+                  onChange={(e) => setNewManager({ ...newManager, includeDefaultExpenses: e.target.checked })}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <label htmlFor="includeDefaultExpenses" style={{ fontSize: '14px', color: '#262626', cursor: 'pointer' }}>
+                  {t('pages.managers.includeDefaultExpenses')}
+                </label>
+              </div>
               <PrimaryButton onClick={handleCreateManager} label={t('pages.managers.create')} />
             </div>
           </IonContent>
@@ -434,7 +446,7 @@ const Managers: React.FC = () => {
         {/* Modal Editar Manager */}
         <IonModal isOpen={showEditModal} onDidDismiss={() => setShowEditModal(false)}>
           <IonHeader>
-            <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+            <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
               <IonTitle>{t('pages.managers.editManager')}</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowEditModal(false)} style={{ color: '#fff' }}>{t('common.close')}</IonButton>
@@ -464,7 +476,7 @@ const Managers: React.FC = () => {
         {/* Modal Trocar Senha */}
         <IonModal isOpen={showPasswordModal} onDidDismiss={() => setShowPasswordModal(false)}>
           <IonHeader>
-            <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+            <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
               <IonTitle>{t('pages.managers.changePassword')}</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowPasswordModal(false)} style={{ color: '#fff' }}>{t('common.close')}</IonButton>

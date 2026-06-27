@@ -59,7 +59,7 @@ const CreditModal: React.FC<CreditModalProps> = ({
               left: 0,
               width: '4px',
               height: '100%',
-              backgroundColor: '#098947',
+              backgroundColor: '#0c0989',
               borderRadius: '16px 0 0 16px'
             }} />
             <div style={{ paddingLeft: '8px' }}>
@@ -72,7 +72,7 @@ const CreditModal: React.FC<CreditModalProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', color: '#999', fontWeight: 600 }}>{t('pages.clients.interestRate')}</span>
                 <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '15px', fontWeight: 700, color: '#098947' }}>{currentTax}%</span>
+                  <span style={{ fontSize: '15px', fontWeight: 700, color: '#0c0989' }}>{currentTax}%</span>
                   <div style={{ fontSize: '11px', color: '#999', marginTop: '1px' }}>{t('pages.clients.currentSystemTax')}</div>
                 </div>
               </div>
@@ -95,7 +95,7 @@ const CreditModal: React.FC<CreditModalProps> = ({
               left: 0,
               width: '4px',
               height: '100%',
-              backgroundColor: '#098947',
+              backgroundColor: '#0c0989',
               borderRadius: '16px 0 0 16px'
             }} />
             <div style={{ paddingLeft: '8px' }}>

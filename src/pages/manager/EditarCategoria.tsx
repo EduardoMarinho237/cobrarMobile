@@ -266,7 +266,7 @@ const EditarCategoria: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+        <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
           <IonTitle>{t('pages.expensesEdit.title')}</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={() => history.push('/manager/gastos')} style={{ color: '#fff' }}>
@@ -303,7 +303,7 @@ const EditarCategoria: React.FC = () => {
                 overflow: 'hidden'
               }}>
                 <div style={{
-                  backgroundColor: '#098947',
+                  backgroundColor: '#0c0989',
                   padding: '16px 20px',
                   display: 'flex',
                   alignItems: 'center'

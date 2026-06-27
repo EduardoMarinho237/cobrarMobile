@@ -148,7 +148,8 @@
       "updatedSuccess": "Gerente atualizado com sucesso",
       "accessRestored": "Acesso restaurado com sucesso",
       "accessRestricted": "Acesso restrito com sucesso",
-      "passwordMinLength": "Senha deve ter pelo menos 6 caracteres"
+      "passwordMinLength": "Senha deve ter pelo menos 6 caracteres",
+      "includeDefaultExpenses": "Incluir categorias e tipos de gastos padrão"
     },
     "dashboard": {
       "title": "Painel de Controle",
@@ -314,6 +315,7 @@
       "expenseTypes": "Tipos de Gastos:",
       "addExpense": "Adicionar Gasto",
       "editExpense": "Editar Gasto",
+      "expenseDetails": "Detalhes do Gasto",
       "addCategory": "Adicionar Categoria",
       "editCategory": "Editar Categoria",
       "name": "Nome",
@@ -335,6 +337,7 @@
       "delete": "Excluir",
       "edit": "Editar",
       "save": "Salvar",
+      "select": "Selecionar",
       "cancel": "Cancelar",
       "confirm": "Confirmar",
       "confirmDelete": "Confirmar Exclusão",

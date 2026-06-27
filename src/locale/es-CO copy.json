@@ -130,7 +130,8 @@
       "restoreButton": "Restaurar",
       "confirmRestrictAccess": "Confirmar Restricción de Acceso",
       "restrictAccess": "Restringir Acceso",
-      "restoreAccess": "Restaurar Acceso"
+      "restoreAccess": "Restaurar Acceso",
+      "includeDefaultExpenses": "Incluir categorías y tipos de gastos predeterminados"
     },
     "dashboard": {
       "title": "Panel de Control",
@@ -396,9 +397,11 @@
       "valuePlaceholder": "Digite el valor",
       "descriptionPlaceholder": "Digite la descripción",
       "editExpense": "Editar Gasto",
+      "expenseDetails": "Detalles del Gasto",
       "create": "Crear",
       "update": "Actualizar",
       "save": "Guardar",
+      "select": "Seleccionar",
       "confirm": "Confirmar",
       "confirmDeleteMessage": "¿Está seguro que desea eliminar el gasto \"{expenseTypeName}\" con valor {value}?",
       "name": "Nombre",
@@ -472,7 +475,8 @@
       "deletedSuccess": "Gasto eliminado exitosamente",
       "connectionError": "Error de conexión",
       "noExpensesRegistered": "No hay gastos registrados",
-      "loadingExpenses": "Cargando gastos..."
+      "loadingExpenses": "Cargando gastos...",
+      "select": "Seleccionar"
     },
     "expensesRoute": {
       "title": "Gastos",

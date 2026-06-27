@@ -39,7 +39,7 @@ const CardSection: React.FC<CardSectionProps> = ({ icon, label, value, valueColo
     marginBottom: '16px',
     boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
     overflow: 'hidden',
-    borderLeft: `4px solid ${borderColor || '#098947'}`,
+    borderLeft: `4px solid ${borderColor || '#0c0989'}`,
   }}>
     <div style={{ padding: '16px 20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
@@ -47,12 +47,12 @@ const CardSection: React.FC<CardSectionProps> = ({ icon, label, value, valueColo
           width: '36px',
           height: '36px',
           borderRadius: '10px',
-          backgroundColor: `${borderColor || '#098947'}15`,
+          backgroundColor: `${borderColor || '#0c0989'}15`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          <IonIcon icon={icon} style={{ fontSize: '18px', color: borderColor || '#098947' }} />
+          <IonIcon icon={icon} style={{ fontSize: '18px', color: borderColor || '#0c0989' }} />
         </div>
         <span style={{ fontSize: '14px', fontWeight: 600, color: '#555' }}>
           {label}
@@ -150,7 +150,7 @@ const Fechamento: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#098947', '--color': '#fff' }}>
+        <IonToolbar style={{ '--background': '#0c0989', '--color': '#fff' }}>
           <IonTitle>{t('pages.closing.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -165,8 +165,8 @@ const Fechamento: React.FC = () => {
                 icon={saveOutline}
                 label={t('pages.closing.cashBoxTitle')}
                 value={formatCurrencyWithSymbol(cashBalance)}
-                valueColor={cashBalance >= 0 ? '#098947' : '#dc3545'}
-                borderColor={cashBalance >= 0 ? '#098947' : '#dc3545'}
+                valueColor={cashBalance >= 0 ? '#0c0989' : '#dc3545'}
+                borderColor={cashBalance >= 0 ? '#0c0989' : '#dc3545'}
                 subtitle={cashBalance >= 0 ? t('pages.closing.cashBoxPositive') : t('pages.closing.cashBoxNegative')}
                 extraInfo={`${t('pages.closing.initialBalance')}: ${formatCurrencyWithSymbol(fechamentoData.caixaInicial)}`}
               />
@@ -175,16 +175,16 @@ const Fechamento: React.FC = () => {
                 icon={cashOutline}
                 label={t('pages.closing.collectionExpectation')}
                 value={formatCurrencyWithSymbol(fechamentoData.expectativaArrecadacao)}
-                valueColor="#098947"
-                borderColor="#098947"
+                valueColor="#0c0989"
+                borderColor="#0c0989"
               />
 
               <CardSection
                 icon={walletOutline}
                 label={t('pages.closing.dayCollection')}
                 value={formatCurrencyWithSymbol(fechamentoData.arrecadacaoDia)}
-                valueColor="#098947"
-                borderColor="#098947"
+                valueColor="#0c0989"
+                borderColor="#0c0989"
               />
 
               <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>

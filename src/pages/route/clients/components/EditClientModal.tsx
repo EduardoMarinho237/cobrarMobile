@@ -49,7 +49,7 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
               left: 0,
               width: '4px',
               height: '100%',
-              backgroundColor: '#098947',
+              backgroundColor: '#0c0989',
               borderRadius: '16px 0 0 16px'
             }} />
             <div style={{ paddingLeft: '8px' }}>

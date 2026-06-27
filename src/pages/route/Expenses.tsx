@@ -278,7 +278,7 @@ const Expenses: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar style={{ '--background': '#098947' } as any}>
+        <IonToolbar style={{ '--background': '#0c0989' } as any}>
           <IonTitle style={{ color: '#fff', fontWeight: 700, fontFamily: "'League Spartan', sans-serif" }}>
             {t('pages.expenses.title')}
           </IonTitle>
@@ -320,7 +320,7 @@ const Expenses: React.FC = () => {
                 }}>
                   <div style={{
                     position: 'absolute', top: 0, left: 0, width: '4px', height: '100%',
-                    backgroundColor: '#098947', borderRadius: '16px 0 0 16px'
+                    backgroundColor: '#0c0989', borderRadius: '16px 0 0 16px'
                   }} />
                   <div style={{ paddingLeft: '8px' }}>
                     <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#262626', marginBottom: '14px' }}>
@@ -358,7 +358,7 @@ const Expenses: React.FC = () => {
           <IonContent>
             <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
               <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#098947', borderRadius: '16px 0 0 16px' }} />
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#0c0989', borderRadius: '16px 0 0 16px' }} />
                 <div style={{ paddingLeft: '8px' }}>
                   <SelectInput
                     label={t('pages.expenses.category')}
@@ -402,7 +402,7 @@ const Expenses: React.FC = () => {
           <IonContent>
             <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
               <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#098947', borderRadius: '16px 0 0 16px' }} />
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#0c0989', borderRadius: '16px 0 0 16px' }} />
                 <div style={{ paddingLeft: '8px' }}>
                   <SelectInput
                     label={t('pages.expenses.category')}
@@ -447,7 +447,7 @@ const Expenses: React.FC = () => {
             {selectedExpense && (
               <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
                 <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#098947', borderRadius: '16px 0 0 16px' }} />
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#0c0989', borderRadius: '16px 0 0 16px' }} />
                   <div style={{ paddingLeft: '8px' }}>
                     <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#262626', marginBottom: '14px' }}>
                       {selectedExpense.expenseTypeName}

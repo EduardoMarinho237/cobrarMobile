@@ -270,7 +270,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
                         size="small"
                         onClick={handlePrevPage}
                         disabled={pageNumber <= 1 || numPages <= 1}
-                        style={{ '--color': '#098947' }}
+                        style={{ '--color': '#0c0989' }}
                       >
                         <IonIcon icon={chevronBack} />
                       </IonButton>
@@ -282,7 +282,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
                         size="small"
                         onClick={handleNextPage}
                         disabled={pageNumber >= numPages || numPages <= 1}
-                        style={{ '--color': '#098947' }}
+                        style={{ '--color': '#0c0989' }}
                       >
                         <IonIcon icon={chevronForward} />
                       </IonButton>

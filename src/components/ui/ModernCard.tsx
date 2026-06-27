@@ -9,7 +9,7 @@ interface ModernCardProps {
   style?: React.CSSProperties;
 }
 
-const ModernCard: React.FC<ModernCardProps> = ({ headerIcon, headerTitle, headerColor = '#098947', children, style }) => (
+const ModernCard: React.FC<ModernCardProps> = ({ headerIcon, headerTitle, headerColor = '#0c0989', children, style }) => (
   <div style={{
     backgroundColor: '#fff',
     borderRadius: '16px',

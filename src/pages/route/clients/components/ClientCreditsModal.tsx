@@ -69,7 +69,7 @@ const ClientCreditsModal: React.FC<ClientCreditsModalProps> = ({
                     left: 0,
                     width: '4px',
                     height: '100%',
-                    backgroundColor: '#098947',
+                    backgroundColor: '#0c0989',
                     borderRadius: '16px 0 0 16px'
                   }} />
 
@@ -86,7 +86,7 @@ const ClientCreditsModal: React.FC<ClientCreditsModalProps> = ({
                       <span style={{
                         fontSize: '16px',
                         fontWeight: 700,
-                        color: progress.percentage >= 100 ? '#28a745' : '#098947'
+                        color: progress.percentage >= 100 ? '#28a745' : '#0c0989'
                       }}>
                         {progress.percentage.toFixed(1)}%
                       </span>

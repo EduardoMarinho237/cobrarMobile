@@ -113,7 +113,7 @@ const Cobrancas: React.FC = () => {
 
   const getDebtColor = (payment: PendingPayment): string => {
     const daysLate = payment.overdueInstallmentsCount ?? 0;
-    if (!payment.hasOverdueInstallments || daysLate === 0) return '#098947';
+    if (!payment.hasOverdueInstallments || daysLate === 0) return '#0c0989';
     if (daysLate <= 3) return '#fac002';
     if (daysLate <= 7) return '#ff7300';
     return '#da0d28';
@@ -327,7 +327,7 @@ const Cobrancas: React.FC = () => {
           {dailySchedule && (
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
               {[
-                { label: t('pages.collections.dailyGoal'), value: dailySchedule.dailyExpectation, color: '#098947' },
+                { label: t('pages.collections.dailyGoal'), value: dailySchedule.dailyExpectation, color: '#0c0989' },
                 { label: t('pages.collections.collected'), value: dailySchedule.collectedToday, color: '#28a745' },
                 { label: t('pages.collections.remaining'), value: dailySchedule.remainingToCollect, color: '#dc3545' },
               ].map((item, i) => (
@@ -442,7 +442,7 @@ const Cobrancas: React.FC = () => {
             {selectedClient && (
               <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
                 <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', marginBottom: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#098947', borderRadius: '16px 0 0 16px' }} />
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#0c0989', borderRadius: '16px 0 0 16px' }} />
                   <div style={{ paddingLeft: '8px' }}>
                     <InfoRow label={t('pages.collections.name')} value={selectedClient.name} />
                     <InfoRow label={t('pages.collections.phone')} value={selectedClient.phone || t('pages.collections.notInformed')} />
@@ -467,7 +467,7 @@ const Cobrancas: React.FC = () => {
                       </div>
 
                       <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
-                        <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#098947', borderRadius: '16px 0 0 16px' }} />
+                        <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#0c0989', borderRadius: '16px 0 0 16px' }} />
                         <div style={{ paddingLeft: '8px' }}>
                           <div style={{ fontSize: '14px', fontWeight: 700, color: '#262626', marginBottom: '12px' }}>{t('pages.collections.debtDetails')}</div>
                           {clientCredits.map((credit, index) => {
@@ -488,7 +488,7 @@ const Cobrancas: React.FC = () => {
                                     <span style={{ fontWeight: 600 }}>{Math.round(progressPercentage)}%</span>
                                   </div>
                                   <div style={{ width: '100%', height: '8px', backgroundColor: '#e9ecef', borderRadius: '4px', overflow: 'hidden' }}>
-                                    <div style={{ width: `${progressPercentage}%`, height: '100%', backgroundColor: '#098947', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                                    <div style={{ width: `${progressPercentage}%`, height: '100%', backgroundColor: '#0c0989', borderRadius: '4px', transition: 'width 0.3s ease' }} />
                                   </div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '11px', color: '#888' }}>
                                     <span>{t('pages.collections.debtPaid')}: {formatCurrencyWithSymbol(paidAmount)}</span>
@@ -557,7 +557,7 @@ const Cobrancas: React.FC = () => {
           <IonContent>
             <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
               <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', marginBottom: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#098947', borderRadius: '16px 0 0 16px' }} />
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#0c0989', borderRadius: '16px 0 0 16px' }} />
                 <div style={{ paddingLeft: '8px' }}>
                   <p style={{ margin: '0 0 20px 0', color: '#555', lineHeight: 1.5, fontSize: '14px' }}>
                     {t('pages.collections.confirmPaymentModalMessage')
@@ -603,7 +603,7 @@ const Cobrancas: React.FC = () => {
         <span style={{ fontSize: '14px', color: '#555', fontWeight: 600 }}>
           {t('pages.collections.todayDebits')}
         </span>
-        <span style={{ fontSize: '18px', fontWeight: 700, color: '#098947' }}>
+        <span style={{ fontSize: '18px', fontWeight: 700, color: '#0c0989' }}>
           {formatCurrencyWithSymbol(todayTotal)}
         </span>
       </div>
@@ -635,11 +635,11 @@ const Cobrancas: React.FC = () => {
             ) : (
               filteredTodayDebits.map((debit) => (
                 <div key={debit.id} style={{ backgroundColor: '#fff', borderRadius: '14px', padding: '16px 18px', marginBottom: '10px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, width: '3px', height: '100%', backgroundColor: '#098947', borderRadius: '14px 0 0 14px' }} />
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '3px', height: '100%', backgroundColor: '#0c0989', borderRadius: '14px 0 0 14px' }} />
                   <div style={{ paddingLeft: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '15px', fontWeight: 600, color: '#262626' }}>{debit.clientName}</div>
-                      <div style={{ fontSize: '16px', fontWeight: 700, color: '#098947', marginTop: '4px' }}>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: '#0c0989', marginTop: '4px' }}>
                         {formatCurrencyWithSymbol(debit.value)}
                       </div>
                       <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>

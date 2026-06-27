@@ -62,7 +62,7 @@ const Toast: React.FC<ToastProps> = ({ isOpen, message, color, onDidDismiss }) =
 
   if (!show) return null;
 
-  const accentColor = color === 'success' ? '#098947' : '#dc3545';
+  const accentColor = color === 'success' ? '#0c0989' : '#dc3545';
 
   return createPortal(
     <div

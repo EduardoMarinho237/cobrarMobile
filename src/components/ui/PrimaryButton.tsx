@@ -17,8 +17,8 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({ onClick, label, icon, exp
     onClick={onClick}
     disabled={disabled}
     style={{
-      '--background': '#098947',
-      '--background-hover': '#067a3a',
+      '--background': '#0c0989',
+      '--background-hover': '#08066a',
       '--border-radius': '12px',
       '--padding-top': '14px',
       '--padding-bottom': '14px',

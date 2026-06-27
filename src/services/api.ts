@@ -418,11 +418,11 @@ export const getCurrentUser = () => {
   }
 };
 
-export const createManager = async (name: string, login: string, password: string) => {
+export const createManager = async (name: string, login: string, password: string, includeDefaultExpenses: boolean = true) => {
   try {
     const response = await apiRequest('/api/users', {
       method: 'POST',
-      body: JSON.stringify({ name, login, password }),
+      body: JSON.stringify({ name, login, password, includeDefaultExpenses }),
     });
     
     // Se a resposta for null (vazia), considera sucesso

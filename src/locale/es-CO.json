@@ -148,7 +148,8 @@
       "updatedSuccess": "Gerente actualizado exitosamente",
       "accessRestored": "Acceso restaurado exitosamente",
       "accessRestricted": "Acceso restringido exitosamente",
-      "passwordMinLength": "La contraseña debe tener al menos 6 caracteres"
+      "passwordMinLength": "La contraseña debe tener al menos 6 caracteres",
+      "includeDefaultExpenses": "Incluir categorías y tipos de gastos predeterminados"
     },
     "dashboard": {
       "title": "Panel de Control",
@@ -482,9 +483,11 @@
       "valuePlaceholder": "Digite el valor",
       "descriptionPlaceholder": "Digite la descripción",
       "editExpense": "Editar Gasto",
+      "expenseDetails": "Detalles del Gasto",
       "create": "Crear",
       "update": "Actualizar",
       "save": "Guardar",
+      "select": "Seleccionar",
       "confirm": "Confirmar",
       "confirmDeleteMessage": "¿Está seguro que desea eliminar el gasto \"{expenseTypeName}\" con valor {value}?",
       "name": "Nombre",
