@@ -251,11 +251,11 @@ const Cobrancas: React.FC = () => {
 
   const calculateClientSummary = (credits: Credit[]) => {
     const totalInitialValue = credits.reduce((sum, credit) => sum + credit.initialValue, 0);
-    const totalDebt = credits.reduce((sum, credit) => sum + credit.totalDebt, 0);
+    const totalWithInterest = credits.reduce((sum, credit) => sum + credit.initialValue + (credit.initialValue * credit.tax / 100), 0);
     const totalRemainingDebt = credits.reduce((sum, credit) => sum + credit.totalDebt, 0);
     const totalInstallments = credits.reduce((sum, credit) => sum + credit.quantityDays, 0);
     const paidInstallments = credits.reduce((sum, credit) => sum + (credit.quantityDays - Math.ceil(credit.totalDebt / credit.dayValue)), 0);
-    return { totalInitialValue, totalDebt, totalRemainingDebt, remainingInstallments: totalInstallments - paidInstallments };
+    return { totalInitialValue, totalWithInterest, totalRemainingDebt, remainingInstallments: totalInstallments - paidInstallments };
   };
 
   const filteredPayments = useMemo(() => pendingPayments.filter((p) => matchesSearchQuery(searchQuery, ...collectSearchableValues(p))), [pendingPayments, searchQuery]);
@@ -461,8 +461,9 @@ const Cobrancas: React.FC = () => {
                         <div style={{ paddingLeft: '8px' }}>
                           <div style={{ fontSize: '14px', fontWeight: 700, color: '#262626', marginBottom: '12px' }}>{t('pages.collections.debtSummary')}</div>
                           <InfoRow label={t('pages.collections.remainingInstallments')} value={`${summary.remainingInstallments} ${t('pages.collections.installments')}`} valueColor="#262626" />
-                          <InfoRow label={t('pages.collections.remainingDebt')} value={formatCurrencyWithSymbol(summary.totalRemainingDebt)} />
-                          <InfoRow label={t('pages.collections.totalDebtWithInterest')} value={formatCurrencyWithSymbol(summary.totalDebt)} showBorder={false} />
+                          <InfoRow label={t('pages.credits.initialValue')} value={formatCurrencyWithSymbol(summary.totalInitialValue)} />
+                          <InfoRow label={t('pages.collections.totalDebtWithInterest')} value={formatCurrencyWithSymbol(summary.totalWithInterest)} />
+                          <InfoRow label={t('pages.collections.remainingDebt')} value={formatCurrencyWithSymbol(summary.totalRemainingDebt)} showBorder={false} />
                         </div>
                       </div>
 
@@ -477,6 +478,8 @@ const Cobrancas: React.FC = () => {
                             return (
                               <div key={credit.id} style={{ marginBottom: index < clientCredits.length - 1 ? '16px' : 0, paddingBottom: index < clientCredits.length - 1 ? '16px' : 0, borderBottom: index < clientCredits.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
                                 <InfoRow label={t('pages.collections.debtStartDate')} value={formatToBrazilTime(credit.startDate)} />
+                                <InfoRow label={t('pages.credits.initialValue')} value={formatCurrencyWithSymbol(credit.initialValue)} />
+                                <InfoRow label={t('pages.collections.totalDebtWithInterest')} value={formatCurrencyWithSymbol(totalWithInterest)} />
                                 <InfoRow label={t('pages.collections.debtInterestRate')} value={`${credit.tax}%`} />
                                 <InfoRow label={t('pages.collections.debtInstallmentValue')} value={formatCurrencyWithSymbol(credit.dayValue)} />
                                 {credit.totalDebt > 0 && (
@@ -491,6 +494,7 @@ const Cobrancas: React.FC = () => {
                                     <div style={{ width: `${progressPercentage}%`, height: '100%', backgroundColor: '#0c0989', borderRadius: '4px', transition: 'width 0.3s ease' }} />
                                   </div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '11px', color: '#888' }}>
+                                    <span>{t('pages.credits.total')}: {formatCurrencyWithSymbol(totalWithInterest)}</span>
                                     <span>{t('pages.collections.debtPaid')}: {formatCurrencyWithSymbol(paidAmount)}</span>
                                     <span>{t('pages.collections.debtRemaining')}: {formatCurrencyWithSymbol(credit.totalDebt)}</span>
                                   </div>

@@ -34,7 +34,7 @@
     "ROUTE": "Cobrador"
   },
   "login": {
-    "title": "Cobrar Mobile",
+    "title": "Abonopay",
     "username": "Usuario",
     "usernamePlaceholder": "Digite el usuario",
     "password": "Contraseña",
@@ -502,7 +502,10 @@
       "deleteAll": "Eliminar Todo",
       "migrateWarning": "Al migrar, todos los tipos de gastos de '{categoryName}' serán movidos a la categoría seleccionada. Esta acción no se puede deshacer.",
       "confirmDeleteCategory": "Confirmar Eliminación de Categoría",
-      "confirmDeleteCategoryMessage": "¿Está seguro que desea eliminar esta categoría y todos sus tipos de gastos?"
+      "confirmDeleteCategoryMessage": "¿Está seguro que desea eliminar esta categoría y todos sus tipos de gastos?",
+      "selectCategory": "Seleccionar categoría",
+      "descriptionRequired": "La descripción es requerida",
+      "todayExpenses": "Gasto hoy"
     },
     "expensesDetails": {
       "title": "Detalles de Gastos",
@@ -593,7 +596,8 @@
       "errorDeletingExpense": "Error al eliminar gasto",
       "validValue": "Digite un valor válido",
       "descriptionRequired": "La descripción es requerida",
-      "noExpensesCreated": "No hay gastos creados aún"
+      "noExpensesCreated": "No hay gastos creados aún",
+      "todayExpenses": "Gasto hoy"
     },
     "collected": {
       "title": "Cobrados",
@@ -654,7 +658,7 @@
     "reportDeposit": "Depósito",
     "reportWithdrawal": "Retiro",
     "reportType": "Tipo",
-    "reportFooter": "Informe generado automáticamente por Cobrar Mobile",
+    "reportFooter": "Informe generado automáticamente por Abonopay",
     "reportTypeTitle": "Seleccione el tipo de informe",
     "reportTypeCollections": "Cobranzas",
     "reportTypeExpenses": "Gastos",

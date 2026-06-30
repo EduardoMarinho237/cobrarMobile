@@ -34,7 +34,7 @@
     "ROUTE": "Cobrador"
   },
   "login": {
-    "title": "Cobrar Mobile",
+    "title": "Abonopay",
     "username": "Usuário",
     "usernamePlaceholder": "Digite o usuário",
     "password": "Senha",
@@ -368,7 +368,10 @@
       "typeRequired": "Tipo é obrigatório",
       "update": "Atualizar",
       "updatedSuccess": "Gasto atualizado com sucesso",
-      "valueGreaterThanZero": "O valor deve ser maior que zero"
+      "valueGreaterThanZero": "O valor deve ser maior que zero",
+      "selectCategory": "Selecionar categoria",
+      "descriptionRequired": "A descrição é obrigatória",
+      "todayExpenses": "Gasto hoje"
     },
     "expensesDetails": {
       "title": "Detalhes de Gastos",
@@ -578,7 +581,8 @@
       "errorDeletingExpense": "Erro ao excluir gasto",
       "validValue": "Digite um valor válido",
       "descriptionRequired": "A descrição é obrigatória",
-      "noExpensesCreated": "Nenhum gasto criado ainda"
+      "noExpensesCreated": "Nenhum gasto criado ainda",
+      "todayExpenses": "Gasto hoje"
     },
     "closing": {
       "title": "Fechamento",
@@ -627,7 +631,7 @@
     "reportDeposit": "Depósito",
     "reportWithdrawal": "Retirada",
     "reportType": "Tipo",
-    "reportFooter": "Relatório gerado automaticamente pelo Cobrar Mobile",
+    "reportFooter": "Relatório gerado automaticamente pelo Abonopay",
     "reportTypeTitle": "Selecione o tipo de relatório",
     "reportTypeCollections": "Cobranças",
     "reportTypeExpenses": "Gastos",

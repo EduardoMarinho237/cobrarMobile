@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.cobrarmobile.app',
-  appName: 'Cobrar Mobile',
+  appName: 'Abonopay',
   webDir: 'dist',
   server: {
     androidScheme: 'http',

@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   IonContent,
   IonPage,
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonButton,
   IonItem,
-  IonLabel,
   IonInput,
   IonModal,
   IonIcon,
@@ -17,23 +15,24 @@ import {
   IonSpinner
 } from '@ionic/react';
 import SelectInput from '../../components/ui/SelectInput';
-import { addCircle, trash, create, eye, walletOutline } from 'ionicons/icons';
+import { addCircle, trash, create, eye } from 'ionicons/icons';
 import { formatCurrencyWithSymbol } from '../../utils/currency';
 import { formatToBrazilTime } from '../../utils/dateFormat';
 import {
   Expense,
   CreateExpenseRequest,
   UpdateExpenseRequest,
-  getExpensesPaginated,
+  getExpenses,
   createExpense,
   updateExpense,
-  deleteExpense
+  deleteExpense,
+  getExpenseCategories,
+  getExpenseTypes,
+  ExpenseCategory,
+  ExpenseType
 } from '../../services/expenseApi';
-import { getExpenseCategories, getExpenseTypes, ExpenseCategory, ExpenseType } from '../../services/expenseApi';
 import Toast from '../../components/Toast';
 import { useTranslation } from 'react-i18next';
-import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
-import { useInView } from 'react-intersection-observer';
 import GreenHeader from '../../components/ui/GreenHeader';
 import PrimaryButton from '../../components/ui/PrimaryButton';
 import InfoRow from '../../components/ui/InfoRow';
@@ -48,43 +47,26 @@ const inputStyle = {
   marginBottom: '8px',
 } as any;
 
+const isToday = (dateString: string) => {
+  const date = new Date(dateString);
+  const today = new Date();
+  return date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate();
+};
+
 const Expenses: React.FC = () => {
   const { t } = useTranslation();
+  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [types, setTypes] = useState<ExpenseType[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState({ isOpen: false, message: '', color: '' });
-
-  const {
-    items: expenses,
-    isLoading,
-    isLoadingMore,
-    hasMore,
-    loadMore,
-    refresh,
-  } = useInfiniteScroll<Expense>({
-    fetchPage: async (page, size) => {
-      const response = await getExpensesPaginated(page, size);
-      return {
-        content: response.content,
-        last: response.last,
-        totalElements: response.totalElements,
-      };
-    },
-    pageSize: 30,
-  });
-
-  const { ref: sentinelRef, inView } = useInView({ threshold: 0 });
-
-  useEffect(() => {
-    if (inView && hasMore && !isLoading && !isLoadingMore) {
-      loadMore();
-    }
-  }, [inView, hasMore, isLoading, isLoadingMore, loadMore]);
 
   const [newExpense, setNewExpense] = useState<CreateExpenseRequest>({
     value: 0,
@@ -96,172 +78,127 @@ const Expenses: React.FC = () => {
     expenseTypeId: 0,
     description: ''
   });
-
   const [selectedCategory, setSelectedCategory] = useState<number>(0);
   const [editSelectedCategory, setEditSelectedCategory] = useState<number>(0);
 
-  const [createFormKey, setCreateFormKey] = useState(0);
-  const [editFormKey, setEditFormKey] = useState(0);
+  const todayExpenses = useMemo(() => allExpenses.filter(e => isToday(e.createdAt)), [allExpenses]);
+  const todayTotal = useMemo(() => todayExpenses.reduce((sum, e) => sum + e.value, 0), [todayExpenses]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
+    setIsLoading(true);
     try {
-      const [categoriesResponse] = await Promise.all([
-        getExpenseCategories()
-      ]);
+      const [categoriesResponse] = await Promise.all([getExpenseCategories()]);
+      const categoriesData = Array.isArray(categoriesResponse) ? categoriesResponse : (categoriesResponse as any)?.data || [];
+      setCategories(categoriesData);
+      await loadExpenses();
+    } catch {
+      showToast(t('pages.expenses.errorLoadingData'), 'danger');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      const categoriesData = Array.isArray(categoriesResponse) ? categoriesResponse : categoriesResponse.data || [];
-      const sortedCategories = categoriesData.sort((a: ExpenseCategory, b: ExpenseCategory) => a.name.localeCompare(b.name));
-      setCategories(sortedCategories);
-    } catch (error) {
+  const loadExpenses = async () => {
+    try {
+      const data = await getExpenses();
+      setAllExpenses(Array.isArray(data) ? data : []);
+    } catch {
       showToast(t('pages.expenses.errorLoadingData'), 'danger');
     }
-    await refresh();
   };
 
   const loadTypesByCategory = async (categoryId: number) => {
-    if (!categoryId) {
-      setTypes([]);
-      return;
-    }
-
+    if (!categoryId) { setTypes([]); return; }
     try {
       const typesResponse = await getExpenseTypes(categoryId);
-      const typesData = Array.isArray(typesResponse) ? typesResponse : typesResponse.data || [];
-      setTypes(typesData);
-    } catch (error) {
-      console.error('Erro ao carregar tipos:', error);
+      setTypes(Array.isArray(typesResponse) ? typesResponse : (typesResponse as any)?.data || []);
+    } catch {
       setTypes([]);
     }
   };
 
-  const showToast = (message: string, color: string) => {
-    setToast({ isOpen: true, message, color });
-  };
+  const showToast = (message: string, color: string) => setToast({ isOpen: true, message, color });
 
   const handleCreateExpense = async () => {
-    if (!newExpense.expenseTypeId) {
-      showToast(t('pages.expenses.typeRequired'), 'danger');
-      return;
-    }
-
-    if (newExpense.value < 1) {
-      showToast(t('pages.expenses.valueGreaterThanZero'), 'danger');
-      return;
-    }
-
+    if (!newExpense.expenseTypeId) { showToast(t('pages.expenses.typeRequired'), 'danger'); return; }
+    if (newExpense.value < 1) { showToast(t('pages.expenses.valueGreaterThanZero'), 'danger'); return; }
     try {
       const response = await createExpense(newExpense);
       if (response.success) {
         showToast(t('pages.expenses.createdSuccess'), 'success');
         setShowCreateModal(false);
-        setNewExpense({
-          value: 0,
-          expenseTypeId: 0,
-          description: ''
-        });
+        setNewExpense({ value: 0, expenseTypeId: 0, description: '' });
         setSelectedCategory(0);
         setTypes([]);
-        loadData();
+        loadExpenses();
       } else {
         showToast(response.message || t('pages.expenses.errorCreating'), 'danger');
       }
-    } catch (error) {
+    } catch {
       showToast(t('pages.expenses.errorCreating'), 'danger');
     }
   };
 
   const handleEditExpense = async () => {
-    if (!editExpense.expenseTypeId) {
-      showToast(t('pages.expenses.typeRequired'), 'danger');
-      return;
-    }
-
-    if (editExpense.value < 1) {
-      showToast(t('pages.expenses.valueGreaterThanZero'), 'danger');
-      return;
-    }
-
+    if (!editExpense.expenseTypeId) { showToast(t('pages.expenses.typeRequired'), 'danger'); return; }
+    if (editExpense.value < 1) { showToast(t('pages.expenses.valueGreaterThanZero'), 'danger'); return; }
     if (!selectedExpense) return;
-
     try {
       const response = await updateExpense(selectedExpense.id, editExpense);
       if (response.success) {
         showToast(t('pages.expenses.updatedSuccess'), 'success');
         setShowEditModal(false);
-        setEditExpense({
-          value: 0,
-          expenseTypeId: 0,
-          description: ''
-        });
+        setEditExpense({ value: 0, expenseTypeId: 0, description: '' });
         setEditSelectedCategory(0);
         setTypes([]);
         setSelectedExpense(null);
-        loadData();
+        loadExpenses();
       } else {
         showToast(response.message || t('pages.expenses.errorUpdating'), 'danger');
       }
-    } catch (error) {
+    } catch {
       showToast(t('pages.expenses.errorUpdating'), 'danger');
     }
   };
 
   const handleDeleteExpense = () => {
     if (!selectedExpense) return;
-
     deleteExpense(selectedExpense.id)
       .then(response => {
         showToast(response.message || t('pages.expenses.deletedSuccess'), response.success ? 'success' : 'danger');
-
         if (response.success) {
           setShowDeleteAlert(false);
           setSelectedExpense(null);
-          loadData();
+          loadExpenses();
         }
       })
-      .catch((error) => {
-        console.error('Erro ao excluir despesa:', error);
-        showToast(t('pages.expenses.connectionError'), 'danger');
-      });
+      .catch(() => showToast(t('pages.expenses.connectionError'), 'danger'));
   };
 
   const openEditModal = async (expense: Expense) => {
-    setEditExpense({
-      value: expense.value,
-      expenseTypeId: expense.expenseTypeId,
-      description: expense.description || ''
-    });
-
+    setEditExpense({ value: expense.value, expenseTypeId: expense.expenseTypeId, description: expense.description || '' });
     setSelectedExpense(expense);
-
     try {
       const categoriesResponse = await getExpenseCategories();
-      const categoriesData = Array.isArray(categoriesResponse) ? categoriesResponse : categoriesResponse.data || [];
-
+      const categoriesData = Array.isArray(categoriesResponse) ? categoriesResponse : (categoriesResponse as any)?.data || [];
       for (const category of categoriesData) {
         const typesResponse = await getExpenseTypes(category.id);
-        const typesData = Array.isArray(typesResponse) ? typesResponse : typesResponse.data || [];
-        const typeExists = typesData.some((type: ExpenseType) => type.id === expense.expenseTypeId);
-        if (typeExists) {
+        const typesData = Array.isArray(typesResponse) ? typesResponse : (typesResponse as any)?.data || [];
+        if (typesData.some((type: ExpenseType) => type.id === expense.expenseTypeId)) {
           setEditSelectedCategory(category.id);
           setTypes(typesData);
           break;
         }
       }
-    } catch (error) {
-      console.error('Erro ao buscar categoria:', error);
+    } catch {
+      setTypes([]);
     }
-
-    setEditFormKey(prev => prev + 1);
     setShowEditModal(true);
   };
 
-  const formatDateTime = (dateString: string) => {
-    return formatToBrazilTime(dateString);
-  };
+  const formatDateTime = (dateString: string) => formatToBrazilTime(dateString);
 
   const handleCategoryChange = (categoryId: number) => {
     setSelectedCategory(categoryId);
@@ -290,12 +227,11 @@ const Expenses: React.FC = () => {
           <IonRefresherContent />
         </IonRefresher>
 
-        <div style={{ padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 16px))' }}>
+        <div style={{ padding: '16px', paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 16px))' }}>
           <PrimaryButton
             onClick={() => {
               setNewExpense({ value: 0, expenseTypeId: 0, description: '' });
               setSelectedCategory(0);
-              setCreateFormKey(prev => prev + 1);
               setShowCreateModal(true);
             }}
             label={t('pages.expenses.addExpense')}
@@ -307,13 +243,13 @@ const Expenses: React.FC = () => {
               <IonSpinner name="dots" />
               <p style={{ color: '#666', fontSize: '14px' }}>{t('pages.expenses.loadingExpenses')}</p>
             </div>
-          ) : expenses.length === 0 ? (
+          ) : todayExpenses.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px' }}>
               <p style={{ color: '#999', margin: 0 }}>{t('pages.expenses.noExpensesRegistered')}</p>
             </div>
           ) : (
             <>
-              {expenses.map((expense) => (
+              {todayExpenses.map((expense) => (
                 <div key={expense.id} style={{
                   backgroundColor: '#fff', borderRadius: '16px', padding: '20px', marginBottom: '12px',
                   boxShadow: '0 2px 12px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden'
@@ -345,11 +281,24 @@ const Expenses: React.FC = () => {
                   </div>
                 </div>
               ))}
-              <div ref={sentinelRef} style={{ height: '40px', textAlign: 'center', padding: '10px' }}>
-                {isLoadingMore && <IonSpinner name="dots" />}
-              </div>
             </>
           )}
+        </div>
+
+        {/* Rodapé - Total de Gastos de Hoje */}
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, width: '100%',
+          backgroundColor: '#fff', borderTop: '1px solid #e8e8e8',
+          padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 12px))',
+          zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          boxSizing: 'border-box', boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
+        }}>
+          <span style={{ fontSize: '14px', color: '#555', fontWeight: 600 }}>
+            {t('pages.expenses.todayExpenses')}
+          </span>
+          <span style={{ fontSize: '18px', fontWeight: 700, color: '#dc3545' }}>
+            {formatCurrencyWithSymbol(todayTotal)}
+          </span>
         </div>
 
         {/* Modal Criar Despesa */}
